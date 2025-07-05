@@ -41,27 +41,30 @@
 
 Take a sneak peek at Empire Enhanced in action.
 <p align="center"><strong>Main Dashboard</strong></p>
+<p align="center"><strong>An intuitive and powerful dashboard providing an overview of your settings and active enhancements.</strong></p>
 <p align="center">
   <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Dashboard.gif" alt="Dashboard">
 </p>
-<p align="center"><strong>An intuitive and powerful dashboard providing an overview of your settings and active enhancements.</strong></p>
 
-<p align="center"><strong>Notification Popup</strong></p
 
+<p align="center"><strong>Notification Popup</strong></p>
+<p align="center"><strong>Instant alerts when your target items appear — never miss a deal.</strong></p>
 <p align="center">
   <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Notification.png" alt="Popup">
 </p>
-<p align="center"><strong>Instant alerts when your target items appear — never miss a deal.</strong></p>
 
-<p align="center"><strong>Notification History Page</strong></p
 
-![History Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/History%20Page.png)
+<p align="center"><strong>Notification History Page</strong></p>
 <p align="center"><strong>Easily track missed or past alerts with the integrated Notification History page.</strong></p>
 
-<p align="center"><strong>CSGOEmpire Home Page</strong></p
+![History Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/History%20Page.png)
+
+
+<p align="center"><strong>CSGOEmpire Home Page</strong></p>
+<p align="center"><strong>The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.</strong></p>
 
 ![Home Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Homepage.png)
-<p align="center"><strong>The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.</strong></p>
+
 
 
 ## ❓How It Works
