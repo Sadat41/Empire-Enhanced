@@ -1,5 +1,13 @@
-// Content script for CSGOEmpire keychain notifications overlay
+// Prevent multiple injections
+(function() {
+  if (window.empireEnhancedLoaded) {
+    console.log('Empire Enhanced already loaded, skipping...');
+    return;
+  }
+  })();
+  window.empireEnhancedLoaded = true;
 
+// Content script for CSGOEmpire keychain notifications overlay with theme support
 class CSGOEmpireNotificationOverlay {
   constructor() {
     this.notifications = [];
@@ -7,6 +15,7 @@ class CSGOEmpireNotificationOverlay {
     this.notificationContainer = null;
     this.soundEnabled = true;
     this.monitoringEnabled = true;
+    this.currentTheme = 'nebula'; // Default theme
     
     this.init();
   }
@@ -14,7 +23,7 @@ class CSGOEmpireNotificationOverlay {
   async init() {
     console.log('♔ Empire Enhanced overlay initialized');
     
-    // Load settings from storage
+    // Load settings from storage including theme
     await this.loadSettings();
     
     // Create notification container
@@ -37,6 +46,10 @@ class CSGOEmpireNotificationOverlay {
           this.setSoundState(message.data.enabled);
           sendResponse({success: true});
           break;
+        case 'THEME_CHANGED':
+          this.setTheme(message.data.theme);
+          sendResponse({success: true});
+          break;
       }
       return true;
     });
@@ -49,16 +62,35 @@ class CSGOEmpireNotificationOverlay {
     try {
       const settings = await chrome.storage.sync.get({
         monitoringEnabled: true,
-        soundEnabled: true
+        soundEnabled: true,
+        selectedTheme: 'nebula'
       });
       
       this.monitoringEnabled = settings.monitoringEnabled;
       this.soundEnabled = settings.soundEnabled;
+      this.currentTheme = settings.selectedTheme;
       
-      console.log('Content script settings loaded:', { monitoring: this.monitoringEnabled, sound: this.soundEnabled });
+      console.log('Content script settings loaded:', { 
+        monitoring: this.monitoringEnabled, 
+        sound: this.soundEnabled,
+        theme: this.currentTheme
+      });
     } catch (error) {
       console.error('Error loading settings in content script:', error);
     }
+  }
+
+  setTheme(themeName) {
+    console.log(`🎨 Content script setting theme to: ${themeName}`);
+    this.currentTheme = themeName;
+    
+    // Update notification container theme
+    if (this.notificationContainer) {
+      this.notificationContainer.className = `keychain-notification-container theme-${themeName}`;
+    }
+    
+    // Re-inject theme styles if needed
+    this.injectThemeStyles();
   }
 
   setMonitoringState(enabled) {
@@ -88,6 +120,7 @@ class CSGOEmpireNotificationOverlay {
     // Create container for notifications
     this.notificationContainer = document.createElement('div');
     this.notificationContainer.id = 'keychain-notification-container';
+    this.notificationContainer.className = `keychain-notification-container theme-${this.currentTheme}`;
     this.notificationContainer.style.cssText = `
       position: fixed;
       top: 20px;
@@ -99,6 +132,258 @@ class CSGOEmpireNotificationOverlay {
     `;
     
     document.body.appendChild(this.notificationContainer);
+    
+    // Inject theme-specific styles
+    this.injectThemeStyles();
+
+  }
+  injectThemeStyles() {
+    // Remove existing theme styles
+    const existingStyles = document.getElementById('keychain-notification-theme-styles');
+    if (existingStyles) {
+      existingStyles.remove();
+    }
+
+    const styles = document.createElement('style');
+    styles.id = 'keychain-notification-theme-styles';
+    
+    styles.textContent = `
+      /* ===== BASE NOTIFICATION STYLES ===== */
+      @keyframes slideInRight {
+        from {
+          transform: translateX(350px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      
+      @keyframes slideOutRight {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(350px);
+          opacity: 0;
+        }
+      }
+      
+      @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-4px) rotate(2deg); }
+      }
+      
+      @keyframes pulseGlow {
+        0%, 100% {
+          box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+        50% {
+          box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+      }
+      
+      .keychain-notification {
+        animation: slideInRight 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      
+      .keychain-notification:hover {
+        transform: translateY(-4px) !important;
+      }
+      
+      .crown-float {
+        animation: float 3s ease-in-out infinite;
+      }
+      
+      /* Fixed gradient text - no background box */
+      .gradient-text {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        display: inline-block;
+        padding: 0;
+        margin: 0;
+        border: none;
+        box-shadow: none;
+      }
+      
+      .premium-button {
+        border: none;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      .premium-button:hover {
+        transform: translateY(-2px);
+      }
+      
+      .secondary-button {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* ===== THEME 1: NEBULA STYLES ===== */
+      .keychain-notification-container.theme-nebula .keychain-notification {
+        background: rgba(255, 255, 255, 0.06);
+        backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      }
+
+      .keychain-notification-container.theme-nebula .keychain-notification:hover {
+        box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+      }
+
+      .keychain-notification-container.theme-nebula .pulse-glow {
+        animation: pulseGlow 3s infinite;
+      }
+
+      .keychain-notification-container.theme-nebula .gradient-text {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .keychain-notification-container.theme-nebula .premium-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      }
+
+      .keychain-notification-container.theme-nebula .premium-button:hover {
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+      }
+
+      .keychain-notification-container.theme-nebula .secondary-button {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+
+      .keychain-notification-container.theme-nebula .secondary-button:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.25);
+      }
+
+      /* ===== THEME 2: SHOOTING STAR STYLES ===== */
+      .keychain-notification-container.theme-shooting-star .keychain-notification {
+        background: rgba(20, 20, 40, 0.85);
+        backdrop-filter: blur(24px);
+        border: 1px solid rgba(135, 206, 235, 0.3);
+        box-shadow: 0 8px 32px rgba(135, 206, 235, 0.15), 0 0 0 1px rgba(135, 206, 235, 0.1);
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* 🔥 NEW: Subtle shooting star background effect for notifications */
+      .keychain-notification-container.theme-shooting-star .keychain-notification::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: 
+          radial-gradient(1px 1px at 20% 30%, rgba(135, 206, 235, 0.4), transparent),
+          radial-gradient(1px 1px at 80% 70%, rgba(74, 144, 226, 0.3), transparent),
+          radial-gradient(1px 1px at 60% 20%, rgba(135, 206, 235, 0.2), transparent),
+          radial-gradient(1px 1px at 40% 80%, rgba(74, 144, 226, 0.3), transparent);
+        background-size: 60px 40px, 80px 50px, 70px 45px, 90px 55px;
+        animation: starFieldMove 15s linear infinite;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      @keyframes starFieldMove {
+        0% { transform: translateY(0px); }
+        100% { transform: translateY(-20px); }
+      }
+
+      /* 🔥 NEW: Subtle shooting star trail effect */
+      .keychain-notification-container.theme-shooting-star .keychain-notification::after {
+        content: '';
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        width: 30px;
+        height: 1px;
+        background: linear-gradient(to left, rgba(135, 206, 235, 0.6), transparent);
+        opacity: 0;
+        animation: subtleShootingStar 4s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      @keyframes subtleShootingStar {
+        0%, 85% { 
+          opacity: 0; 
+          transform: translateX(-40px) translateY(-5px); 
+        }
+        90%, 95% { 
+          opacity: 1; 
+          transform: translateX(20px) translateY(8px); 
+        }
+        100% { 
+          opacity: 0; 
+          transform: translateX(30px) translateY(10px); 
+        }
+      }
+
+      .keychain-notification-container.theme-shooting-star .keychain-notification:hover {
+        box-shadow: 0 20px 40px rgba(135, 206, 235, 0.25), 0 0 0 1px rgba(135, 206, 235, 0.2) !important;
+        border-color: rgba(135, 206, 235, 0.5);
+      }
+
+      .keychain-notification-container.theme-shooting-star .pulse-glow {
+        animation: pulseGlowStar 3s infinite;
+      }
+
+      @keyframes pulseGlowStar {
+        0%, 100% {
+          box-shadow: 0 8px 32px rgba(135, 206, 235, 0.15), 0 0 0 1px rgba(135, 206, 235, 0.1);
+        }
+        50% {
+          box-shadow: 0 12px 40px rgba(135, 206, 235, 0.3), 0 0 0 1px rgba(135, 206, 235, 0.2);
+        }
+      }
+
+      .keychain-notification-container.theme-shooting-star .gradient-text {
+        background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .keychain-notification-container.theme-shooting-star .premium-button {
+        background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+        box-shadow: 0 4px 15px rgba(135, 206, 235, 0.3);
+      }
+
+      .keychain-notification-container.theme-shooting-star .premium-button:hover {
+        box-shadow: 0 8px 25px rgba(135, 206, 235, 0.5);
+      }
+
+      .keychain-notification-container.theme-shooting-star .secondary-button {
+        background: rgba(135, 206, 235, 0.08);
+        border: 1px solid rgba(135, 206, 235, 0.2);
+      }
+
+      .keychain-notification-container.theme-shooting-star .secondary-button:hover {
+        background: rgba(135, 206, 235, 0.15);
+        border-color: rgba(135, 206, 235, 0.3);
+      }
+
+      /* Crown SVG theming */
+      .keychain-notification-container.theme-shooting-star .crown-svg {
+        filter: drop-shadow(0 4px 8px rgba(135, 206, 235, 0.4));
+      }
+
+      .keychain-notification-container.theme-nebula .crown-svg {
+        filter: drop-shadow(0 4px 8px rgba(102, 126, 234, 0.4));
+      }
+    `;
+    
+    document.head.appendChild(styles);
   }
 
   showKeychainNotification(itemData) {
@@ -123,7 +408,7 @@ class CSGOEmpireNotificationOverlay {
     const marketValue = itemData.market_value ? (itemData.market_value / 100).toFixed(2) : 'Unknown';
     const purchasePrice = itemData.purchase_price ? (itemData.purchase_price / 100).toFixed(2) : marketValue;
     
-    // 🔥 NEW: Get Float value from wear field - replace recommended price
+    // Get Float value from wear field
     const floatValue = itemData.wear !== undefined && itemData.wear !== null ? 
       parseFloat(itemData.wear).toFixed(6) : 'Unknown';
     
@@ -135,112 +420,18 @@ class CSGOEmpireNotificationOverlay {
       (Array.isArray(itemData.keychains) ? itemData.keychains.map(k => k.name || k).join(', ') : itemData.keychains) : 
       'Unknown';
 
-    // Add enhanced keyframes and styles for premium look
-    if (!document.getElementById('keychain-notification-styles')) {
-      const styles = document.createElement('style');
-      styles.id = 'keychain-notification-styles';
-      styles.textContent = `
-        @keyframes slideInRight {
-          from {
-            transform: translateX(350px);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes slideOutRight {
-          from {
-            transform: translateX(0);
-            opacity: 1;
-          }
-          to {
-            transform: translateX(350px);
-            opacity: 0;
-          }
-        }
-        
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-4px) rotate(2deg); }
-        }
-        
-        @keyframes pulseGlow {
-          0%, 100% {
-            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
-          }
-          50% {
-            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
-          }
-        }
-        
-        .keychain-notification {
-          animation: slideInRight 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-        
-        .keychain-notification:hover {
-          transform: translateY(-4px) !important;
-          box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
-        }
-        
-        .pulse-glow {
-          animation: pulseGlow 3s infinite;
-        }
-        
-        .crown-float {
-          animation: float 3s ease-in-out infinite;
-        }
-        
-        .gradient-text {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        
-        .premium-button {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          border: none;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .premium-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-        }
-        
-        .secondary-button {
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .secondary-button:hover {
-          background: rgba(255, 255, 255, 0.15);
-          border-color: rgba(255, 255, 255, 0.25);
-        }
-      `;
-      document.head.appendChild(styles);
-    }
-
     // Create notification element with unique ID based on item ID
     const notification = document.createElement('div');
     const notificationId = `notification-${itemData.id}`;
     notification.id = notificationId;
     notification.className = 'keychain-notification pulse-glow';
     notification.style.cssText = `
-      background: rgba(255, 255, 255, 0.06);
-      backdrop-filter: blur(24px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 12px;
       padding: 16px;
       margin-bottom: 12px;
       max-width: 300px;
       min-width: 280px;
       color: #e2e8f0;
-      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
       pointer-events: auto;
       cursor: pointer;
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -249,21 +440,26 @@ class CSGOEmpireNotificationOverlay {
       overflow: hidden;
     `;
 
-    // Premium animated crown SVG matching your theme
+    // Create crown SVG with theme-aware gradient
+    const crownGradientId = `crownGradient${itemData.id}`;
+    const crownColors = this.currentTheme === 'shooting-star' 
+      ? { start: '#4a90e2', mid: '#87ceeb', end: '#36d1dc' }
+      : { start: '#667eea', mid: '#764ba2', end: '#36d1dc' };
+
     const crownSVG = `
-      <svg class="crown-float" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 8px rgba(102, 126, 234, 0.4));">
+      <svg class="crown-float crown-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <linearGradient id="crownGradient${itemData.id}" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-            <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#36d1dc;stop-opacity:1" />
+          <linearGradient id="${crownGradientId}" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:${crownColors.start};stop-opacity:1" />
+            <stop offset="50%" style="stop-color:${crownColors.mid};stop-opacity:1" />
+            <stop offset="100%" style="stop-color:${crownColors.end};stop-opacity:1" />
           </linearGradient>
         </defs>
-        <path d="M3 18h18l-2-8-4 3-3-6-3 6-4-3z" fill="url(#crownGradient${itemData.id})" stroke="#667eea" stroke-width="0.5"/>
-        <path d="M5 18h14v1.5c0 0.5-0.5 1-1 1H6c-0.5 0-1-0.5-1-1V18z" fill="#764ba2"/>
-        <circle cx="12" cy="12" r="1.5" fill="#36d1dc"/>
-        <circle cx="8" cy="14" r="1" fill="#667eea"/>
-        <circle cx="16" cy="14" r="1" fill="#667eea"/>
+        <path d="M3 18h18l-2-8-4 3-3-6-3 6-4-3z" fill="url(#${crownGradientId})" stroke="${crownColors.start}" stroke-width="0.5"/>
+        <path d="M5 18h14v1.5c0 0.5-0.5 1-1 1H6c-0.5 0-1-0.5-1-1V18z" fill="${crownColors.mid}"/>
+        <circle cx="12" cy="12" r="1.5" fill="${crownColors.end}"/>
+        <circle cx="8" cy="14" r="1" fill="${crownColors.start}"/>
+        <circle cx="16" cy="14" r="1" fill="${crownColors.start}"/>
       </svg>
     `;
 
@@ -298,7 +494,7 @@ class CSGOEmpireNotificationOverlay {
         " onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.12)'">×</button>
       </div>
       
-      <!-- Premium item info section with enhanced typography -->
+      <!-- Premium item info section -->
       <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
         <div style="font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #f1f5f9; line-height: 1.3; letter-spacing: -0.2px;">
           ${itemData.market_name || 'Unknown Item'}
@@ -349,7 +545,6 @@ class CSGOEmpireNotificationOverlay {
           align-items: center;
           justify-content: center;
           gap: 4px;
-          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         ">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
@@ -361,7 +556,6 @@ class CSGOEmpireNotificationOverlay {
         <button onclick="this.closest('.keychain-notification').remove()" 
                 class="secondary-button"
                 style="
-          background: rgba(255, 255, 255, 0.08);
           color: #e2e8f0;
           padding: 10px 12px;
           border-radius: 8px;
@@ -438,7 +632,7 @@ class CSGOEmpireNotificationOverlay {
       // Create audio context for notification sound
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       
-      // Create a more premium notification sound sequence
+      // Create different sound patterns based on theme
       const playTone = (frequency, duration, delay = 0) => {
         setTimeout(() => {
           const oscillator = audioContext.createOscillator();
@@ -459,10 +653,17 @@ class CSGOEmpireNotificationOverlay {
         }, delay);
       };
 
-      // Premium notification sound sequence
-      playTone(880, 0.15, 0);      // A5
-      playTone(1108, 0.15, 200);   // C#6
-      playTone(1320, 0.2, 400);    // E6
+      if (this.currentTheme === 'shooting-star') {
+        // Ethereal shooting star sound sequence
+        playTone(800, 0.15, 0);      // C5
+        playTone(1200, 0.15, 200);   // E6
+        playTone(1600, 0.2, 400);    // G#6
+      } else {
+        // Original nebula sound sequence
+        playTone(880, 0.15, 0);      // A5
+        playTone(1108, 0.15, 200);   // C#6
+        playTone(1320, 0.2, 400);    // E6
+      }
 
     } catch (error) {
       console.error('Could not play notification sound:', error);

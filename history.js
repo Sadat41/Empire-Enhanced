@@ -1,4 +1,4 @@
-// history.js - Updated for modern card-based layout
+// history.js - Updated with theme support for modern card-based layout
 
 class NotificationHistory {
     constructor() {
@@ -6,6 +6,7 @@ class NotificationHistory {
         this.serverUrl = 'http://localhost:3001';
         this.autoRefreshInterval = null;
         this.currentFilter = 'All Items'; // Track current filter state
+        this.currentTheme = 'nebula'; // Default theme
         this.init();
     }
 
@@ -19,9 +20,67 @@ class NotificationHistory {
             });
         }
         
+        // Load theme first, then setup everything else
+        await this.loadTheme();
         this.setupEventListeners();
         await this.loadHistory();
         this.startAutoRefresh();
+    }
+
+    async loadTheme() {
+        try {
+            const settings = await chrome.storage.sync.get({
+                selectedTheme: 'nebula'
+            });
+            
+            this.currentTheme = settings.selectedTheme;
+            this.applyTheme(this.currentTheme);
+            
+            console.log(`🎨 History page loaded theme: ${this.currentTheme}`);
+        } catch (error) {
+            console.error('Error loading theme:', error);
+            // Fall back to default theme
+            this.applyTheme('nebula');
+        }
+    }
+
+    applyTheme(themeName) {
+        console.log(`🎨 Applying theme: ${themeName}`);
+        
+        // Update body class
+        document.body.className = `theme-${themeName}`;
+        
+        // Update crown SVG colors based on theme
+        this.updateCrownColors(themeName);
+        
+        this.currentTheme = themeName;
+    }
+
+    updateCrownColors(themeName) {
+        const crownPath = document.querySelector('.crown-path');
+        const crownBase = document.querySelector('.crown-base');
+        const crownLeft = document.querySelector('.crown-left');
+        const crownRight = document.querySelector('.crown-right');
+        
+        if (themeName === 'shooting-star') {
+            // Update to shooting star theme colors
+            if (crownPath) {
+                crownPath.setAttribute('fill', 'url(#crownGradientStar)');
+                crownPath.setAttribute('stroke', '#4a90e2');
+            }
+            if (crownBase) crownBase.setAttribute('fill', '#87ceeb');
+            if (crownLeft) crownLeft.setAttribute('fill', '#4a90e2');
+            if (crownRight) crownRight.setAttribute('fill', '#4a90e2');
+        } else {
+            // Default nebula theme colors
+            if (crownPath) {
+                crownPath.setAttribute('fill', 'url(#crownGradient)');
+                crownPath.setAttribute('stroke', '#667eea');
+            }
+            if (crownBase) crownBase.setAttribute('fill', '#764ba2');
+            if (crownLeft) crownLeft.setAttribute('fill', '#667eea');
+            if (crownRight) crownRight.setAttribute('fill', '#667eea');
+        }
     }
 
     setupEventListeners() {
@@ -54,6 +113,17 @@ class NotificationHistory {
                 this.applyCurrentFilter();
             });
         });
+
+        // Listen for storage changes (theme updates from popup)
+        chrome.storage.onChanged.addListener((changes, namespace) => {
+            if (namespace === 'sync' && changes.selectedTheme) {
+                const newTheme = changes.selectedTheme.newValue;
+                if (newTheme !== this.currentTheme) {
+                    console.log(`🎨 Theme changed to: ${newTheme}`);
+                    this.applyTheme(newTheme);
+                }
+            }
+        });
     }
 
     applyCurrentFilter() {
@@ -85,137 +155,137 @@ class NotificationHistory {
         this.renderFilteredHistory(sortedNotifications);
     }
 
-
     renderFilteredHistory(sortedNotifications) {
-    console.log(`🎨 Rendering ${sortedNotifications.length} filtered/sorted notifications...`);
-    
-    const itemsGrid = document.getElementById('itemsGrid');
-    const emptyState = document.getElementById('emptyState');
-    
-    if (!sortedNotifications || sortedNotifications.length === 0) {
-        console.log('📝 Showing empty state for filtered results');
-        if (itemsGrid) itemsGrid.innerHTML = '';
-        if (itemsGrid) itemsGrid.style.display = 'none';
-        if (emptyState) emptyState.style.display = 'block';
-        return;
-    }
-    
-    console.log('📝 Showing grid with filtered data');
-    if (emptyState) emptyState.style.display = 'none';
-    if (itemsGrid) itemsGrid.style.display = 'grid';
-    
-    try {
-        const cardsHTML = sortedNotifications.map((item, index) => {
-            const marketValue = (item.market_value || 0) / 100;
-            const recommendedValue = (item.suggested_price || 0) / 100;
-            const aboveRec = item.above_recommended_price || 0;
-
-            // Format keychains
-            let keychainDisplay = 'N/A';
-            if (item.keychains) {
-                if (Array.isArray(item.keychains)) {
-                    keychainDisplay = item.keychains.length > 0 ? item.keychains.join(', ') : 'N/A';
-                } else if (typeof item.keychains === 'string') {
-                    keychainDisplay = item.keychains;
-                }
-            }
-
-            // Format timestamp using published_at primarily
-            const publishedTime = new Date(item.published_at || item.timestamp);
-            const now = new Date();
-            const isToday = publishedTime.toDateString() === now.toDateString();
-            const timeStr = isToday ? 
-                `Today at ${publishedTime.toLocaleTimeString()}` : 
-                publishedTime.toLocaleString();
-
-            // Determine percentage styling
-            const percentageClass = aboveRec >= 0 ? 'positive' : 'negative';
-            const percentageIcon = aboveRec >= 0 ? '📈' : '📉';
-            const percentageText = aboveRec >= 0 ? `+${aboveRec.toFixed(1)}%` : `${aboveRec.toFixed(1)}%`;
-
-            return `
-                <div class="item-card" style="animation-delay: ${index * 0.05}s;">
-                    <div class="item-header">
-                        <div>
-                            <div class="item-name" title="${item.market_name || 'Unknown Item'}">${item.market_name || 'Unknown Item'}</div>
-                            <div class="item-keychain">
-                                <div class="keychain-icon">🔑</div>
-                                ${keychainDisplay}
-                            </div>
-                        </div>
-                        <div class="item-id">#${item.id || 'Unknown'}</div>
-                    </div>
-                    
-                    <div class="price-grid">
-                        <div class="price-item">
-                            <div class="price-label">Market Value</div>
-                            <div class="price-value market">${marketValue.toFixed(2)}</div>
-                        </div>
-                        <div class="price-item">
-                            <div class="price-label">Recommended</div>
-                            <div class="price-value recommended">${recommendedValue.toFixed(2)}</div>
-                        </div>
-                    </div>
-
-                    <div class="percentage-badge ${percentageClass}">
-                        <span>${percentageIcon}</span>
-                        ${percentageText}
-                    </div>
-
-                    <div class="item-actions">
-                        <button class="action-btn primary view-item-btn" data-item-id="${item.id}">
-                            <span>🔗</span>
-                            View Item
-                        </button>
-                        <button class="action-btn secondary hide-item-btn">
-                            <span>✕</span>
-                            Hide
-                        </button>
-                    </div>
-
-                    <div class="timestamp">
-                        ${timeStr}
-                    </div>
-                </div>
-            `;
-        }).join('');
+        console.log(`🎨 Rendering ${sortedNotifications.length} filtered/sorted notifications...`);
         
-        if (itemsGrid) {
-            itemsGrid.innerHTML = cardsHTML;
-            console.log(`✅ Filtered cards rendered successfully (${this.currentFilter})`);
-            
-            // 🟢 Attach event listeners here for CSP-safe action buttons
-
-            // View Item buttons
-            itemsGrid.querySelectorAll('.view-item-btn').forEach(btn => {
-                btn.addEventListener('click', (event) => {
-                    // Prevent bubbling to card
-                    event.stopPropagation();
-                    const itemId = btn.getAttribute('data-item-id');
-                    if (itemId) {
-                        window.open(`https://csgoempire.com/item/${itemId}`, '_blank');
-                    }
-                });
-            });
-
-            // Hide buttons
-            itemsGrid.querySelectorAll('.hide-item-btn').forEach(btn => {
-                btn.addEventListener('click', (event) => {
-                    event.stopPropagation();
-                    const card = btn.closest('.item-card');
-                    if (card) card.remove();
-                });
-            });
+        const itemsGrid = document.getElementById('itemsGrid');
+        const emptyState = document.getElementById('emptyState');
+        
+        if (!sortedNotifications || sortedNotifications.length === 0) {
+            console.log('📝 Showing empty state for filtered results');
+            if (itemsGrid) itemsGrid.innerHTML = '';
+            if (itemsGrid) itemsGrid.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'block';
+            return;
         }
         
-    } catch (error) {
-        console.error('❌ Error rendering filtered cards:', error);
-        this.showError(`Error rendering filtered cards: ${error.message}`);
+        console.log('📝 Showing grid with filtered data');
+        if (emptyState) emptyState.style.display = 'none';
+        if (itemsGrid) itemsGrid.style.display = 'grid';
+        
+        try {
+            const cardsHTML = sortedNotifications.map((item, index) => {
+                const marketValue = (item.market_value || 0) / 100;
+                const recommendedValue = (item.suggested_price || 0) / 100;
+                const aboveRec = item.above_recommended_price || 0;
+
+                // Format keychains
+                let keychainDisplay = 'N/A';
+                if (item.keychains) {
+                    if (Array.isArray(item.keychains)) {
+                        keychainDisplay = item.keychains.length > 0 ? item.keychains.join(', ') : 'N/A';
+                    } else if (typeof item.keychains === 'string') {
+                        keychainDisplay = item.keychains;
+                    }
+                }
+
+                // Format timestamp using published_at primarily
+                const publishedTime = new Date(item.published_at || item.timestamp);
+                const now = new Date();
+                const isToday = publishedTime.toDateString() === now.toDateString();
+                const timeStr = isToday ? 
+                    `Today at ${publishedTime.toLocaleTimeString()}` : 
+                    publishedTime.toLocaleString();
+
+                // Format float value
+                const floatValue = item.wear !== undefined && item.wear !== null ? 
+                    parseFloat(item.wear).toFixed(6) : 'Unknown';
+
+                // Determine percentage styling
+                const percentageClass = aboveRec >= 0 ? 'positive' : 'negative';
+                const percentageIcon = aboveRec >= 0 ? '📈' : '📉';
+                const percentageText = aboveRec >= 0 ? `+${aboveRec.toFixed(1)}%` : `${aboveRec.toFixed(1)}%`;
+
+                return `
+                    <div class="item-card" style="animation-delay: ${index * 0.05}s;">
+                        <div class="item-header">
+                            <div>
+                                <div class="item-name" title="${item.market_name || 'Unknown Item'}">${item.market_name || 'Unknown Item'}</div>
+                                <div class="item-keychain">
+                                    <div class="keychain-icon">🔑</div>
+                                    ${keychainDisplay}
+                                </div>
+                            </div>
+                            <div class="item-id">#${item.id || 'Unknown'}</div>
+                        </div>
+                        
+                        <div class="price-grid">
+                            <div class="price-item">
+                                <div class="price-label">Market Value</div>
+                                <div class="price-value market">$${marketValue.toFixed(2)}</div>
+                            </div>
+                            <div class="price-item">
+                                <div class="price-label">Float</div>
+                                <div class="price-value recommended">${floatValue}</div>
+                            </div>
+                        </div>
+
+                        <div class="percentage-badge ${percentageClass}">
+                            <span>${percentageIcon}</span>
+                            ${percentageText}
+                        </div>
+
+                        <div class="item-actions">
+                            <button class="action-btn primary view-item-btn" data-item-id="${item.id}">
+                                <span>🔗</span>
+                                View Item
+                            </button>
+                            <button class="action-btn secondary hide-item-btn">
+                                <span>✕</span>
+                                Hide
+                            </button>
+                        </div>
+
+                        <div class="timestamp">
+                            ${timeStr}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            if (itemsGrid) {
+                itemsGrid.innerHTML = cardsHTML;
+                console.log(`✅ Filtered cards rendered successfully (${this.currentFilter})`);
+                
+                // 🟢 Attach event listeners here for CSP-safe action buttons
+
+                // View Item buttons
+                itemsGrid.querySelectorAll('.view-item-btn').forEach(btn => {
+                    btn.addEventListener('click', (event) => {
+                        // Prevent bubbling to card
+                        event.stopPropagation();
+                        const itemId = btn.getAttribute('data-item-id');
+                        if (itemId) {
+                            window.open(`https://csgoempire.com/item/${itemId}`, '_blank');
+                        }
+                    });
+                });
+
+                // Hide buttons
+                itemsGrid.querySelectorAll('.hide-item-btn').forEach(btn => {
+                    btn.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        const card = btn.closest('.item-card');
+                        if (card) card.remove();
+                    });
+                });
+            }
+            
+        } catch (error) {
+            console.error('❌ Error rendering filtered cards:', error);
+            this.showError(`Error rendering filtered cards: ${error.message}`);
+        }
     }
-}
-
-
-
 
     async loadHistory() {
         try {
@@ -401,7 +471,7 @@ if (document.readyState === 'loading') {
 }
 
 // Test function to verify JavaScript is working
-console.log('📝 History.js loaded successfully');
+console.log('📝 History.js with theme support loaded successfully');
 
 // Add a global test function to debug CSP issues
 window.testButtonClick = function() {

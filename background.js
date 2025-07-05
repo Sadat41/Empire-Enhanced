@@ -7,6 +7,7 @@ class ExtensionManager {
     // Removed WebSocket client connection - HTTP polling only!
     this.isMonitoringEnabled = true;
     this.isSoundEnabled = true;
+    this.currentTheme = 'nebula'; // Default theme
     this.stats = {
       keychainsFound: 0,
       lastConnection: null,
@@ -28,7 +29,7 @@ class ExtensionManager {
   async init() {
     console.log('♔ Empire Enhanced Extension initialized');
     
-    // Load settings
+    // Load settings including theme
     await this.loadSettings();
     
     // Set default settings
@@ -36,6 +37,7 @@ class ExtensionManager {
       serverUrl: this.serverUrl,
       notificationSound: this.isSoundEnabled,
       monitoringEnabled: this.isMonitoringEnabled,
+      selectedTheme: this.currentTheme,
       lastNotification: 0
     });
 
@@ -161,14 +163,20 @@ class ExtensionManager {
       const settings = await chrome.storage.sync.get({
         monitoringEnabled: true,
         soundEnabled: true,
+        selectedTheme: 'nebula',
         lastNotificationTimestamp: 0
       });
       
       this.isMonitoringEnabled = settings.monitoringEnabled;
       this.isSoundEnabled = settings.soundEnabled;
+      this.currentTheme = settings.selectedTheme;
       this.lastNotificationTimestamp = settings.lastNotificationTimestamp || 0;
       
-      console.log('Settings loaded:', { monitoring: this.isMonitoringEnabled, sound: this.isSoundEnabled });
+      console.log('Settings loaded:', { 
+        monitoring: this.isMonitoringEnabled, 
+        sound: this.isSoundEnabled,
+        theme: this.currentTheme
+      });
     } catch (error) {
       console.error('Error loading settings:', error);
     }
@@ -206,6 +214,25 @@ class ExtensionManager {
     
     // Notify content scripts
     this.sendToContentScript('SOUND_STATE_CHANGED', { enabled });
+  }
+
+  // 🎨 NEW: Theme management
+  async setTheme(themeName) {
+    console.log(`🎨 Background setting theme to: ${themeName}`);
+    
+    this.currentTheme = themeName;
+    
+    // Save to storage
+    try {
+      await chrome.storage.sync.set({ selectedTheme: themeName });
+      console.log(`✅ Theme "${themeName}" saved to storage by background`);
+      
+      // Notify all content scripts about theme change
+      this.sendToContentScript('THEME_CHANGED', { theme: themeName });
+      
+    } catch (error) {
+      console.error('Error saving theme in background:', error);
+    }
   }
 
   formatPrice(priceValue) {
@@ -301,7 +328,7 @@ class ExtensionManager {
       chrome.notifications.create(notificationId, {
         type: 'basic',
         iconUrl: 'icon128.png',
-        title: '♔ TARGET FOUND!',
+        title: 'EMPIRE ENHANCED - TARGET FOUND!',
         message: `${itemData.market_name}\n${detailedMessage}`,
         priority: 2,
         requireInteraction: true,
@@ -444,7 +471,7 @@ class ExtensionManager {
     // Create a simple data URL audio as last resort
     try {
       // Create a short beep using data URL
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsF');
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAcBTuY3PLLeCsF');
       audio.volume = 0.1;
       audio.play().catch(() => {
         console.log('🔊 All sound methods failed - notifications will be silent');
@@ -615,20 +642,25 @@ chrome.notifications.onClosed.addListener((notificationId) => {
   chrome.storage.local.remove(`notification_${notificationId}`);
 });
 
-// Listen for messages from popup
+// Listen for messages from popup and other components
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'GET_STATS') {
     sendResponse({
       stats: extensionManager.stats,
       connected: extensionManager.stats.serverConnected || (Date.now() - extensionManager.lastSuccessfulPoll < 10000),
       monitoringEnabled: extensionManager.isMonitoringEnabled,
-      soundEnabled: extensionManager.isSoundEnabled
+      soundEnabled: extensionManager.isSoundEnabled,
+      currentTheme: extensionManager.currentTheme // 🎨 NEW: Include current theme
     });
   } else if (message.type === 'SET_MONITORING_STATE') {
     extensionManager.setMonitoringState(message.data.enabled);
     sendResponse({success: true});
   } else if (message.type === 'SET_SOUND_STATE') {
     extensionManager.setSoundState(message.data.enabled);
+    sendResponse({success: true});
+  } else if (message.type === 'THEME_CHANGED') {
+    // 🎨 NEW: Handle theme change from popup
+    extensionManager.setTheme(message.data.theme);
     sendResponse({success: true});
   } else if (message.type === 'TEST_CONNECTION') {
     if (extensionManager.isMonitoringEnabled) {

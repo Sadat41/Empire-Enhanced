@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Empire Enhanced</title>
+    <title>EMPIRE ENHANCED</title>
     <style>
         * {
             margin: 0;
@@ -16,15 +16,19 @@
             padding: 0;
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0a0f1c 0%, #1a1f2e 25%, #2a2f3e 50%, #1a1f2e 75%, #0a0f1c 100%);
             color: #e2e8f0;
             position: relative;
             overflow: hidden;
             min-height: 650px;
+            transition: all 0.3s ease;
         }
 
-        /* Enhanced animated background */
-        body::before {
+        /* ===== THEME 1: NEBULA (Default) ===== */
+        body.theme-nebula {
+            background: linear-gradient(135deg, #0a0f1c 0%, #1a1f2e 25%, #2a2f3e 50%, #1a1f2e 75%, #0a0f1c 100%);
+        }
+
+        body.theme-nebula::before {
             content: '';
             position: fixed;
             top: 0;
@@ -45,8 +49,265 @@
             50% { opacity: 0.8; }
         }
 
+        /* ===== THEME 2: SHOOTING STAR ===== */
+        body.theme-shooting-star {
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 35%, #0f0f1e 100%);
+            overflow: hidden;
+        }
+
+        body.theme-shooting-star::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+                radial-gradient(2px 2px at 40px 70px, #fff, transparent),
+                radial-gradient(1px 1px at 90px 40px, #eee, transparent),
+                radial-gradient(1px 1px at 130px 80px, #fff, transparent),
+                radial-gradient(2px 2px at 160px 30px, #eee, transparent);
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            animation: sparkle 20s linear infinite;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        @keyframes sparkle {
+            from { transform: translateY(0px); }
+            to { transform: translateY(-200px); }
+        }
+
+        /* 🔥 IMPROVED: Completely invisible shooting star head - only trail visible */
+        .shooting-star {
+            position: fixed;
+            width: 0px;
+            height: 0px;
+            opacity: 0;
+            z-index: -1;
+        }
+
+        /* 🔥 FIXED: Pure trail effect with no dot artifact */
+        .shooting-star::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(to left, rgba(135, 206, 235, 0.9), rgba(74, 144, 226, 0.6), transparent);
+            border-radius: 1px;
+            opacity: 1;
+            transform: rotate(45deg);
+        }
+
+        /* 🔥 IMPROVED: Randomized, organic shooting star animations */
+        @keyframes shootingStar1 {
+            0% {
+                transform: translateX(-120px) translateY(-80px);
+                opacity: 0;
+            }
+            8% {
+                opacity: 1;
+            }
+            92% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(520px) translateY(480px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shootingStar2 {
+            0% {
+                transform: translateX(-180px) translateY(-40px);
+                opacity: 0;
+            }
+            12% {
+                opacity: 1;
+            }
+            88% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(580px) translateY(420px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shootingStar3 {
+            0% {
+                transform: translateX(-90px) translateY(-110px);
+                opacity: 0;
+            }
+            15% {
+                opacity: 1;
+            }
+            85% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(470px) translateY(530px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shootingStar4 {
+            0% {
+                transform: translateX(-160px) translateY(-60px);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(550px) translateY(460px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shootingStar5 {
+            0% {
+                transform: translateX(-70px) translateY(-130px);
+                opacity: 0;
+            }
+            18% {
+                opacity: 1;
+            }
+            82% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(490px) translateY(510px);
+                opacity: 0;
+            }
+        }
+
+        /* 🔥 IMPROVED: Completely scattered, natural star positioning */
+        .shooting-star:nth-child(1) {
+            animation: shootingStar1 4.2s linear infinite;
+            animation-delay: 0.3s;
+            top: 22%;
+            left: 6%;
+        }
+
+        .shooting-star:nth-child(2) {
+            animation: shootingStar2 5.8s linear infinite;
+            animation-delay: 2.1s;
+            top: 68%;
+            left: 19%;
+        }
+
+        .shooting-star:nth-child(3) {
+            animation: shootingStar3 3.7s linear infinite;
+            animation-delay: 4.6s;
+            top: 41%;
+            left: 4%;
+        }
+
+        .shooting-star:nth-child(4) {
+            animation: shootingStar4 4.9s linear infinite;
+            animation-delay: 1.8s;
+            top: 85%;
+            left: 23%;
+        }
+
+        .shooting-star:nth-child(5) {
+            animation: shootingStar5 3.3s linear infinite;
+            animation-delay: 3.9s;
+            top: 58%;
+            left: 12%;
+        }
+
+        /* Theme-specific control panels for Shooting Star */
+        body.theme-shooting-star .control-panel,
+        body.theme-shooting-star .settings-section,
+        body.theme-shooting-star .server-info,
+        body.theme-shooting-star .status,
+        body.theme-shooting-star .stat-card,
+        body.theme-shooting-star .theme-selector {
+            background: rgba(20, 20, 40, 0.85);
+            border: 1px solid rgba(135, 206, 235, 0.3);
+            box-shadow: 0 8px 32px rgba(135, 206, 235, 0.15);
+        }
+
+        body.theme-shooting-star .control-panel:hover,
+        body.theme-shooting-star .settings-section:hover,
+        body.theme-shooting-star .server-info:hover,
+        body.theme-shooting-star .status:hover,
+        body.theme-shooting-star .stat-card:hover,
+        body.theme-shooting-star .theme-selector:hover {
+            border-color: rgba(135, 206, 235, 0.5);
+            box-shadow: 0 12px 40px rgba(135, 206, 235, 0.25);
+        }
+
+        body.theme-shooting-star .tabs {
+            background: rgba(15, 15, 30, 0.9);
+            border: 1px solid rgba(135, 206, 235, 0.2);
+        }
+
+        body.theme-shooting-star .tab.active {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            box-shadow: 0 4px 15px rgba(135, 206, 235, 0.4);
+        }
+
+        body.theme-shooting-star .premium-test-btn {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            box-shadow: 0 6px 20px rgba(135, 206, 235, 0.4);
+        }
+
+        body.theme-shooting-star .premium-test-btn:hover {
+            box-shadow: 0 8px 30px rgba(135, 206, 235, 0.6);
+        }
+
+        body.theme-shooting-star .header h1 {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        body.theme-shooting-star .stat-value {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        body.theme-shooting-star .toggle-switch.active {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            box-shadow: 0 0 24px rgba(135, 206, 235, 0.5);
+        }
+
+        body.theme-shooting-star .button {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            box-shadow: 0 4px 18px rgba(135, 206, 235, 0.4);
+        }
+
+        body.theme-shooting-star .button:hover {
+            box-shadow: 0 8px 30px rgba(135, 206, 235, 0.5);
+        }
+
+        body.theme-shooting-star .control-panel h3,
+        body.theme-shooting-star .settings-section h3,
+        body.theme-shooting-star .theme-selector h3 {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
         .container {
             padding: 24px;
+            position: relative;
+            z-index: 1;
         }
 
         /* Premium header with floating crown */
@@ -356,7 +617,173 @@
             letter-spacing: 1px;
         }
 
-        /* Enhanced premium action buttons - CSP compliant */
+        /* ===== THEME SELECTOR SECTION ===== */
+        .theme-selector {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 18px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .theme-selector::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+        }
+
+        .theme-selector:hover {
+            border-color: rgba(102, 126, 234, 0.2);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.1);
+        }
+
+        .theme-selector h3 {
+            margin: 0 0 18px 0;
+            font-size: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+
+        .theme-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .theme-option {
+            background: rgba(255, 255, 255, 0.04);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            text-align: center;
+        }
+
+        .theme-option:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(102, 126, 234, 0.3);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+        }
+
+        .theme-option.active {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.15);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.25);
+        }
+
+        .theme-preview {
+            width: 40px;
+            height: 30px;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .theme-preview.nebula {
+            background: linear-gradient(135deg, #0a0f1c 0%, #1a1f2e 25%, #2a2f3e 50%, #1a1f2e 75%, #0a0f1c 100%);
+        }
+
+        .theme-preview.nebula::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(102, 126, 234, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(118, 75, 162, 0.2) 0%, transparent 50%);
+        }
+
+        .theme-preview.shooting-star-preview {
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 35%, #0f0f1e 100%);
+            position: relative
+        }
+
+        .theme-preview.shooting-star-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(1px 1px at 8px 6px, #fff, transparent),
+                radial-gradient(1px 1px at 20px 15px, #87ceeb, transparent),
+                radial-gradient(1px 1px at 30px 8px, #fff, transparent);
+            background-size: 40px 30px;
+        }
+
+        .theme-preview.shooting-star-preview::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 15px;
+            height: 1px;
+            background: linear-gradient(to right, #87ceeb, transparent);
+            transform: rotate(-30deg);
+            animation: miniShootingStar 2s ease-in-out infinite;
+        }
+
+        @keyframes miniShootingStar {
+            0%, 70% { opacity: 0; transform: rotate(-30deg) translateX(-5px); }
+            80%, 90% { opacity: 1; transform: rotate(-30deg) translateX(10px); }
+            100% { opacity: 0; transform: rotate(-30deg) translateX(15px); }
+        }
+
+        .theme-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .theme-description {
+            font-size: 10px;
+            color: #94a3b8;
+            line-height: 1.3;
+        }
+
+        /* Shooting star theme-specific theme selector */
+        body.theme-shooting-star .theme-option {
+            background: rgba(135, 206, 235, 0.05);
+            border-color: rgba(135, 206, 235, 0.2);
+        }
+
+        body.theme-shooting-star .theme-option:hover {
+            border-color: rgba(135, 206, 235, 0.4);
+            background: rgba(135, 206, 235, 0.1);
+            box-shadow: 0 8px 25px rgba(135, 206, 235, 0.2);
+        }
+
+        body.theme-shooting-star .theme-option.active {
+            border-color: #87ceeb;
+            background: rgba(135, 206, 235, 0.2);
+            box-shadow: 0 8px 25px rgba(135, 206, 235, 0.3);
+        }
+
+        /* Enhanced premium action buttons */
         .premium-test-btn {
             width: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -436,14 +863,6 @@
             border-color: rgba(102, 126, 234, 0.3);
             box-shadow: 0 8px 30px rgba(102, 126, 234, 0.2);
             background: rgba(255, 255, 255, 0.1);
-        }
-
-        /* Remove old action grid styles */
-        .action-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
         }
 
         /* Enhanced settings sections */
@@ -715,9 +1134,22 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(102, 126, 234, 0.6);
         }
+
+        /* Fix: Hide shooting star elements when Nebula theme is active */
+        body.theme-nebula .shooting-star {
+            display: none !important;
+        }
+
     </style>
 </head>
-<body>
+<body class="theme-nebula">
+    <!-- 🔥 IMPROVED: More shooting stars with organic timing -->
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    
     <div class="container">
         <div class="header">
             <h1>
@@ -728,14 +1160,19 @@
                             <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
                             <stop offset="100%" style="stop-color:#36d1dc;stop-opacity:1" />
                         </linearGradient>
+                        <linearGradient id="crownGradientStar" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#4a90e2;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#87ceeb;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#36d1dc;stop-opacity:1" />
+                        </linearGradient>
                     </defs>
-                    <path d="M3 18h18l-2-8-4 3-3-6-3 6-4-3z" fill="url(#crownGradient)" stroke="#667eea" stroke-width="0.5"/>
-                    <path d="M5 18h14v1.5c0 0.5-0.5 1-1 1H6c-0.5 0-1-0.5-1-1V18z" fill="#764ba2"/>
-                    <circle cx="12" cy="12" r="1.5" fill="#36d1dc"/>
-                    <circle cx="8" cy="14" r="1" fill="#667eea"/>
-                    <circle cx="16" cy="14" r="1" fill="#667eea"/>
+                    <path class="crown-path" d="M3 18h18l-2-8-4 3-3-6-3 6-4-3z" fill="url(#crownGradient)" stroke="#667eea" stroke-width="0.5"/>
+                    <path class="crown-base" d="M5 18h14v1.5c0 0.5-0.5 1-1 1H6c-0.5 0-1-0.5-1-1V18z" fill="#764ba2"/>
+                    <circle class="crown-center" cx="12" cy="12" r="1.5" fill="#36d1dc"/>
+                    <circle class="crown-left" cx="8" cy="14" r="1" fill="#667eea"/>
+                    <circle class="crown-right" cx="16" cy="14" r="1" fill="#667eea"/>
                 </svg>
-                Empire Enhanced
+                EMPIRE ENHANCED
             </h1>
             <div class="subtitle">Advanced Monitoring Tool</div>
         </div>
@@ -792,16 +1229,38 @@
                 </div>
             </div>
 
+            <!-- 🔥 MOVED: Theme selector positioned below stats and above Test Notification -->
+            <div class="theme-selector">
+                <h3>
+                    <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polygon points="10,8 16,12 10,16 10,8"/>
+                    </svg>
+                    Theme Selection
+                </h3>
+                
+                <div class="theme-options">
+                    <div class="theme-option active" data-theme="nebula">
+                        <div class="theme-preview nebula"></div>
+                        <div class="theme-name">Nebula</div>
+                        <div class="theme-description">Cosmic gradient design</div>
+                    </div>
+                    <div class="theme-option" data-theme="shooting-star">
+                        <div class="theme-preview shooting-star-preview"></div>
+                        <div class="theme-name">Shooting Star</div>
+                        <div class="theme-description">Starfield with animations</div>
+                    </div>
+                </div>
+            </div>
+
             <div id="errorMessage" class="error" style="display: none;">
                 Server not running! Please start the Node.js server first.
             </div>
 
-            <div id="successMessage" class="success" style="display: none;">
-                Connected to monitoring server!
-            </div>
+            <!-- 🔥 REMOVED: Redundant success message eliminated -->
 
             <div id="actionButtons">
-                <!-- Enhanced Action Buttons with CSFloat-inspired design -->
+                <!-- Enhanced Action Buttons -->
                 <div style="margin-bottom: 20px;">
                     <button class="premium-test-btn" id="testNotification">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -938,7 +1397,7 @@
                 <path d="M5 18h14v1.5c0 0.5-0.5 1-1 1H6c-0.5 0-1-0.5-1-1V18z" fill="#764ba2"/>
                 <circle cx="12" cy="12" r="1.2" fill="#36d1dc"/>
             </svg>
-            Empire Enhanced v3.0 - Advanced CSGOEmpire Tool
+            Empire Enhanced v3.0
         </div>
     </div>
 

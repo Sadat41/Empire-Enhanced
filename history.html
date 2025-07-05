@@ -14,15 +14,19 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0a0f1c 0%, #1a1f2e 25%, #2a2f3e 50%, #1a1f2e 75%, #0a0f1c 100%);
             color: #e2e8f0;
             min-height: 100vh;
             position: relative;
             overflow-x: hidden;
+            transition: all 0.3s ease;
         }
 
-        /* Animated background elements */
-        body::before {
+        /* ===== THEME 1: NEBULA (Default) ===== */
+        body.theme-nebula {
+            background: linear-gradient(135deg, #0a0f1c 0%, #1a1f2e 25%, #2a2f3e 50%, #1a1f2e 75%, #0a0f1c 100%);
+        }
+
+        body.theme-nebula::before {
             content: '';
             position: fixed;
             top: 0;
@@ -35,6 +39,289 @@
                 radial-gradient(circle at 40% 40%, rgba(54, 215, 183, 0.1) 0%, transparent 50%);
             pointer-events: none;
             z-index: -1;
+        }
+
+        /* ===== THEME 2: SHOOTING STAR ===== */
+        body.theme-shooting-star {
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 35%, #0f0f1e 100%);
+            overflow-x: hidden;
+        }
+
+        body.theme-shooting-star::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+                radial-gradient(2px 2px at 40px 70px, #fff, transparent),
+                radial-gradient(1px 1px at 90px 40px, #eee, transparent),
+                radial-gradient(1px 1px at 130px 80px, #fff, transparent),
+                radial-gradient(2px 2px at 160px 30px, #eee, transparent);
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            animation: sparkle 20s linear infinite;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        @keyframes sparkle {
+            from { transform: translateY(0px); }
+            to { transform: translateY(-200px); }
+        }
+
+        /* 🔥 IMPROVED: Completely invisible shooting star head - only trail visible */
+        .shooting-star {
+            position: fixed;
+            width: 0px;
+            height: 0px;
+            opacity: 0;
+            z-index: -1;
+        }
+
+        /* 🔥 FIXED: Pure trail effect with no dot artifact */
+        .shooting-star::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(to left, rgba(135, 206, 235, 0.9), rgba(74, 144, 226, 0.6), transparent);
+            border-radius: 1px;
+            opacity: 1;
+            transform: rotate(45deg);
+        }
+
+        /* 🔥 IMPROVED: Randomized, organic shooting star animations */
+        @keyframes shootingStar1 {
+            0% {
+                transform: translateX(-140px) translateY(-90px);
+                opacity: 0;
+            }
+            12% {
+                opacity: 1;
+            }
+            88% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(640px) translateY(520px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shootingStar2 {
+            0% {
+                transform: translateX(-200px) translateY(-60px);
+                opacity: 0;
+            }
+            15% {
+                opacity: 1;
+            }
+            85% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(720px) translateY(480px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shootingStar3 {
+            0% {
+                transform: translateX(-110px) translateY(-120px);
+                opacity: 0;
+            }
+            18% {
+                opacity: 1;
+            }
+            82% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(580px) translateY(560px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shootingStar4 {
+            0% {
+                transform: translateX(-170px) translateY(-75px);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(650px) translateY(500px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shootingStar5 {
+            0% {
+                transform: translateX(-85px) translateY(-140px);
+                opacity: 0;
+            }
+            20% {
+                opacity: 1;
+            }
+            80% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(560px) translateY(580px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shootingStar6 {
+            0% {
+                transform: translateX(-190px) translateY(-45px);
+                opacity: 0;
+            }
+            14% {
+                opacity: 1;
+            }
+            86% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(690px) translateY(460px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shootingStar7 {
+            0% {
+                transform: translateX(-125px) translateY(-105px);
+                opacity: 0;
+            }
+            16% {
+                opacity: 1;
+            }
+            84% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(610px) translateY(540px);
+                opacity: 0;
+            }
+        }
+
+        /* 🔥 IMPROVED: Completely scattered, natural star positioning */
+        .shooting-star:nth-child(1) {
+            animation: shootingStar1 5.2s linear infinite;
+            animation-delay: 0.7s;
+            top: 18%;
+            left: 3%;
+        }
+
+        .shooting-star:nth-child(2) {
+            animation: shootingStar2 6.8s linear infinite;
+            animation-delay: 3.1s;
+            top: 62%;
+            left: 22%;
+        }
+
+        .shooting-star:nth-child(3) {
+            animation: shootingStar3 4.3s linear infinite;
+            animation-delay: 5.9s;
+            top: 35%;
+            left: 7%;
+        }
+
+        .shooting-star:nth-child(4) {
+            animation: shootingStar4 5.7s linear infinite;
+            animation-delay: 2.4s;
+            top: 78%;
+            left: 16%;
+        }
+
+        .shooting-star:nth-child(5) {
+            animation: shootingStar5 3.9s linear infinite;
+            animation-delay: 4.6s;
+            top: 45%;
+            left: 28%;
+        }
+
+        .shooting-star:nth-child(6) {
+            animation: shootingStar6 6.1s linear infinite;
+            animation-delay: 1.3s;
+            top: 25%;
+            left: 12%;
+        }
+
+        .shooting-star:nth-child(7) {
+            animation: shootingStar7 4.8s linear infinite;
+            animation-delay: 6.7s;
+            top: 87%;
+            left: 25%;
+        }
+
+        /* Theme-specific component styling for Shooting Star */
+        body.theme-shooting-star .stat-card,
+        body.theme-shooting-star .controls,
+        body.theme-shooting-star .item-card,
+        body.theme-shooting-star .message,
+        body.theme-shooting-star .loading,
+        body.theme-shooting-star .empty-state {
+            background: rgba(20, 20, 40, 0.85);
+            border: 1px solid rgba(135, 206, 235, 0.3);
+            box-shadow: 0 8px 32px rgba(135, 206, 235, 0.15);
+        }
+
+        body.theme-shooting-star .stat-card:hover,
+        body.theme-shooting-star .item-card:hover {
+            border-color: rgba(135, 206, 235, 0.5);
+            box-shadow: 0 20px 40px rgba(135, 206, 235, 0.25);
+        }
+
+        body.theme-shooting-star .filter-btn.active,
+        body.theme-shooting-star .refresh-btn {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            box-shadow: 0 4px 15px rgba(135, 206, 235, 0.3);
+        }
+
+        body.theme-shooting-star .filter-btn.active:hover,
+        body.theme-shooting-star .refresh-btn:hover {
+            box-shadow: 0 8px 25px rgba(135, 206, 235, 0.4);
+        }
+
+        body.theme-shooting-star .header h1 {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        body.theme-shooting-star .stat-value {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        body.theme-shooting-star .action-btn.primary {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            box-shadow: 0 8px 25px rgba(135, 206, 235, 0.4);
+        }
+
+        body.theme-shooting-star .filter-btn {
+            background: rgba(135, 206, 235, 0.1);
+            border: 1px solid rgba(135, 206, 235, 0.2);
+        }
+
+        body.theme-shooting-star .filter-btn:hover {
+            background: rgba(135, 206, 235, 0.2);
+            border-color: rgba(135, 206, 235, 0.4);
         }
 
         .container {
@@ -71,6 +358,10 @@
             height: 48px;
             filter: drop-shadow(0 4px 8px rgba(102, 126, 234, 0.4));
             animation: float 3s ease-in-out infinite;
+        }
+
+        body.theme-shooting-star .crown-icon {
+            filter: drop-shadow(0 4px 8px rgba(135, 206, 235, 0.4));
         }
 
         @keyframes float {
@@ -152,6 +443,12 @@
             margin-bottom: 30px;
             flex-wrap: wrap;
             gap: 20px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
 
         .filters {
@@ -238,6 +535,10 @@
             transition: opacity 0.3s ease;
         }
 
+        body.theme-shooting-star .item-card::before {
+            background: linear-gradient(90deg, #4a90e2, #87ceeb, #36d1dc);
+        }
+
         .item-card:hover {
             transform: translateY(-8px);
             border-color: rgba(102, 126, 234, 0.4);
@@ -273,6 +574,10 @@
             font-weight: 600;
         }
 
+        body.theme-shooting-star .item-keychain {
+            color: #87ceeb;
+        }
+
         .keychain-icon {
             width: 14px;
             height: 14px;
@@ -283,6 +588,10 @@
             justify-content: center;
             color: white;
             font-size: 9px;
+        }
+
+        body.theme-shooting-star .keychain-icon {
+            background: linear-gradient(135deg, #87ceeb 0%, #4a90e2 100%);
         }
 
         .item-id {
@@ -330,6 +639,10 @@
 
         .price-value.recommended {
             color: #a855f7;
+        }
+
+        body.theme-shooting-star .price-value.recommended {
+            color: #87ceeb;
         }
 
         .percentage-badge {
@@ -405,6 +718,11 @@
             padding: 80px 20px;
             max-width: 500px;
             margin: 0 auto;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
 
         .empty-icon {
@@ -412,6 +730,13 @@
             margin-bottom: 30px;
             opacity: 0.6;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        body.theme-shooting-star .empty-icon {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -439,6 +764,15 @@
             flex-direction: column;
             align-items: center;
             gap: 20px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        body.theme-shooting-star .loading {
+            color: #87ceeb;
         }
 
         .refresh-btn.loading {
@@ -469,6 +803,8 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
 
         .message.error {
@@ -530,9 +866,24 @@
                 transform: translateY(0);
             }
         }
+
+        /* Fix: Hide shooting star elements when Nebula theme is active */
+        body.theme-nebula .shooting-star {
+            display: none !important;
+        }
+
     </style>
 </head>
-<body>
+<body class="theme-nebula">
+    <!-- 🔥 IMPROVED: More shooting stars with organic timing -->
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    
     <div class="container">
         <div class="header">
             <h1>
@@ -543,12 +894,17 @@
                             <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
                             <stop offset="100%" style="stop-color:#36d1dc;stop-opacity:1" />
                         </linearGradient>
+                        <linearGradient id="crownGradientStar" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#4a90e2;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#87ceeb;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#36d1dc;stop-opacity:1" />
+                        </linearGradient>
                     </defs>
-                    <path d="M3 18h18l-2-8-4 3-3-6-3 6-4-3z" fill="url(#crownGradient)" stroke="#667eea" stroke-width="0.5"/>
-                    <path d="M5 18h14v1.5c0 0.5-0.5 1-1 1H6c-0.5 0-1-0.5-1-1V18z" fill="#764ba2"/>
-                    <circle cx="12" cy="12" r="1.5" fill="#36d1dc"/>
-                    <circle cx="8" cy="14" r="1" fill="#667eea"/>
-                    <circle cx="16" cy="14" r="1" fill="#667eea"/>
+                    <path class="crown-path" d="M3 18h18l-2-8-4 3-3-6-3 6-4-3z" fill="url(#crownGradient)" stroke="#667eea" stroke-width="0.5"/>
+                    <path class="crown-base" d="M5 18h14v1.5c0 0.5-0.5 1-1 1H6c-0.5 0-1-0.5-1-1V18z" fill="#764ba2"/>
+                    <circle class="crown-center" cx="12" cy="12" r="1.5" fill="#36d1dc"/>
+                    <circle class="crown-left" cx="8" cy="14" r="1" fill="#667eea"/>
+                    <circle class="crown-right" cx="16" cy="14" r="1" fill="#667eea"/>
                 </svg>
                 EMPIRE ENHANCED
             </h1>
@@ -577,7 +933,7 @@
                 <button class="filter-btn">Recent</button>
             </div>
             <button class="refresh-btn" id="refreshBtn">
-                <span class="refresh-icon">🔄</span>
+                <span class="refresh-icon"></span>
                 Refresh
             </button>
         </div>
