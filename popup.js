@@ -1323,3 +1323,17 @@ class PopupManager {
 document.addEventListener('DOMContentLoaded', () => {
     new PopupManager();
 });
+
+// 🚀 MODULE SYSTEM BOOTSTRAP  
+(async function() {
+  try {
+    await import('./core/event-bus.js');
+    await import('./core/module-loader.js'); 
+    await import('./core/base-module.js');
+    
+    window.empireModuleLoader.setContext('popup');
+    await window.empireModuleLoader.autoLoadModules();
+  } catch (error) {
+    console.log('⚠️ Module system not ready yet');
+  }
+})();

@@ -1211,3 +1211,23 @@ chrome.runtime.onInstalled.addListener(() => {
 
 // Global instance
 let extensionManager = new ExtensionManager();
+
+// Add this at the very end of your existing background.js file
+
+// 🚀 MODULE SYSTEM BOOTSTRAP - Add this once, never touch again
+(async function initModuleSystem() {
+  try {
+    // Load core framework
+    await import('./core/event-bus.js');
+    await import('./core/module-loader.js'); 
+    await import('./core/base-module.js');
+    
+    // Set context and auto-load modules
+    window.empireModuleLoader.setContext('background');
+    await window.empireModuleLoader.autoLoadModules();
+    
+    console.log('🎉 Empire Enhanced: Module system ready for infinite scalability!');
+  } catch (error) {
+    console.log('⚠️ Module system not ready yet (this is normal during initial setup)');
+  }
+})();

@@ -9,13 +9,12 @@
 <p align="center"><strong> Real-Time Monitoring, Smart Filters, and Seamless Customization. </strong></p>
 
 
-
-[![Version](https://img.shields.io/badge/version-6.4.0-blue?style=flat)](https://github.com/Sadat41/Empire-Enhanced)
-[![Repo Size](https://img.shields.io/github/repo-size/Sadat41/Empire-Enhanced?label=repo%20size&color=orange&style=flat)](https://github.com/Sadat41/Empire-Enhanced)
-[![Last Commit](https://img.shields.io/github/last-commit/Sadat41/Empire-Enhanced?label=last%20commit&color=lightgrey&style=flat)](https://github.com/Sadat41/Empire-Enhanced/commits/main)
-[![Counter-Strike 2](https://img.shields.io/badge/COUNTER--STRIKE%202-red?style=flat&logo=counterstrike&logoColor=white&logoWidth=16)](https://www.counter-strike.net/)
-[![GitHub commit activity](https://img.shields.io/github/commit-activity/w/Sadat41/Empire-Enhanced?label=commit%20activity&style=flat)](https://github.com/Sadat41/Empire-Enhanced)
-[![Project Status: Active](https://img.shields.io/badge/STATUS-ACTIVE-brightgreen?style=flat)](https://github.com/Sadat41/Empire-Enhanced)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Sadat41/Empire-Enhanced)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
+[![Repo Size](https://img.shields.io/github/repo-size/Sadat41/Empire-Enhanced?label=repo%20size&color=orange)](https://github.com/Sadat41/Empire-Enhanced)
+[![Last Commit](https://img.shields.io/github/last-commit/Sadat41/Empire-Enhanced?label=last%20commit&color=lightgrey)](https://github.com/Sadat41/Empire-Enhanced/commits/main)
+![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/w/Sadat41/Empire-Enhanced)
+[![GitHub license](https://img.shields.io/badge/license-CC_BY_NC_SA_4.0-orange)](https://github.com/Sadat41/Empire-Enhanced/blob/main/LICENSE)
 
 
 ## Discord 
@@ -108,13 +107,13 @@ npm start     # For production
 
 ### Step 2: Load the Browser Extension
 
-[![Chrome](https://img.shields.io/badge/Google_chrome-4285F4?style=for-the-badge&logo=Google-chrome&logoColor=white)](https://github.com/Sadat41)
+For Chrome:
 - Go to `chrome://extensions/`
 - Enable Developer Mode (top-right)
 - Click Load unpacked
 - Select the `/extension` folder inside the project
 
-[![FireFox](https://img.shields.io/badge/Firefox_Browser-FF7139?style=for-the-badge&logo=Firefox-Browser&logoColor=white)](https://github.com/Sadat41)
+For Firefox:
 - Visit `about:debugging#/runtime/this-firefox`
 - Click Load Temporary Add-on
 - Choose the `manifest.json` inside the `/extension` folder
@@ -138,5 +137,3 @@ Checkout CSGOEmpire API documentation:
 ## ⚠️ Note
 Please be aware of the following:
 * **Prohibited Activities:** We explicitly forbid the use of the Empire-Enhanced extension for illegal activities. This includes, but is not limited to, using the extension to gain an unfair advantage over other users, engaging in any form of malicious behavior, or violating platform terms of service. 
-
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Sadat41)
