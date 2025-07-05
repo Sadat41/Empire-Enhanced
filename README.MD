@@ -1,6 +1,6 @@
 # Empire-Enhanced
 
-![Empire-Enhanced Logo](uploaded:icon128.png-8fa4b8c0-595d-40d0-84bf-f3c310c5ba92)
+![Empire-Enhanced Logo](https://github.com/Sadat41/Empire-Enhanced/blob/main/icon128.png?raw=true)
 
 **Elevate Your Digital Realm. Experience Unprecedented Control and Customization.**
 
@@ -11,34 +11,39 @@
 
 ---
 
-## 🚀 Get the Extension
+## Get the Extension
 
 Ready to command your Browse experience? Install Empire-Enhanced now and start building your digital empire!
 
-[![Available in the Chrome Web Store](https://img.shields.io/badge/-GET%20IT%20ON%20CHROME%20WEB%20STORE-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white&link=YOUR_CHROME_WEB_STORE_LINK_HERE)](YOUR_CHROME_WEB_STORE_LINK_HERE)
-[![Get the ADD-ON for Firefox](https://img.shields.io/badge/-GET%20THE%20ADD--ON%20FOR%20FIREFOX-FF7139?style=for-the-badge&logo=firefox&logoColor=white&link=YOUR_FIREFOX_ADDON_LINK_HERE)](YOUR_FIREFOX_ADDON_LINK_HERE)
----
+
 
 ## 🤝 Community & Support
 
 Join our thriving community! Whether you have questions, need support, want to report a bug, or have brilliant ideas for new features, our Discord server is the place to be.
 
-[![Join our Discord Server](https://img.shields.io/badge/-JOIN%20OUR%20DISCORD-7289DA?style=for-the-badge&logo=discord&logoColor=white&link=YOUR_DISCORD_INVITE_LINK_HERE)](YOUR_DISCORD_INVITE_LINK_HERE)
+[![Join our Discord Server](https://img.shields.io/badge/-JOIN%20OUR%20DISCORD-7289DA?style=for-the-badge&logo=discord&logoColor=white&link=https://discord.gg/tmX4HjmQKz)](https://discord.gg/tmX4HjmQKz)
 
 ---
 
-## ✨ Highlights
+## Key Features
 
-Empire-Enhanced is packed with features designed to give you an unparalleled Browse advantage.
+**Empire Enhanced** is built to extend and streamline the experience on [CSGOEmpire](https://csgoempire.com) through a set of practical and performance-focused tools:
 
-* **Intelligent Automation:** Streamline repetitive tasks and automate complex workflows.
-* **Deep Customization:** Tailor every aspect of your experience, from UI elements to behavioral scripts.
-* **Performance Optimized:** Engineered for speed and efficiency, ensuring a buttery-smooth experience without slowdowns.
-* **Cross-Browser Compatibility:** Enjoy a consistent and powerful experience across supported browsers.
-* **[Add Your Specific Feature 1]:** Briefly describe what this feature does.
-* **[Add Your Specific Feature 2]:** Briefly describe what this feature does.
-* **[Add Your Specific Feature 3]:** Briefly describe what this feature does.
-* **...and many more quality-of-life enhancements!**
+### Custom Item Tracking  
+Track any item by name using the Item Target List. Supports partial keyword matching and optional float (wear) value filtering.
+
+### Real-Time Notifications  
+Receive instant alerts when matching items appear in the marketplace. Includes customizable notification sounds with live preview.
+
+### Persistent Filters and Settings  
+Price ranges, keychain thresholds, and item lists are saved locally and restored automatically after browser or system restarts.
+
+### Theme and UI Customization  
+Apply consistent visual themes to both the extension and the target site. Built-in themes like Nebula and Shooting Star are supported, with modular theme architecture for easy additions.
+
+### Modular and Scalable Design  
+Features are designed as self-contained modules to allow for easy expansion without modifying core files.
+
 
 ---
 
@@ -63,40 +68,22 @@ Take a sneak peek at Empire-Enhanced in action.
 
 ---
 
-## ⚠️ Important Notice
+## ⚠️ Note
 
 Please be aware of the following:
 
-* **Prohibited Activities:** We explicitly forbid the use of the Empire-Enhanced extension for illegal activities. This includes, but is not limited to, using the extension to gain an unfair advantage over other users, engaging in any form of malicious behavior, or violating platform terms of service. We reserve the right to ban users from our services and report them to the respective platforms if they are found to be engaged in such activities.
-* **Licensing Terms:** The extension is provided under the [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) license. This means you are free to share and adapt the material for non-commercial purposes, with attribution. If you are interested in a commercial license or have other licensing inquiries, please contact us directly.
+* **Prohibited Activities:** We explicitly forbid the use of the Empire-Enhanced extension for illegal activities. This includes, but is not limited to, using the extension to gain an unfair advantage over other users, engaging in any form of malicious behavior, or violating platform terms of service. 
 
 ---
 
-## ❓ How does Empire-Enhanced work?
+## ❓How It Works
 
-Empire-Enhanced works by [briefly explain its core technical approach, e.g., "injecting custom JavaScript into web pages," "modifying network requests," "providing a customizable overlay"]. It operates by listening for specific browser events and then applies your configured enhancements.
+Empire Enhanced operates by injecting JavaScript into the target website and listening to websocket data streams from CSGOEmpire. It intercepts and processes real-time data such as item listings, wear values, and pricing information.
 
-Upon installation, Empire-Enhanced will [explain initial user interaction, e.g., "add an icon to your browser toolbar," "require certain permissions for full functionality"]. Clicking the toolbar icon will typically open a popup or a dedicated dashboard page where you can [explain main user actions, e.g., "toggle features on/off," "adjust settings," "view activity logs"].
+Upon installation, the extension adds a toolbar icon that opens a popup interface. From this UI, users can:
+- Add or remove items in the tracking list
+- Adjust price and float filters
+- Preview and select notification sounds
+- Enable or disable site theming
 
-Our robust architecture ensures minimal performance impact while delivering powerful results.
-
-```javascript
-// Example: A simplified snippet showing core functionality logic
-// This would typically reside in background.js or a dedicated module.
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === "enhancePage") {
-        // Example: Perform some DOM manipulation or data fetching
-        chrome.scripting.executeScript({
-            target: { tabId: sender.tab.id },
-            function: applyPageEnhancements
-        });
-        sendResponse({ status: "Enhancement initiated" });
-    }
-});
-
-function applyPageEnhancements() {
-    // Logic to modify the current page's content or behavior
-    console.log("Empire-Enhanced: Applying enhancements to current page.");
-    // Example: document.body.style.backgroundColor = 'darkgrey';
-    // More complex logic for your specific features...
-}
+Data from the popup interface is stored using `chrome.storage` or equivalent local storage APIs. This allows settings and tracked items to persist between sessions. The local server syncs with the extension to ensure notifications and filters are consistent and reliable.
