@@ -9,7 +9,7 @@
 <p align="center"><strong> Real-Time Monitoring, Smart Filters, and Seamless Customization. </strong></p>
 
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Sadat41/Empire-Enhanced)
+
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
 [![Repo Size](https://img.shields.io/github/repo-size/Sadat41/Empire-Enhanced?label=repo%20size&color=orange)](https://github.com/Sadat41/Empire-Enhanced)
 [![Last Commit](https://img.shields.io/github/last-commit/Sadat41/Empire-Enhanced?label=last%20commit&color=lightgrey)](https://github.com/Sadat41/Empire-Enhanced/commits/main)
