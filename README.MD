@@ -6,15 +6,16 @@
   </a>
   <h1 align="center">Empire Enhanced</h1>
 </p>
+<p align="center"><strong> Real-Time Monitoring, Smart Filters, and Seamless Customization. </strong></p>
 
-**Real-Time Monitoring, Smart Filters, and Seamless Customization.**
-
+****
+---
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Sadat41/Empire-Enhanced)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
 [![Repo Size](https://img.shields.io/github/repo-size/Sadat41/Empire-Enhanced?label=repo%20size&color=orange)](https://github.com/Sadat41/Empire-Enhanced)
 [![Last Commit](https://img.shields.io/github/last-commit/Sadat41/Empire-Enhanced?label=last%20commit&color=lightgrey)](https://github.com/Sadat41/Empire-Enhanced/commits/main)
 
----
+
 
 ## 🤝 Community & Support
 <p align="center">
@@ -27,42 +28,35 @@
 ---
 
 ## Key Features
-
 **Empire Enhanced** is built to extend and streamline the experience on [CSGOEmpire](https://csgoempire.com) through a set of practical and performance-focused tools:
-
-### Custom Item Tracking  
+#### Custom Item Tracking  
 - Track any item by name using the Item Target List. Supports partial keyword matching and optional float (wear) value filtering.
-
-### Real-Time Notifications  
+#### Real-Time Notifications  
 - Receive instant alerts when matching items appear in the marketplace. Includes customizable notification sounds with live preview.
-
-### Persistent Filters and Settings  
+#### Persistent Filters and Settings  
 - Price ranges, keychain thresholds, and item lists are saved locally and restored automatically after browser or system restarts.
-
-### Theming: 
+#### Theming
 - The extension offers different themes ("Nebula" and "Shooting Star") for both the popup and the CSGOEmpire website itself.
-
-### Modular and Scalable Design  
+#### Modular and Scalable Design  
 - Features are designed as self-contained modules to allow for easy expansion without modifying core files.
 ---
-
 ## 📸 Preview
 
 Take a sneak peek at Empire Enhanced in action.
 
 ### Main Dashboard
 
-![Dashboard Screenshot](https://placehold.co/1200x675/333333/ffffff?text=YOUR_DASHBOARD_SCREENSHOT_HERE)
+![Dashboard Screenshot](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Extension%20Menu.png)
 *An intuitive and powerful dashboard providing an overview of your settings and active enhancements.*
 
 ### Notification History Page
 
-![History Page](https://placehold.co/1200x675/555555/ffffff?text=YOUR_FEATURE_X_SCREENSHOT_HERE)
+![History Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/History%20Page.png)
 *Easily track missed or past alerts with the integrated Notification History page.*
 
 ### CSGOEmpire Home Page
 
-![Home Page](https://placehold.co/1200x675/555555/ffffff?text=YOUR_FEATURE_X_SCREENSHOT_HERE)
+![Home Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Homepage.png)
 *The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.*
 
 ### Short Demo Video (Optional)
@@ -73,9 +67,7 @@ Take a sneak peek at Empire Enhanced in action.
 ---
 
 ## ❓How It Works
-
 **Empire Enhanced** injects JavaScript into CSGOEmpire and listens to WebSocket data for real-time item monitoring.
-
 To use it:
 - Run a local Node.js server that filters and processes data
 - Provide your CSGOEmpire [API key](https://csgoempire.com/trading/apikey)
@@ -91,7 +83,6 @@ All settings are saved using `chrome.storage` and `server-settings.json`.
 
 Ready to command your Browse experience? Install Empire-Enhanced now and start building your digital empire!
 
-## Getting Started
 ### Step 1: Set Up the Backend Server
 
 #### 1. Clone the Project
@@ -127,23 +118,17 @@ npm start     # For production
 
 For Chrome:
 #### 1. Go to `chrome://extensions/`
-
 #### 2. Enable Developer Mode (top-right)
-
 #### 3. Click Load unpacked
-
 #### 4. Select the `/extension` folder inside the project
 
 For Firefox:
 #### 1. Visit `about:debugging#/runtime/this-firefox`
-
 #### 2. Click Load Temporary Add-on
-
 #### 3. Choose the `manifest.json` inside the `/extension` folder
 
 ### Step 3: Use the Extension
 Once both the server and extension are running:
-
 - Click the Empire Enhanced icon in your browser toolbar
 - Use the popup to:
 - Add items to the Item Target List
