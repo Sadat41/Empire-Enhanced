@@ -12,7 +12,7 @@ const SETTINGS_FILE = path.join(__dirname, 'server-settings.json');
 // Configuration - EDIT THESE VALUES
 const CONFIG = {
   // Replace with your CSGOEmpire API key
-  apiKey: "YOUR_API_KEY_HERE", // Changed API Key just as an example.
+  apiKey: "YOUR_API_KEY_HERE", // Get your API key from here: https://csgoempire.com/trading/apikey
   
   // Change to '.gg' if '.com' is blocked
   domain: "csgoempire.com",

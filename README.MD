@@ -1,8 +1,13 @@
-# Empire-Enhanced
 
-![Empire-Enhanced Logo](https://github.com/Sadat41/Empire-Enhanced/blob/main/icon128.png?raw=true)
 
-**Elevate Your Digital Realm. Experience Unprecedented Control and Customization.**
+<p align="center">
+  <a href="https://betterfloat.com/">
+    <img width="128" src="https://github.com/Sadat41/Empire-Enhanced/blob/main/icon128.png?raw=true"/>
+  </a>
+  <h1 align="center">Empire Enhanced</h1>
+</p>
+
+**Real-Time Monitoring, Smart Filters, and Seamless Customization.**
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Sadat41/Empire-Enhanced)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
@@ -11,17 +16,13 @@
 
 ---
 
-## Get the Extension
-
-Ready to command your Browse experience? Install Empire-Enhanced now and start building your digital empire!
-
-
-
 ## 🤝 Community & Support
-
-Join our thriving community! Whether you have questions, need support, want to report a bug, or have brilliant ideas for new features, our Discord server is the place to be.
-
-[![Join our Discord Server](https://img.shields.io/badge/-JOIN%20OUR%20DISCORD-7289DA?style=for-the-badge&logo=discord&logoColor=white&link=https://discord.gg/tmX4HjmQKz)](https://discord.gg/tmX4HjmQKz)
+<p align="center">
+  <a href="https://discord.gg/tmX4HjmQKz">
+    <picture>
+      <source srcset="https://i.postimg.cc/Fzj7T05w/discord.png" media="(prefers-color-scheme: dark)">
+      <img height="58" src="https://i.postimg.cc/Fzj7T05w/discord.png" alt="Discord"></picture></a>
+</p>
 
 ---
 
@@ -30,36 +31,39 @@ Join our thriving community! Whether you have questions, need support, want to r
 **Empire Enhanced** is built to extend and streamline the experience on [CSGOEmpire](https://csgoempire.com) through a set of practical and performance-focused tools:
 
 ### Custom Item Tracking  
-Track any item by name using the Item Target List. Supports partial keyword matching and optional float (wear) value filtering.
+- Track any item by name using the Item Target List. Supports partial keyword matching and optional float (wear) value filtering.
 
 ### Real-Time Notifications  
-Receive instant alerts when matching items appear in the marketplace. Includes customizable notification sounds with live preview.
+- Receive instant alerts when matching items appear in the marketplace. Includes customizable notification sounds with live preview.
 
 ### Persistent Filters and Settings  
-Price ranges, keychain thresholds, and item lists are saved locally and restored automatically after browser or system restarts.
+- Price ranges, keychain thresholds, and item lists are saved locally and restored automatically after browser or system restarts.
 
-### Theme and UI Customization  
-Apply consistent visual themes to both the extension and the target site. Built-in themes like Nebula and Shooting Star are supported, with modular theme architecture for easy additions.
+### Theming: 
+- The extension offers different themes ("Nebula" and "Shooting Star") for both the popup and the CSGOEmpire website itself.
 
 ### Modular and Scalable Design  
-Features are designed as self-contained modules to allow for easy expansion without modifying core files.
-
-
+- Features are designed as self-contained modules to allow for easy expansion without modifying core files.
 ---
 
 ## 📸 Preview
 
-Take a sneak peek at Empire-Enhanced in action.
+Take a sneak peek at Empire Enhanced in action.
 
 ### Main Dashboard
 
 ![Dashboard Screenshot](https://placehold.co/1200x675/333333/ffffff?text=YOUR_DASHBOARD_SCREENSHOT_HERE)
 *An intuitive and powerful dashboard providing an overview of your settings and active enhancements.*
 
-### Feature X in Use
+### Notification History Page
 
-![Feature X Screenshot](https://placehold.co/1200x675/555555/ffffff?text=YOUR_FEATURE_X_SCREENSHOT_HERE)
-*See how [Feature X] seamlessly integrates into your Browse, offering [benefit of feature X].*
+![History Page](https://placehold.co/1200x675/555555/ffffff?text=YOUR_FEATURE_X_SCREENSHOT_HERE)
+*Easily track missed or past alerts with the integrated Notification History page.*
+
+### CSGOEmpire Home Page
+
+![Home Page](https://placehold.co/1200x675/555555/ffffff?text=YOUR_FEATURE_X_SCREENSHOT_HERE)
+*The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.*
 
 ### Short Demo Video (Optional)
 
@@ -68,22 +72,95 @@ Take a sneak peek at Empire-Enhanced in action.
 
 ---
 
+## ❓How It Works
+
+**Empire Enhanced** injects JavaScript into CSGOEmpire and listens to WebSocket data for real-time item monitoring.
+
+To use it:
+- Run a local Node.js server that filters and processes data
+- Provide your CSGOEmpire [API key](https://csgoempire.com/trading/apikey)
+- The extension UI connects to the server and lets you configure:
+  -  Target items + optional float range
+  -  Notification sounds
+  -  Site-wide theming
+  -  Price and keychain filters
+
+All settings are saved using `chrome.storage` and `server-settings.json`.
+
+## Get the Extension
+
+Ready to command your Browse experience? Install Empire-Enhanced now and start building your digital empire!
+
+## Getting Started
+### Step 1: Set Up the Backend Server
+
+#### 1. Clone the Project
+```bash
+git clone https://github.com/Sadat41/Empire-Enhanced.git
+```
+#### 2. Navigate to the server directory:
+``` bash
+cd Empire-Enhanced/server
+```
+#### 3. Install required packages:
+```bash
+npm install
+```
+#### 4. Open server.js and replace the placeholder API key:
+```bash
+const CONFIG = {
+  apiKey: "YOUR_CSGOEMPIRE_API_KEY",
+  ...
+};
+```
+#### 5. Start the server
+```bash
+npm run dev  # For development (auto restarts)
+```
+or
+```bash
+npm start     # For production
+```
+#### 6. Visit http://localhost:3001/health to confirm it's running.
+
+### Step 2: Load the Browser Extension
+
+For Chrome:
+#### 1. Go to `chrome://extensions/`
+
+#### 2. Enable Developer Mode (top-right)
+
+#### 3. Click Load unpacked
+
+#### 4. Select the `/extension` folder inside the project
+
+For Firefox:
+#### 1. Visit `about:debugging#/runtime/this-firefox`
+
+#### 2. Click Load Temporary Add-on
+
+#### 3. Choose the `manifest.json` inside the `/extension` folder
+
+### Step 3: Use the Extension
+Once both the server and extension are running:
+
+- Click the Empire Enhanced icon in your browser toolbar
+- Use the popup to:
+- Add items to the Item Target List
+- Set float and price filters
+- Choose notification sounds
+- Enable site theming (Nebula or Shooting Star)
+
+The extension will automatically connect to `http://localhost:3001` and start monitoring items based on your configuration.
+
+## 📋 Notes
+Checkout CSGOEmpire API documentation:
+```
+[CSGOEmpire API Documentation](https://docs.csgoempire.com/reference/getting-started-with-your-api)
+```
+
 ## ⚠️ Note
 
 Please be aware of the following:
 
 * **Prohibited Activities:** We explicitly forbid the use of the Empire-Enhanced extension for illegal activities. This includes, but is not limited to, using the extension to gain an unfair advantage over other users, engaging in any form of malicious behavior, or violating platform terms of service. 
-
----
-
-## ❓How It Works
-
-Empire Enhanced operates by injecting JavaScript into the target website and listening to websocket data streams from CSGOEmpire. It intercepts and processes real-time data such as item listings, wear values, and pricing information.
-
-Upon installation, the extension adds a toolbar icon that opens a popup interface. From this UI, users can:
-- Add or remove items in the tracking list
-- Adjust price and float filters
-- Preview and select notification sounds
-- Enable or disable site theming
-
-Data from the popup interface is stored using `chrome.storage` or equivalent local storage APIs. This allows settings and tracked items to persist between sessions. The local server syncs with the extension to ensure notifications and filters are consistent and reliable.
