@@ -3,11 +3,16 @@ const axios = require('axios');
 const express = require('express');
 const cors = require('cors');
 const WebSocket = require('ws');
+const fs = require('fs');
+const path = require('path');
+
+// 🔥 NEW: Settings file for persistent storage
+const SETTINGS_FILE = path.join(__dirname, 'server-settings.json');
 
 // Configuration - EDIT THESE VALUES
 const CONFIG = {
   // Replace with your CSGOEmpire API key
-  apiKey: "1bbf0df01915e7159f82076fb64638d8",
+  apiKey: "1bbf0df01915e7159f82076fb64638d8", // Changed API Key just as an example.
   
   // Change to '.gg' if '.com' is blocked
   domain: "csgoempire.com",
@@ -15,11 +20,33 @@ const CONFIG = {
   // Port for the local server (extension will connect to this)
   port: 3001,
   
-  // Price filter range: reject items outside this range
-  minAboveRecommended: -50, // Allow items up to 50% below recommended
-  maxAboveRecommended: 5,   // Allow items up to 5% above recommended
+  // 🔥 NEW: Connection resilience settings
+  maxReconnectAttempts: 50,        // Maximum reconnection attempts
+  reconnectDelay: 5000,            // Base delay between reconnection attempts (ms)
+  maxReconnectDelay: 60000,        // Maximum delay between reconnection attempts (ms)
+  heartbeatInterval: 30000,        // Send heartbeat every 30 seconds
+  connectionTimeout: 10000,        // Timeout for initial connection (ms)
   
-  // Target keychains to monitor for
+  // 🔥 PERSISTENT: Price filter range - will be loaded from file if available
+  minAboveRecommended: -50, // Default: Allow items up to 50% below recommended
+  maxAboveRecommended: 5,   // Default: Allow items up to 5% above recommended
+  
+  // 🔥 PERSISTENT: Keychain filter settings - will be loaded from file if available
+  keychainPercentageThreshold: 50, // Default: Only notify if charm price is >= 50% of market value
+  enabledKeychains: new Set([     // Default: All keychains enabled initially
+    "Hot Howl", "Baby Karat T", "Hot Wurst", "Baby Karat CT", "Semi-Precious", 
+    "Diamond Dog", "Titeenium AWP", "Lil' Monster", "Diner Dog", "Lil' Squirt", 
+    "Die-cast AK", "Lil' Teacup", "Chicken Lil'", "That's Bananas", "Lil' Whiskers", 
+    "Glamour Shot", "Lil' Sandy", "Hot Hands", "POP Art", "Disco MAC", "Lil' Squatch", 
+    "Lil' SAS", "Baby's AK", "Hot Sauce", "Pinch O' Salt", "Big Kev", "Whittle Knife", 
+    "Lil' Crass", "Pocket AWP", "Lil' Ava", "Stitch-Loaded", "Backsplash", "Lil' Cap Gun"
+  ]),
+  
+  // 🔥 PERSISTENT: Item Target List settings - will be loaded from file if available
+  itemTargetList: [], // Default: Empty array
+  floatFilterEnabled: false, // Default: Float filter disabled
+  
+  // Target keychains to monitor for (kept for backward compatibility)
   targetKeychains: [
     "Hot Howl", "Baby Karat T", "Hot Wurst", "Baby Karat CT", "Semi-Precious", 
     "Diamond Dog", "Titeenium AWP", "Lil' Monster", "Diner Dog", "Lil' Squirt", 
@@ -27,8 +54,155 @@ const CONFIG = {
     "Glamour Shot", "Lil' Sandy", "Hot Hands", "POP Art", "Disco MAC", "Lil' Squatch", 
     "Lil' SAS", "Baby's AK", "Hot Sauce", "Pinch O' Salt", "Big Kev", "Whittle Knife", 
     "Lil' Crass", "Pocket AWP", "Lil' Ava", "Stitch-Loaded", "Backsplash", "Lil' Cap Gun"
-  ]
+  ],
+
+  // Enhanced Charm Pricing Data with better organization
+  charmPricing: {
+    "Red": {
+      "Hot Howl": 70.0,
+      "Baby Karat T": 50.0,
+      "Hot Wurst": 30.0,
+      "Baby Karat CT": 30.0
+    },
+    "Pink": {
+      "Semi-Precious": 40.0,
+      "Diamond Dog": 25.0,
+      "Titeenium AWP": 10.0,
+      "Lil' Monster": 10.0,
+      "Diner Dog": 5.00,
+      "Lil' Squirt": 5.00
+    },
+    "Purple": {
+      "Die-cast AK": 9.00,
+      "Lil' Teacup": 4.50,
+      "Chicken Lil'": 3.00,
+      "That's Bananas": 3.00,
+      "Lil' Whiskers": 3.00,
+      "Glamour Shot": 2.50,
+      "Lil' Sandy": 2.50,
+      "Hot Hands": 2.00,
+      "POP Art": 2.00,
+      "Disco MAC": 1.60,
+      "Lil' Squatch": 1.50
+    },
+    "Blue": {
+      "Lil' SAS": 1.00,
+      "Baby's AK": 0.80,
+      "Hot Sauce": 0.90,
+      "Pinch O' Salt": 1.0,
+      "Big Kev": 0.70,
+      "Whittle Knife": 0.65,
+      "Lil' Crass": 0.60,
+      "Pocket AWP": 0.60,
+      "Lil' Ava": 0.50,
+      "Stitch-Loaded": 0.30,
+      "Backsplash": 0.28,
+      "Lil' Cap Gun": 0.30
+    }
+  }
 };
+
+// 🔥 NEW: Persistent storage functions
+function loadSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      console.log('📂 Loading settings from file...');
+      const settingsData = fs.readFileSync(SETTINGS_FILE, 'utf8');
+      const settings = JSON.parse(settingsData);
+      
+      // Apply loaded settings to CONFIG with validation
+      if (typeof settings.minAboveRecommended === 'number') {
+        CONFIG.minAboveRecommended = settings.minAboveRecommended;
+        console.log(`✅ Loaded minAboveRecommended: ${settings.minAboveRecommended}%`);
+      }
+      
+      if (typeof settings.maxAboveRecommended === 'number') {
+        CONFIG.maxAboveRecommended = settings.maxAboveRecommended;
+        console.log(`✅ Loaded maxAboveRecommended: ${settings.maxAboveRecommended}%`);
+      }
+      
+      if (typeof settings.keychainPercentageThreshold === 'number') {
+        CONFIG.keychainPercentageThreshold = settings.keychainPercentageThreshold;
+        console.log(`✅ Loaded keychainPercentageThreshold: ${settings.keychainPercentageThreshold}%`);
+      }
+      
+      if (Array.isArray(settings.enabledKeychains)) {
+        CONFIG.enabledKeychains = new Set(settings.enabledKeychains);
+        console.log(`✅ Loaded enabledKeychains: ${settings.enabledKeychains.length} keychains`);
+      }
+      
+      if (Array.isArray(settings.itemTargetList)) {
+        CONFIG.itemTargetList = settings.itemTargetList;
+        console.log(`✅ Loaded itemTargetList: ${settings.itemTargetList.length} items`);
+      }
+      
+      if (typeof settings.floatFilterEnabled === 'boolean') {
+        CONFIG.floatFilterEnabled = settings.floatFilterEnabled;
+        console.log(`✅ Loaded floatFilterEnabled: ${settings.floatFilterEnabled}`);
+      }
+      
+      console.log('🎉 All settings loaded successfully from file');
+      console.log(`📊 Current settings summary:`);
+      console.log(`   💰 Price range: ${CONFIG.minAboveRecommended}% to ${CONFIG.maxAboveRecommended}%`);
+      console.log(`   🔑 Keychain threshold: ${CONFIG.keychainPercentageThreshold}%`);
+      console.log(`   🔗 Enabled keychains: ${CONFIG.enabledKeychains.size}/${getAllKeychainNames().length}`);
+      console.log(`   🎯 Target items: ${CONFIG.itemTargetList.length}`);
+      console.log(`   📏 Float filter: ${CONFIG.floatFilterEnabled ? 'enabled' : 'disabled'}`);
+      
+      return true;
+    } else {
+      console.log('📁 No settings file found, using defaults and creating new file...');
+      saveSettings(); // Create the file with current defaults
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Error loading settings:', error);
+    console.log('🔄 Using default settings and attempting to create new settings file...');
+    saveSettings(); // Try to create the file with defaults
+    return false;
+  }
+}
+
+function saveSettings() {
+  try {
+    const settings = {
+      // Save current CONFIG values
+      minAboveRecommended: CONFIG.minAboveRecommended,
+      maxAboveRecommended: CONFIG.maxAboveRecommended,
+      keychainPercentageThreshold: CONFIG.keychainPercentageThreshold,
+      enabledKeychains: Array.from(CONFIG.enabledKeychains), // Convert Set to Array for JSON
+      itemTargetList: CONFIG.itemTargetList,
+      floatFilterEnabled: CONFIG.floatFilterEnabled,
+      
+      // Metadata
+      lastUpdated: new Date().toISOString(),
+      version: "1.0"
+    };
+    
+    // Write to file with pretty formatting
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf8');
+    console.log('💾 Settings saved to file successfully');
+    console.log(`📊 Saved settings summary:`);
+    console.log(`   💰 Price range: ${CONFIG.minAboveRecommended}% to ${CONFIG.maxAboveRecommended}%`);
+    console.log(`   🔑 Keychain threshold: ${CONFIG.keychainPercentageThreshold}%`);
+    console.log(`   🔗 Enabled keychains: ${CONFIG.enabledKeychains.size}`);
+    console.log(`   🎯 Target items: ${CONFIG.itemTargetList.length}`);
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error saving settings:', error);
+    return false;
+  }
+}
+
+// 🔥 Helper function to get all keychain names (needed for loadSettings)
+function getAllKeychainNames() {
+  const keychains = [];
+  for (const category in CONFIG.charmPricing) {
+    keychains.push(...Object.keys(CONFIG.charmPricing[category]));
+  }
+  return keychains.sort();
+}
 
 class KeychainMonitorServer {
   constructor() {
@@ -41,14 +215,97 @@ class KeychainMonitorServer {
     this.connectedClients = new Set();
     this.notifiedItems = new Set(); // Track notified items to prevent duplicates
     this.notificationHistory = []; // Store only successful notifications
+    
+    // 🔥 NEW: Connection management
+    this.reconnectAttempts = 0;
+    this.isConnecting = false;
+    this.heartbeatTimer = null;
+    this.connectionStartTime = null;
+    this.lastConnectionError = null;
+    this.connectionState = 'disconnected'; // disconnected, connecting, connected, error
+    
     this.stats = {
       keychainsFound: 0,
+      itemsFound: 0,
       startTime: Date.now(),
-      lastKeychainFound: null
+      lastKeychainFound: null,
+      lastItemFound: null,
+      itemsProcessed: 0,
+      itemsFiltered: 0,
+      filterReasons: {},
+      // 🔥 NEW: Connection stats
+      totalConnections: 0,
+      totalDisconnections: 0,
+      lastSuccessfulConnection: null,
+      lastDisconnection: null,
+      uptime: 0
     };
+    
+    // 🔥 NEW: Load persistent settings before starting
+    console.log('🔧 Loading persistent settings...');
+    loadSettings();
+    
+    // 🔥 NEW: Setup process handlers for stability
+    this.setupProcessHandlers();
     
     this.setupExpressServer();
     this.startServer();
+  }
+
+  // 🔥 NEW: Setup process handlers for graceful shutdown and error handling
+  setupProcessHandlers() {
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (error) => {
+      console.error('💥 Uncaught Exception:', error);
+      console.log('🔄 Server will continue running...');
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('💥 Unhandled Promise Rejection:', reason);
+      console.log('🔄 Server will continue running...');
+    });
+
+    // Handle SIGTERM (PM2 and Docker)
+    process.on('SIGTERM', () => {
+      console.log('🛑 SIGTERM received, shutting down gracefully...');
+      this.gracefulShutdown();
+    });
+
+    // Handle SIGINT (Ctrl+C)
+    process.on('SIGINT', () => {
+      console.log('\n🛑 SIGINT received, shutting down gracefully...');
+      this.gracefulShutdown();
+    });
+
+    // Keep process alive
+    setInterval(() => {
+      this.stats.uptime = Date.now() - this.stats.startTime;
+    }, 10000); // Update uptime every 10 seconds
+  }
+
+  // 🔥 NEW: Graceful shutdown handler
+  gracefulShutdown() {
+    console.log('💾 Saving settings before shutdown...');
+    saveSettings();
+    
+    console.log('🔌 Closing connections...');
+    if (this.csgoSocket) {
+      this.csgoSocket.disconnect();
+    }
+    
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+    }
+    
+    if (this.server) {
+      this.server.close(() => {
+        console.log('✅ Server closed gracefully');
+        process.exit(0);
+      });
+    } else {
+      process.exit(0);
+    }
   }
 
   setupExpressServer() {
@@ -56,23 +313,44 @@ class KeychainMonitorServer {
     this.app.use(cors());
     this.app.use(express.json());
 
-    // Health check endpoint
+    // 🔥 ENHANCED: Health check endpoint with connection status
     this.app.get('/health', (req, res) => {
       res.json({
         status: 'running',
         connected: this.csgoSocket !== null,
-        stats: this.stats,
-        notificationCount: this.notificationHistory.length
+        connectionState: this.connectionState,
+        stats: {
+          ...this.stats,
+          uptime: Date.now() - this.stats.startTime,
+          connectionHealth: {
+            totalConnections: this.stats.totalConnections,
+            totalDisconnections: this.stats.totalDisconnections,
+            reconnectAttempts: this.reconnectAttempts,
+            lastSuccessfulConnection: this.stats.lastSuccessfulConnection,
+            lastDisconnection: this.stats.lastDisconnection,
+            lastConnectionError: this.lastConnectionError
+          }
+        },
+        notificationCount: this.notificationHistory.length,
+        config: {
+          keychainPercentageThreshold: CONFIG.keychainPercentageThreshold,
+          enabledKeychainsCount: CONFIG.enabledKeychains.size,
+          itemTargetListCount: CONFIG.itemTargetList.length,
+          priceRange: {
+            min: CONFIG.minAboveRecommended,
+            max: CONFIG.maxAboveRecommended
+          }
+        }
       });
     });
 
     // Notification history endpoint - only last 30 minutes
     this.app.get('/history', (req, res) => {
-      const thirtyMinutesAgo = Date.now() - (30 * 60 * 1000); // 30 minutes in milliseconds
+      const thirtyMinutesAgo = Date.now() - (30 * 60 * 1000);
       
       const recentNotifications = this.notificationHistory
         .filter(item => item.timestamp > thirtyMinutesAgo)
-        .sort((a, b) => b.timestamp - a.timestamp); // Newest first
+        .sort((a, b) => b.timestamp - a.timestamp);
 
       console.log(`📊 History request: ${recentNotifications.length} notifications in last 30 minutes`);
 
@@ -83,36 +361,48 @@ class KeychainMonitorServer {
       });
     });
 
-    // Stats endpoint
+    // Stats endpoint with enhanced debugging info
     this.app.get('/stats', (req, res) => {
       res.json({
         ...this.stats,
         uptime: Date.now() - this.stats.startTime,
         isConnectedToCSGO: this.csgoSocket !== null,
-        notificationCount: this.notificationHistory.length
+        connectionState: this.connectionState,
+        notificationCount: this.notificationHistory.length,
+        config: {
+          keychainPercentageThreshold: CONFIG.keychainPercentageThreshold,
+          enabledKeychainsCount: CONFIG.enabledKeychains.size,
+          totalKeychains: this.getAllKeychainNames().length,
+          itemTargetListCount: CONFIG.itemTargetList.length
+        }
       });
     });
 
-    // Manual test endpoint with float value
+    // Manual test endpoint with float value and debugging
     this.app.post('/test', (req, res) => {
       const testItem = {
         id: 'test-' + Date.now(),
         market_name: 'Test AK-47 | Redline (Field-Tested)',
-        market_value: 3907, // $39.07 in cents
+        market_value: 3907,
         purchase_price: 3907,
         suggested_price: 4100,
         above_recommended_price: -4.7,
-        wear: 0.1234567, // 🔥 NEW: Include float value for testing
+        wear: 0.1234567,
         keychains: [{ name: 'Hot Howl', wear: null }],
         published_at: new Date().toISOString()
       };
       
       console.log('🧪 Sending test notification...');
       
-      // Store in notification history
-      this.storeNotification(testItem);
+      const charmDetails = this.getCharmDetails(testItem);
+      if (charmDetails) {
+        testItem.charm_category = charmDetails.category;
+        testItem.charm_name = charmDetails.name;
+        testItem.charm_price = charmDetails.price;
+        testItem.charm_price_display = this.formatCharmPrice(charmDetails.price, testItem.purchase_price);
+      }
       
-      // Send notification
+      this.storeNotification(testItem);
       this.notifyClients('KEYCHAIN_FOUND', testItem);
       
       res.json({ 
@@ -121,12 +411,13 @@ class KeychainMonitorServer {
           name: testItem.market_name,
           price: `${(testItem.market_value / 100).toFixed(2)}`,
           float: testItem.wear.toFixed(6),
-          keychains: testItem.keychains.map(k => k.name)
+          keychains: testItem.keychains.map(k => k.name),
+          charmDetails: charmDetails || 'No charm found'
         }
       });
     });
 
-    // Update filter endpoint
+    // 🔥 UPDATED: Update filter endpoint with persistent storage
     this.app.post('/update-filter', (req, res) => {
       const { minPercentage, maxPercentage } = req.body;
       
@@ -146,24 +437,239 @@ class KeychainMonitorServer {
       CONFIG.minAboveRecommended = minPercentage;
       CONFIG.maxAboveRecommended = maxPercentage;
       
-      console.log(`🔧 Price filter updated: ${minPercentage}% to ${maxPercentage}%`);
+      // 🔥 NEW: Save to persistent storage
+      const saveSuccess = saveSettings();
+      
+      console.log(`🔧 Price filter updated: ${minPercentage}% to ${maxPercentage}% ${saveSuccess ? '(saved)' : '(save failed)'}`);
       
       res.json({ 
-        message: `Price filter updated to ${minPercentage}% to ${maxPercentage}%`,
+        message: `Price filter updated to ${minPercentage}% to ${maxPercentage}%${saveSuccess ? ' and saved persistently' : ' (warning: save failed)'}`,
         filter: {
           min: minPercentage,
           max: maxPercentage
+        },
+        persistent: saveSuccess
+      });
+    });
+
+    // 🔥 UPDATED: Update Item Target List endpoint with persistent storage
+    this.app.post('/update-item-target-list', (req, res) => {
+      const { itemTargetList, floatFilterEnabled } = req.body;
+      
+      if (!Array.isArray(itemTargetList)) {
+        return res.status(400).json({ 
+          error: 'Invalid input: itemTargetList must be an array' 
+        });
+      }
+      
+      // Validate item structure
+      for (const item of itemTargetList) {
+        if (!item.name || typeof item.name !== 'string') {
+          return res.status(400).json({ 
+            error: 'Invalid item: each item must have a name string' 
+          });
+        }
+        
+        if (item.floatFilter && typeof item.floatFilter !== 'object') {
+          return res.status(400).json({ 
+            error: 'Invalid item: floatFilter must be an object' 
+          });
+        }
+      }
+      
+      const oldCount = CONFIG.itemTargetList.length;
+      CONFIG.itemTargetList = itemTargetList;
+      CONFIG.floatFilterEnabled = floatFilterEnabled !== undefined ? floatFilterEnabled : CONFIG.floatFilterEnabled;
+      
+      // 🔥 NEW: Save to persistent storage
+      const saveSuccess = saveSettings();
+      
+      console.log(`🔧 Item Target List updated: ${oldCount} → ${itemTargetList.length} items ${saveSuccess ? '(saved)' : '(save failed)'}`);
+      console.log(`🎯 Float filter enabled: ${CONFIG.floatFilterEnabled}`);
+      
+      if (itemTargetList.length > 0) {
+        console.log(`🎯 Target items: ${itemTargetList.slice(0, 3).map(i => i.name).join(', ')}${itemTargetList.length > 3 ? ` +${itemTargetList.length - 3} more` : ''}`);
+      }
+      
+      res.json({ 
+        message: `Item Target List updated: ${itemTargetList.length} items being monitored${saveSuccess ? ' and saved persistently' : ' (warning: save failed)'}`,
+        itemTargetList: itemTargetList.map(item => ({
+          name: item.name,
+          floatFilter: item.floatFilter || { enabled: false, min: 0, max: 1 }
+        })),
+        count: itemTargetList.length,
+        previousCount: oldCount,
+        floatFilterEnabled: CONFIG.floatFilterEnabled,
+        persistent: saveSuccess
+      });
+    });
+
+    // 🔥 UPDATED: Update keychain percentage threshold with persistent storage
+    this.app.post('/update-keychain-percentage', (req, res) => {
+      const { percentageThreshold } = req.body;
+      
+      if (typeof percentageThreshold !== 'number' || percentageThreshold < 0 || percentageThreshold > 100) {
+        return res.status(400).json({ 
+          error: 'Invalid input: percentageThreshold must be a number between 0 and 100' 
+        });
+      }
+      
+      const oldThreshold = CONFIG.keychainPercentageThreshold;
+      CONFIG.keychainPercentageThreshold = percentageThreshold;
+      
+      // 🔥 NEW: Save to persistent storage
+      const saveSuccess = saveSettings();
+      
+      console.log(`🔧 Keychain percentage threshold updated: ${oldThreshold}% → ${percentageThreshold}% ${saveSuccess ? '(saved)' : '(save failed)'}`);
+      
+      res.json({ 
+        message: `Keychain percentage threshold updated to ${percentageThreshold}%${saveSuccess ? ' and saved persistently' : ' (warning: save failed)'}`,
+        threshold: percentageThreshold,
+        previousThreshold: oldThreshold,
+        persistent: saveSuccess
+      });
+    });
+
+    // 🔥 UPDATED: Update enabled keychains with persistent storage
+    this.app.post('/update-enabled-keychains', (req, res) => {
+      const { enabledKeychains } = req.body;
+      
+      if (!Array.isArray(enabledKeychains)) {
+        return res.status(400).json({ 
+          error: 'Invalid input: enabledKeychains must be an array' 
+        });
+      }
+      
+      // Validate that all keychains exist in our pricing data
+      const allKeychains = this.getAllKeychainNames();
+      const invalidKeychains = enabledKeychains.filter(k => !allKeychains.includes(k));
+      
+      if (invalidKeychains.length > 0) {
+        return res.status(400).json({ 
+          error: `Invalid keychains: ${invalidKeychains.join(', ')}`,
+          validKeychains: allKeychains
+        });
+      }
+      
+      const oldCount = CONFIG.enabledKeychains.size;
+      CONFIG.enabledKeychains = new Set(enabledKeychains);
+      
+      // 🔥 NEW: Save to persistent storage
+      const saveSuccess = saveSettings();
+      
+      console.log(`🔧 Enabled keychains updated: ${oldCount} → ${enabledKeychains.length} keychains enabled ${saveSuccess ? '(saved)' : '(save failed)'}`);
+      console.log(`🔑 Enabled: ${enabledKeychains.slice(0, 5).join(', ')}${enabledKeychains.length > 5 ? ` +${enabledKeychains.length - 5} more` : ''}`);
+      
+      res.json({ 
+        message: `Enabled keychains updated: ${enabledKeychains.length} keychains enabled${saveSuccess ? ' and saved persistently' : ' (warning: save failed)'}`,
+        enabledKeychains: enabledKeychains,
+        count: enabledKeychains.length,
+        previousCount: oldCount,
+        persistent: saveSuccess
+      });
+    });
+
+    // Get current keychain filter settings with full details
+    this.app.get('/keychain-filter-settings', (req, res) => {
+      console.log('📊 Keychain filter settings requested');
+      
+      const allKeychains = this.getAllKeychainNames();
+      const enabledKeychainsArray = Array.from(CONFIG.enabledKeychains);
+      
+      const response = {
+        percentageThreshold: CONFIG.keychainPercentageThreshold,
+        enabledKeychains: enabledKeychainsArray,
+        allKeychains: allKeychains.map(name => {
+          const category = this.getKeychainCategory(name);
+          const price = category ? CONFIG.charmPricing[category][name] : 0;
+          return {
+            name,
+            category,
+            price,
+            enabled: CONFIG.enabledKeychains.has(name)
+          };
+        }),
+        totalKeychains: allKeychains.length,
+        enabledCount: enabledKeychainsArray.length,
+        stats: {
+          itemsProcessed: this.stats.itemsProcessed,
+          itemsFiltered: this.stats.itemsFiltered,
+          successfulNotifications: this.stats.keychainsFound
+        }
+      };
+      
+      console.log(`📊 Returning settings: ${enabledKeychainsArray.length}/${allKeychains.length} keychains enabled, ${CONFIG.keychainPercentageThreshold}% threshold`);
+      
+      res.json(response);
+    });
+
+    // Get current Item Target List settings
+    this.app.get('/item-target-list-settings', (req, res) => {
+      console.log('📊 Item Target List settings requested');
+      
+      const response = {
+        itemTargetList: CONFIG.itemTargetList,
+        floatFilterEnabled: CONFIG.floatFilterEnabled,
+        count: CONFIG.itemTargetList.length,
+        stats: {
+          itemsProcessed: this.stats.itemsProcessed,
+          itemsFiltered: this.stats.itemsFiltered,
+          itemsFound: this.stats.itemsFound,
+          keychainsFound: this.stats.keychainsFound
+        }
+      };
+      
+      console.log(`📊 Returning Item Target List: ${CONFIG.itemTargetList.length} items being monitored`);
+      
+      res.json(response);
+    });
+
+    // 🔥 NEW: Connection status endpoint
+    this.app.get('/connection-status', (req, res) => {
+      res.json({
+        connectionState: this.connectionState,
+        isConnected: this.csgoSocket !== null,
+        reconnectAttempts: this.reconnectAttempts,
+        lastConnectionError: this.lastConnectionError,
+        connectionHealth: {
+          totalConnections: this.stats.totalConnections,
+          totalDisconnections: this.stats.totalDisconnections,
+          lastSuccessfulConnection: this.stats.lastSuccessfulConnection,
+          lastDisconnection: this.stats.lastDisconnection,
+          uptime: Date.now() - this.stats.startTime
         }
       });
     });
   }
 
+  // Helper methods for keychain management
+  getAllKeychainNames() {
+    const keychains = [];
+    for (const category in CONFIG.charmPricing) {
+      keychains.push(...Object.keys(CONFIG.charmPricing[category]));
+    }
+    return keychains.sort();
+  }
+
+  getKeychainCategory(keychainName) {
+    for (const category in CONFIG.charmPricing) {
+      if (CONFIG.charmPricing[category].hasOwnProperty(keychainName)) {
+        return category;
+      }
+    }
+    return null;
+  }
+
   startServer() {
     this.server = this.app.listen(CONFIG.port, () => {
-      console.log(`🔑 Keychain Monitor Server started on port ${CONFIG.port}`);
+      console.log(`🔑 Enhanced Monitor Server started on port ${CONFIG.port}`);
       console.log(`📊 Health check: http://localhost:${CONFIG.port}/health`);
       console.log(`📜 History endpoint: http://localhost:${CONFIG.port}/history`);
       console.log(`🧪 Test notification: POST http://localhost:${CONFIG.port}/test`);
+      console.log(`🔧 Keychain filter settings: GET http://localhost:${CONFIG.port}/keychain-filter-settings`);
+      console.log(`🎯 Item Target List settings: GET http://localhost:${CONFIG.port}/item-target-list-settings`);
+      console.log(`🔌 Connection status: GET http://localhost:${CONFIG.port}/connection-status`);
+      console.log(`💾 Settings file: ${SETTINGS_FILE}`);
     });
 
     // Setup WebSocket server for extension connections
@@ -199,7 +705,6 @@ class KeychainMonitorServer {
 
   async refreshUserData() {
     if (this.userDataRefreshedAt && this.userDataRefreshedAt > Date.now() - 15 * 1000) {
-      // Refreshed less than 15s ago, should be still valid
       return;
     }
     
@@ -208,7 +713,8 @@ class KeychainMonitorServer {
       const response = await axios.get(`https://${CONFIG.domain}/api/v2/metadata/socket`, {
         headers: {
           'Authorization': `Bearer ${CONFIG.apiKey}`
-        }
+        },
+        timeout: CONFIG.connectionTimeout
       });
       
       this.userData = response.data;
@@ -220,26 +726,35 @@ class KeychainMonitorServer {
     }
   }
 
+  // 🔥 ENHANCED: Improved connection method with better resilience
   async connectToCSGOEmpire() {
+    if (this.isConnecting) {
+      console.log('🔄 Connection already in progress, skipping...');
+      return;
+    }
+
+    this.isConnecting = true;
+    this.connectionState = 'connecting';
+    this.connectionStartTime = Date.now();
+
     try {
-      console.log('🔑 Connecting to CSGOEmpire...');
+      console.log(`🔑 Connecting to CSGOEmpire... (Attempt ${this.reconnectAttempts + 1}/${CONFIG.maxReconnectAttempts})`);
       
       if (!CONFIG.apiKey || CONFIG.apiKey === "YOUR_API_KEY_HERE") {
         throw new Error('Please set your API key in the CONFIG object');
       }
 
-      // Refresh user data
       await this.refreshUserData();
 
       const socketEndpoint = `wss://trade.${CONFIG.domain}/trade`;
       
-      // Initialize socket connection
       this.csgoSocket = io(socketEndpoint, {
         transports: ["websocket"],
         path: "/s/",
         secure: true,
         rejectUnauthorized: false,
-        reconnect: true,
+        reconnect: false, // We handle reconnection manually
+        timeout: CONFIG.connectionTimeout,
         query: {
           uid: this.userData.user.id,
           token: this.userData.socket_token,
@@ -249,24 +764,32 @@ class KeychainMonitorServer {
         }
       });
 
+      // 🔥 NEW: Enhanced connection event handlers
       this.csgoSocket.on('connect', async () => {
         console.log('✅ Connected to CSGOEmpire websocket');
+        this.connectionState = 'connected';
+        this.isConnecting = false;
+        this.reconnectAttempts = 0;
+        this.lastConnectionError = null;
+        this.stats.totalConnections++;
+        this.stats.lastSuccessfulConnection = Date.now();
+        
+        // Start heartbeat
+        this.startHeartbeat();
+        
         this.notifyClients('STATUS', { connected: true });
       });
 
-      // Handle the Init event
       this.csgoSocket.on('init', async (data) => {
         if (data && data.authenticated) {
           console.log(`✅ Successfully authenticated as ${data.name}`);
           
-          // Emit the default filters to ensure we receive events
           this.csgoSocket.emit('filters', {
             price_max: 9999999
           });
           
         } else {
           await this.refreshUserData();
-          // When the server asks for it, emit the data we got earlier to identify this client
           this.csgoSocket.emit('identify', {
             uid: this.userData.user.id,
             model: this.userData.user,
@@ -276,7 +799,6 @@ class KeychainMonitorServer {
         }
       });
 
-      // Listen for websocket events
       this.csgoSocket.on('timesync', (data) => {
         console.log(`🕐 Timesync: ${JSON.stringify(data)}`);
       });
@@ -303,32 +825,98 @@ class KeychainMonitorServer {
         console.log(`📊 Trade status update received`);
       });
 
+      // 🔥 ENHANCED: Better disconnect handling
       this.csgoSocket.on("disconnect", (reason) => {
         console.log(`❌ Socket disconnected: ${reason}`);
-        this.csgoSocket = null;
-        this.notifyClients('STATUS', { connected: false });
-        
-        // Attempt to reconnect after 5 seconds
-        setTimeout(() => this.connectToCSGOEmpire(), 5000);
+        this.handleDisconnection(reason);
       });
 
       this.csgoSocket.on("close", (reason) => {
         console.log(`❌ Socket closed: ${reason}`);
+        this.handleDisconnection(`close: ${reason}`);
       });
 
-      this.csgoSocket.on('error', (data) => {
-        console.error(`❌ WS Error: ${data}`);
+      this.csgoSocket.on('error', (error) => {
+        console.error(`❌ WS Error: ${error}`);
+        this.lastConnectionError = error.toString();
+        this.handleDisconnection(`error: ${error}`);
       });
 
-      this.csgoSocket.on('connect_error', (data) => {
-        console.error(`❌ Connect Error: ${data}`);
+      this.csgoSocket.on('connect_error', (error) => {
+        console.error(`❌ Connect Error: ${error}`);
+        this.lastConnectionError = error.toString();
+        this.handleDisconnection(`connect_error: ${error}`);
       });
 
     } catch (error) {
       console.error('❌ Error while initializing socket:', error.message);
+      this.lastConnectionError = error.message;
+      this.handleDisconnection(`initialization_error: ${error.message}`);
+    }
+  }
+
+  // 🔥 NEW: Handle disconnections with smart reconnection
+  handleDisconnection(reason) {
+    this.connectionState = 'disconnected';
+    this.isConnecting = false;
+    this.stats.totalDisconnections++;
+    this.stats.lastDisconnection = Date.now();
+    
+    if (this.csgoSocket) {
+      this.csgoSocket = null;
+    }
+    
+    this.stopHeartbeat();
+    this.notifyClients('STATUS', { connected: false });
+    
+    // Smart reconnection logic
+    if (this.reconnectAttempts < CONFIG.maxReconnectAttempts) {
+      this.reconnectAttempts++;
       
-      // Retry connection after 10 seconds
-      setTimeout(() => this.connectToCSGOEmpire(), 10000);
+      // Exponential backoff with jitter
+      const baseDelay = CONFIG.reconnectDelay;
+      const exponentialDelay = Math.min(baseDelay * Math.pow(2, this.reconnectAttempts - 1), CONFIG.maxReconnectDelay);
+      const jitter = Math.random() * 1000; // Add up to 1 second of jitter
+      const delay = exponentialDelay + jitter;
+      
+      console.log(`🔄 Attempting reconnection in ${(delay / 1000).toFixed(1)}s (${this.reconnectAttempts}/${CONFIG.maxReconnectAttempts})`);
+      
+      setTimeout(() => {
+        if (this.reconnectAttempts <= CONFIG.maxReconnectAttempts) {
+          this.connectToCSGOEmpire();
+        }
+      }, delay);
+    } else {
+      console.error(`❌ Max reconnection attempts reached (${CONFIG.maxReconnectAttempts}). Stopping automatic reconnection.`);
+      console.log('🔄 You can restart the server to begin reconnection attempts again.');
+      this.connectionState = 'error';
+    }
+  }
+
+  // 🔥 NEW: Heartbeat mechanism to keep connection alive
+  startHeartbeat() {
+    this.stopHeartbeat(); // Clear any existing heartbeat
+    
+    this.heartbeatTimer = setInterval(() => {
+      if (this.csgoSocket && this.connectionState === 'connected') {
+        try {
+          // Send a lightweight ping to keep connection alive
+          this.csgoSocket.emit('ping', { timestamp: Date.now() });
+        } catch (error) {
+          console.error('❌ Heartbeat failed:', error);
+          this.handleDisconnection('heartbeat_failed');
+        }
+      }
+    }, CONFIG.heartbeatInterval);
+    
+    console.log(`💓 Heartbeat started (every ${CONFIG.heartbeatInterval / 1000}s)`);
+  }
+
+  // 🔥 NEW: Stop heartbeat
+  stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
     }
   }
 
@@ -338,58 +926,130 @@ class KeychainMonitorServer {
       id: item.id,
       market_name: item.market_name,
       market_value: item.market_value,
+      purchase_price: item.purchase_price,
       suggested_price: item.suggested_price,
       above_recommended_price: item.above_recommended_price,
-      wear: item.wear, // 🔥 NEW: Store float value
+      wear: item.wear,
       keychains: item.keychains ? item.keychains.map(k => k.name) : [],
+      charm_category: item.charm_category,
+      charm_name: item.charm_name,
+      charm_price: item.charm_price,
+      charm_price_display: item.charm_price_display,
+      notification_type: item.notification_type || 'keychain',
+      target_item_matched: item.target_item_matched,
       published_at: item.published_at,
-      timestamp: Date.now() // When notification was created
+      timestamp: Date.now()
     };
 
-    // Add to beginning of array (newest first)
     this.notificationHistory.unshift(notificationItem);
 
-    // Keep only notifications from last 30 minutes + some buffer
-    const oneHourAgo = Date.now() - (60 * 60 * 1000); // Keep 1 hour for safety
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
     this.notificationHistory = this.notificationHistory.filter(item => item.timestamp > oneHourAgo);
 
     console.log(`💾 Stored notification in history: ${item.market_name} (Float: ${item.wear ? item.wear.toFixed(6) : 'N/A'}) (Total: ${this.notificationHistory.length})`);
   }
 
+  // Process items with comprehensive filtering and Item Target List support
   processItems(items) {
     if (!Array.isArray(items)) {
       items = [items];
     }
 
     items.forEach(item => {
-      // Skip if we've already notified about this item
+      this.stats.itemsProcessed++;
+      
       if (this.notifiedItems.has(item.id)) {
         return;
       }
 
-      // Check if item has target keychain and good price
-      if (this.hasTargetKeychain(item)) {
-        const priceCheck = this.isGoodPrice(item);
+      console.log(`🔍 Processing item: ${item.market_name}`);
+      console.log(`💰 Market: $${(item.market_value / 100).toFixed(2)}, Float: ${item.wear ? item.wear.toFixed(6) : 'N/A'}`);
+
+      // Check Item Target List first (higher priority)
+      const targetItemMatch = this.checkItemTargetList(item);
+      if (targetItemMatch) {
+        console.log(`🎯 Found target item match: ${targetItemMatch.name}`);
         
-        if (priceCheck.isGood) {
-          console.log('🔑 TARGET FOUND!');
-          console.log(`📦 Item: ${item.market_name}`);
-          console.log(`🔑 Keychains: ${item.keychains.map(k => k.name).join(', ')}`);
-          console.log(`💰 Market Value: ${(item.market_value / 100).toFixed(2)}`);
-          console.log(`💰 Purchase Price: ${(item.purchase_price / 100).toFixed(2)}`);
-          console.log(`🎯 Float: ${item.wear ? item.wear.toFixed(6) : 'Unknown'}`); // 🔥 NEW: Log float
-          console.log(`📈 Above Recommended: ${item.above_recommended_price}%`);
-          console.log(`✅ Reason: ${priceCheck.reason}`);
-          console.log(`🆔 ID: ${item.id}`);
-          console.log('─'.repeat(50));
+        const priceCheck = this.isGoodPrice(item);
+        if (!priceCheck.isGood) {
+          this.stats.itemsFiltered++;
+          this.incrementFilterReason('price_filter_target_item');
+          console.log(`🚫 FILTERED: Target item price filter failed`);
+          return;
+        }
+        
+        const floatCheck = this.checkFloatFilter(item, targetItemMatch);
+        if (!floatCheck.isGood) {
+          this.stats.itemsFiltered++;
+          this.incrementFilterReason('float_filter_target_item');
+          console.log(`🚫 FILTERED: Target item float filter failed`);
+          return;
+        }
 
-          // STORE IN NOTIFICATION HISTORY with float value
+        console.log('🎉 🎯 TARGET ITEM FOUND - ALL FILTERS PASSED! 🎯 🎉');
+        
+        item.notification_type = 'target_item';
+        item.target_item_matched = targetItemMatch;
+
+        this.storeNotification(item);
+        this.notifiedItems.add(item.id);
+        
+        if (this.notifiedItems.size > 1000) {
+          const itemsArray = Array.from(this.notifiedItems);
+          this.notifiedItems = new Set(itemsArray.slice(-500));
+        }
+
+        this.stats.itemsFound++;
+        this.stats.lastItemFound = Date.now();
+
+        this.notifyClients('ITEM_TARGET_FOUND', item);
+        
+        return;
+      }
+
+      // Check for keychains if no target item match
+      if (item.keychains && item.keychains.length > 0) {
+        console.log(`🔑 Keychains: ${item.keychains.map(k => k.name).join(', ')}`);
+        
+        const charmDetails = this.getCharmDetails(item);
+
+        if (charmDetails) {
+          console.log(`🎯 Found target charm: ${charmDetails.name} (${charmDetails.category}) - $${charmDetails.price.toFixed(2)}`);
+          
+          if (!CONFIG.enabledKeychains.has(charmDetails.name)) {
+            this.stats.itemsFiltered++;
+            this.incrementFilterReason('keychain_disabled');
+            console.log(`🚫 FILTERED: Keychain "${charmDetails.name}" disabled in settings`);
+            return;
+          }
+
+          const priceCheck = this.isGoodPrice(item);
+          if (!priceCheck.isGood) {
+            this.stats.itemsFiltered++;
+            this.incrementFilterReason('price_filter');
+            console.log(`🚫 FILTERED: Price filter failed`);
+            return;
+          }
+          
+          const keychainPercentageCheck = this.checkKeychainPercentage(item, charmDetails);
+          if (!keychainPercentageCheck.isGood) {
+            this.stats.itemsFiltered++;
+            this.incrementFilterReason('keychain_percentage');
+            console.log(`🚫 FILTERED: Keychain percentage too low`);
+            return;
+          }
+
+          console.log('🎉 🔑 TARGET FOUND - ALL FILTERS PASSED! 🔑 🎉');
+
+          item.charm_category = charmDetails.category;
+          item.charm_name = charmDetails.name;
+          item.charm_price = charmDetails.price;
+          item.charm_price_display = this.formatCharmPrice(charmDetails.price, item.purchase_price);
+          item.notification_type = 'keychain';
+
           this.storeNotification(item);
-
-          // Add to notified items to prevent duplicates
           this.notifiedItems.add(item.id);
           
-          // Clean up old entries to prevent memory leak
           if (this.notifiedItems.size > 1000) {
             const itemsArray = Array.from(this.notifiedItems);
             this.notifiedItems = new Set(itemsArray.slice(-500));
@@ -398,32 +1058,158 @@ class KeychainMonitorServer {
           this.stats.keychainsFound++;
           this.stats.lastKeychainFound = Date.now();
 
-          // Notify all connected extensions
           this.notifyClients('KEYCHAIN_FOUND', item);
         } else {
-          console.log('🚫 Keychain found but price filtering failed:');
-          console.log(`📦 Item: ${item.market_name}`);
-          console.log(`🔑 Keychains: ${item.keychains.map(k => k.name).join(', ')}`);
-          console.log(`💰 Purchase Price: ${(item.purchase_price / 100).toFixed(2)}`);
-          console.log(`🎯 Float: ${item.wear ? item.wear.toFixed(6) : 'Unknown'}`);
-          console.log(`📈 Above Recommended: ${item.above_recommended_price}%`);
-          console.log(`❌ Reason: ${priceCheck.reason}`);
-          console.log('─'.repeat(50));
+          console.log(`🔍 Unknown keychains found: ${item.keychains.map(k => k.name).join(', ')}`);
+          this.stats.itemsFiltered++;
+          this.incrementFilterReason('unknown_keychain');
         }
       }
     });
   }
 
+  // Check if item matches any target item in the list
+  checkItemTargetList(item) {
+    if (!item.market_name || CONFIG.itemTargetList.length === 0) {
+      return null;
+    }
+
+    const itemName = item.market_name.toLowerCase();
+    
+    for (const targetItem of CONFIG.itemTargetList) {
+      const targetName = targetItem.name.toLowerCase();
+      
+      if (itemName.includes(targetName) || targetName.includes(itemName)) {
+        console.log(`✅ Item name match found: "${targetItem.name}" matches "${item.market_name}"`);
+        return targetItem;
+      }
+    }
+    
+    return null;
+  }
+
+  // Check float filter for target items
+  checkFloatFilter(item, targetItem) {
+    if (!targetItem.floatFilter || !targetItem.floatFilter.enabled) {
+      return { 
+        isGood: true, 
+        reason: 'Float filter disabled for this item' 
+      };
+    }
+
+    if (item.wear === undefined || item.wear === null) {
+      return { 
+        isGood: false, 
+        reason: 'Item has no float value but float filter is enabled' 
+      };
+    }
+
+    const itemFloat = parseFloat(item.wear);
+    const minFloat = targetItem.floatFilter.min;
+    const maxFloat = targetItem.floatFilter.max;
+
+    if (itemFloat >= minFloat && itemFloat <= maxFloat) {
+      return { 
+        isGood: true, 
+        reason: `Float ${itemFloat.toFixed(6)} is within range ${minFloat.toFixed(3)}-${maxFloat.toFixed(3)}` 
+      };
+    } else {
+      return { 
+        isGood: false, 
+        reason: `Float ${itemFloat.toFixed(6)} is outside range ${minFloat.toFixed(3)}-${maxFloat.toFixed(3)}` 
+      };
+    }
+  }
+
+  // Track filter reasons for debugging
+  incrementFilterReason(reason) {
+    if (!this.stats.filterReasons[reason]) {
+      this.stats.filterReasons[reason] = 0;
+    }
+    this.stats.filterReasons[reason]++;
+  }
+
+  // Enhanced function to get charm details from CONFIG.charmPricing
+  getCharmDetails(item) {
+    if (!item.keychains || !Array.isArray(item.keychains) || item.keychains.length === 0) {
+      return null;
+    }
+
+    for (const keychain of item.keychains) {
+      const keychainName = keychain.name;
+      if (!keychainName) continue;
+
+      for (const category in CONFIG.charmPricing) {
+        if (CONFIG.charmPricing[category].hasOwnProperty(keychainName)) {
+          return {
+            category: category,
+            name: keychainName,
+            price: CONFIG.charmPricing[category][keychainName]
+          };
+        }
+      }
+    }
+    return null;
+  }
+
+  // Check if keychain meets percentage threshold with detailed logging
+  checkKeychainPercentage(item, charmDetails) {
+    const marketValue = item.market_value ? (item.market_value / 100) : 0;
+    const charmPrice = charmDetails.price;
+    
+    if (marketValue <= 0) {
+      return { 
+        isGood: false, 
+        reason: 'Market value is zero or unknown',
+        percentage: 0
+      };
+    }
+    
+    const percentage = (charmPrice / marketValue) * 100;
+    
+    if (percentage >= CONFIG.keychainPercentageThreshold) {
+      return { 
+        isGood: true, 
+        reason: `Charm is ${percentage.toFixed(2)}% of market value (≥${CONFIG.keychainPercentageThreshold}%)`,
+        percentage: percentage
+      };
+    } else {
+      return { 
+        isGood: false, 
+        reason: `Charm is ${percentage.toFixed(2)}% of market value (<${CONFIG.keychainPercentageThreshold}%)`,
+        percentage: percentage
+      };
+    }
+  }
+
+  // Enhanced function to format charm price display
+  formatCharmPrice(charmPrice, purchasePriceCents) {
+    if (purchasePriceCents === undefined || purchasePriceCents === null) {
+      return "N/A (Purchase Price Unknown)";
+    }
+
+    const purchasePriceDollars = purchasePriceCents / 100;
+
+    if (purchasePriceDollars === 0) {
+        return "N/A (Purchase Price is Zero)";
+    }
+
+    if (charmPrice > purchasePriceDollars) {
+      const multiplier = (charmPrice / purchasePriceDollars).toFixed(2);
+      return `${multiplier}× above purchase`;
+    } else {
+      const percentage = (charmPrice / purchasePriceDollars * 100).toFixed(2);
+      return `${percentage}% of purchase price`;
+    }
+  }
+
   isGoodPrice(item) {
-    // Use the above_recommended_price field directly from CSGOEmpire
     const aboveRecommended = item.above_recommended_price;
     
-    // Reject items with unknown percentage
     if (aboveRecommended === undefined || aboveRecommended === null || isNaN(aboveRecommended)) {
       return { isGood: false, reason: 'Unknown percentage above recommended' };
     }
     
-    // Check if within the configured range
     if (aboveRecommended >= CONFIG.minAboveRecommended && aboveRecommended <= CONFIG.maxAboveRecommended) {
       return { isGood: true, reason: `Within range ${CONFIG.minAboveRecommended}% to ${CONFIG.maxAboveRecommended}% (${aboveRecommended}%)` };
     } else {
@@ -432,20 +1218,7 @@ class KeychainMonitorServer {
   }
 
   hasTargetKeychain(item) {
-    // Check if item has keychains
-    if (!item.keychains || !Array.isArray(item.keychains) || item.keychains.length === 0) {
-      return false;
-    }
-
-    // Check if any keychain matches our target list
-    return item.keychains.some(keychain => {
-      if (!keychain.name) return false;
-      
-      return CONFIG.targetKeychains.some(targetName => 
-        keychain.name.toLowerCase().includes(targetName.toLowerCase()) ||
-        targetName.toLowerCase().includes(keychain.name.toLowerCase())
-      );
-    });
+    return !!this.getCharmDetails(item);
   }
 
   notifyClients(type, data) {
@@ -462,10 +1235,17 @@ class KeychainMonitorServer {
 }
 
 // Start the server
-console.log('🚀 Starting Keychain Monitor Server...');
+console.log('🚀 Starting Enhanced Monitor Server with Persistent Storage & High Availability...');
 console.log('📋 Monitoring for keychains:', CONFIG.targetKeychains.length);
+console.log('🎯 Item Target List:', CONFIG.itemTargetList.length, 'items');
 console.log('💰 Price filter range:', CONFIG.minAboveRecommended + '% to ' + CONFIG.maxAboveRecommended + '% above recommended');
+console.log('📊 Keychain percentage threshold:', CONFIG.keychainPercentageThreshold + '% of market value');
+console.log('🔑 Enabled keychains:', Array.from(CONFIG.enabledKeychains).length + '/' + CONFIG.targetKeychains.length);
+console.log('🎯 Float filter enabled:', CONFIG.floatFilterEnabled);
 console.log('🔑 API Key configured:', CONFIG.apiKey !== "YOUR_API_KEY_HERE" ? '✅' : '❌');
+console.log('💾 Settings will be saved to:', SETTINGS_FILE);
+console.log('🔄 Max reconnection attempts:', CONFIG.maxReconnectAttempts);
+console.log('💓 Heartbeat interval:', CONFIG.heartbeatInterval / 1000 + 's');
 
 if (CONFIG.apiKey === "YOUR_API_KEY_HERE") {
   console.error('❌ Please set your CSGOEmpire API key in the CONFIG object at the top of this file');
@@ -473,9 +1253,3 @@ if (CONFIG.apiKey === "YOUR_API_KEY_HERE") {
 }
 
 new KeychainMonitorServer();
-
-// Handle graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\n🛑 Shutting down server...');
-  process.exit(0);
-});

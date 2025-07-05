@@ -12,14 +12,14 @@
         }
 
         body {
-            width: 400px;
+            width: 420px;
             padding: 0;
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
             color: #e2e8f0;
             position: relative;
             overflow: hidden;
-            min-height: 650px;
+            min-height: 700px;
             transition: all 0.3s ease;
         }
 
@@ -81,7 +81,7 @@
             to { transform: translateY(-200px); }
         }
 
-        /* 🔥 IMPROVED: Completely invisible shooting star head - only trail visible */
+        /* Shooting star CSS animations */
         .shooting-star {
             position: fixed;
             width: 0px;
@@ -90,7 +90,6 @@
             z-index: -1;
         }
 
-        /* 🔥 FIXED: Pure trail effect with no dot artifact */
         .shooting-star::after {
             content: '';
             position: absolute;
@@ -104,7 +103,7 @@
             transform: rotate(45deg);
         }
 
-        /* 🔥 IMPROVED: Randomized, organic shooting star animations */
+        /* Shooting star animations */
         @keyframes shootingStar1 {
             0% {
                 transform: translateX(-120px) translateY(-80px);
@@ -190,7 +189,6 @@
             }
         }
 
-        /* 🔥 IMPROVED: Completely scattered, natural star positioning */
         .shooting-star:nth-child(1) {
             animation: shootingStar1 4.2s linear infinite;
             animation-delay: 0.3s;
@@ -232,7 +230,8 @@
         body.theme-shooting-star .server-info,
         body.theme-shooting-star .status,
         body.theme-shooting-star .stat-card,
-        body.theme-shooting-star .theme-selector {
+        body.theme-shooting-star .theme-selector,
+        body.theme-shooting-star .item-target-list {
             background: rgba(20, 20, 40, 0.85);
             border: 1px solid rgba(135, 206, 235, 0.3);
             box-shadow: 0 8px 32px rgba(135, 206, 235, 0.15);
@@ -243,7 +242,8 @@
         body.theme-shooting-star .server-info:hover,
         body.theme-shooting-star .status:hover,
         body.theme-shooting-star .stat-card:hover,
-        body.theme-shooting-star .theme-selector:hover {
+        body.theme-shooting-star .theme-selector:hover,
+        body.theme-shooting-star .item-target-list:hover {
             border-color: rgba(135, 206, 235, 0.5);
             box-shadow: 0 12px 40px rgba(135, 206, 235, 0.25);
         }
@@ -297,7 +297,8 @@
 
         body.theme-shooting-star .control-panel h3,
         body.theme-shooting-star .settings-section h3,
-        body.theme-shooting-star .theme-selector h3 {
+        body.theme-shooting-star .theme-selector h3,
+        body.theme-shooting-star .item-target-list h3 {
             background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -615,6 +616,235 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
+        }
+
+        /* ===== NEW: ITEM TARGET LIST STYLES ===== */
+        .item-target-list {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 22px;
+            margin-bottom: 22px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .item-target-list::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.4), transparent);
+        }
+
+        .item-target-list:hover {
+            border-color: rgba(102, 126, 234, 0.25);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .item-target-list h3 {
+            margin: 0 0 22px 0;
+            font-size: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
+        .add-item-form {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 14px;
+            align-items: end;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .form-group.narrow {
+            flex: 0 0 80px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(30, 32, 41, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            color: white;
+            padding: 12px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+            background: rgba(30, 32, 41, 1);
+        }
+
+        .form-input::placeholder {
+            color: #64748b;
+            font-style: italic;
+        }
+
+        .add-item-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .add-item-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        body.theme-shooting-star .add-item-btn {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+        }
+
+        body.theme-shooting-star .add-item-btn:hover {
+            box-shadow: 0 8px 25px rgba(135, 206, 235, 0.4);
+        }
+
+        .items-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .item-entry {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            gap: 12px;
+        }
+
+        .item-entry:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .item-keyword {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 6px;
+            word-break: break-word;
+        }
+
+        .item-wear-range {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .wear-badge {
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            color: #667eea;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        body.theme-shooting-star .wear-badge {
+            background: rgba(135, 206, 235, 0.2);
+            border-color: rgba(135, 206, 235, 0.3);
+            color: #87ceeb;
+        }
+
+        .remove-item-btn {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: #f87171;
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .remove-item-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+            transform: scale(1.05);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            color: #64748b;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .items-count {
+            font-size: 12px;
+            color: #94a3b8;
+            text-align: center;
+            margin-bottom: 16px;
+            font-weight: 500;
         }
 
         /* ===== THEME SELECTOR SECTION ===== */
@@ -1014,6 +1244,302 @@
             box-shadow: 0 8px 30px rgba(255, 255, 255, 0.08);
         }
 
+        /* 🔥 NEW: Keychain Filter Styles */
+        .keychain-filter {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 18px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .keychain-filter::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+        }
+
+        .keychain-filter:hover {
+            border-color: rgba(102, 126, 234, 0.2);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.1);
+        }
+
+        .keychain-filter h3 {
+            margin: 0 0 18px 0;
+            font-size: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+
+        .percentage-slider {
+            margin-bottom: 18px;
+        }
+
+        .percentage-slider label {
+            display: block;
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .percentage-slider input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(30, 32, 41, 0.9);
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .percentage-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+        }
+
+        .percentage-slider input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+        }
+
+        .percentage-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #667eea;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        body.theme-shooting-star .percentage-value {
+            color: #87ceeb;
+        }
+
+        .keychain-list-toggle {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #e2e8f0;
+            padding: 14px 18px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .keychain-list-toggle:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .keychain-list-toggle .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .keychain-list-toggle.expanded .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .keychain-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: rgba(30, 32, 41, 0.7);
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .keychain-list.expanded {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .keychain-list-header {
+            padding: 15px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .keychain-count {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .select-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .select-btn {
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            color: #667eea;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .select-btn:hover {
+            background: rgba(102, 126, 234, 0.3);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        body.theme-shooting-star .select-btn {
+            background: rgba(135, 206, 235, 0.2);
+            border-color: rgba(135, 206, 235, 0.3);
+            color: #87ceeb;
+        }
+
+        body.theme-shooting-star .select-btn:hover {
+            background: rgba(135, 206, 235, 0.3);
+            border-color: rgba(135, 206, 235, 0.5);
+        }
+
+        .keychain-items {
+            padding: 15px 18px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .keychain-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .keychain-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .keychain-item.red {
+            border-left: 3px solid #ef4444;
+        }
+
+        .keychain-item.pink {
+            border-left: 3px solid #ec4899;
+        }
+
+        .keychain-item.purple {
+            border-left: 3px solid #a855f7;
+        }
+
+        .keychain-item.blue {
+            border-left: 3px solid #3b82f6;
+        }
+
+        .keychain-checkbox {
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            position: relative;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .keychain-checkbox.checked {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+        }
+
+        body.theme-shooting-star .keychain-checkbox.checked {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            border-color: #87ceeb;
+        }
+
+        .keychain-checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .keychain-info {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .keychain-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .keychain-price {
+            font-size: 12px;
+            font-weight: 700;
+            opacity: 0.8;
+        }
+
+        .keychain-item.red .keychain-price {
+            color: #ef4444;
+        }
+
+        .keychain-item.pink .keychain-price {
+            color: #ec4899;
+        }
+
+        .keychain-item.purple .keychain-price {
+            color: #a855f7;
+        }
+
+        .keychain-item.blue .keychain-price {
+            color: #3b82f6;
+        }
+
         /* Enhanced server info */
         .server-info {
             background: rgba(255, 255, 255, 0.06);
@@ -1143,7 +1669,7 @@
     </style>
 </head>
 <body class="theme-nebula">
-    <!-- 🔥 IMPROVED: More shooting stars with organic timing -->
+    <!-- Shooting stars -->
     <div class="shooting-star"></div>
     <div class="shooting-star"></div>
     <div class="shooting-star"></div>
@@ -1239,7 +1765,7 @@
                 </div>
             </div>
 
-            <!-- 🔥 MOVED: Theme selector positioned below stats and above Test Notification -->
+            <!-- Theme selector positioned below stats and above Test Notification -->
             <div class="theme-selector">
                 <h3>
                     <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1266,8 +1792,6 @@
             <div id="errorMessage" class="error" style="display: none;">
                 Server not running! Please start the Node.js server first.
             </div>
-
-            <!-- 🔥 REMOVED: Redundant success message eliminated -->
 
             <div id="actionButtons">
                 <!-- Enhanced Action Buttons -->
@@ -1321,6 +1845,58 @@
         </div>
 
         <div id="settingsTab" class="tab-content">
+            <!-- ===== NEW: ITEM TARGET LIST SECTION ===== -->
+            <div class="item-target-list">
+                <h3>
+                    <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
+                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                    </svg>
+                    Item Target List
+                </h3>
+                
+                <div class="add-item-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Item Keyword</label>
+                            <input type="text" class="form-input" id="itemKeyword" placeholder="e.g., AWP | Hyper Beast, Glock-18 | Shinobu" />
+                        </div>
+                        <button class="add-item-btn" id="addItemBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14m-7-7h14"/>
+                            </svg>
+                            Add
+                        </button>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group narrow">
+                            <label class="form-label">Min Float</label>
+                            <input type="number" class="form-input" id="minFloat" placeholder="0.00" step="0.01" min="0" max="1" />
+                        </div>
+                        <div class="form-group narrow">
+                            <label class="form-label">Max Float</label>
+                            <input type="number" class="form-input" id="maxFloat" placeholder="1.00" step="0.01" min="0" max="1" />
+                        </div>
+                        <div class="form-group">
+                            <span style="font-size: 12px; color: #64748b; font-style: italic; display: block; margin-top: 20px;">
+                                Leave float fields empty to match any wear value (0.00-1.00)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="items-count" id="itemsCount">
+                    0 items being monitored
+                </div>
+                
+                <div class="items-list" id="itemsList">
+                    <div class="empty-state">
+                        No items added yet. Add keywords above to start monitoring specific items.
+                    </div>
+                </div>
+            </div>
+
             <div class="settings-section">
                 <h3>
                     <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1356,6 +1932,49 @@
                 </button>
             </div>
 
+            <!-- 🔥 NEW: Keychain Filter Section -->
+            <div class="keychain-filter">
+                <h3>
+                    <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                    </svg>
+                    Keychain Filter
+                </h3>
+                
+                <div class="percentage-slider">
+                    <label>Minimum Charm Value (% of Item Value)</label>
+                    <input type="range" id="keychainPercentage" min="0" max="100" value="50" step="5">
+                    <div class="percentage-value" id="percentageValue">50% of item value</div>
+                </div>
+                
+                <button class="keychain-list-toggle" id="keychainListToggle">
+                    <span>Target Keychains (<span id="enabledCount"></span>)
+                    <span class="toggle-icon">▼</span>
+                </button>
+                
+                <div class="keychain-list" id="keychainList">
+                    <div class="keychain-list-header">
+                        <div class="keychain-count">Select which keychains to monitor</div>
+                        <div class="select-buttons">
+                            <button class="select-btn" id="selectAll">All</button>
+                            <button class="select-btn" id="selectNone">None</button>
+                        </div>
+                    </div>
+                    <div class="keychain-items" id="keychainItems">
+                        <!-- Keychain items will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <button class="button" id="saveKeychainFilter" style="margin-top: 14px;">
+                    <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17,21 17,13 7,13 7,21"/>
+                        <polyline points="7,3 7,8 15,8"/>
+                    </svg>
+                    Save Keychain Settings
+                </button>
+            </div>
+
             <div class="settings-section">
                 <h3>
                     <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1370,26 +1989,6 @@
                         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                     </svg>
                     Enable Notifications
-                </button>
-            </div>
-
-            <div class="settings-section">
-                <h3>
-                    <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 12l2 2 4-4"/>
-                        <path d="M21 12c.552 0 1-.448 1-1V8a2 2 0 0 0-2-2h-5L9.293 0.293A1 1 0 0 0 8.586 0H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3c0-.552-.448-1-1-1z"/>
-                    </svg>
-                    Target Keychains
-                </h3>
-                <div style="font-size: 12px; color: #64748b; margin-bottom: 14px; font-weight: 500;">
-                    Currently monitoring <span id="keychainCount" style="color: #667eea; font-weight: 700;">33</span> keychain types
-                </div>
-                <button class="button secondary" id="viewKeychains">
-                    <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                    View Target List
                 </button>
             </div>
         </div>

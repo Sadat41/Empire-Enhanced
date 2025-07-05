@@ -1,4 +1,4 @@
-// content-script.js - FIXED VERSION - Better site theming coordination
+// content-script.js - Enhanced with working charm pricing and Item Target support
 (function() {
   if (window.empireEnhancedLoaded) {
     console.log('Empire Enhanced already loaded, skipping...');
@@ -6,7 +6,9 @@
   }
   window.empireEnhancedLoaded = true;
 
-// Content script for CSGOEmpire keychain notifications overlay with SAFE site theming
+  console.log('🔥 EMPIRE ENHANCED CONTENT SCRIPT v2.2 LOADED WITH ITEM TARGET SUPPORT');
+
+// Content script for CSGOEmpire notifications overlay with enhanced charm pricing and item targets
 class CSGOEmpireNotificationOverlay {
   constructor() {
     this.notifications = [];
@@ -16,6 +18,59 @@ class CSGOEmpireNotificationOverlay {
     this.monitoringEnabled = true;
     this.currentTheme = 'shooting-star'; // Default theme
     this.siteThemingEnabled = true; // Site theming state
+    
+    // Charm category color mapping
+    this.charmColors = {
+      'Red': '#ef4444',      // Red
+      'Pink': '#ec4899',     // Pink
+      'Purple': '#a855f7',   // Purple
+      'Blue': '#3b82f6'      // Blue
+    };
+    
+    // 🔥 ENHANCED: Enhanced fallback charm pricing for offline mode (matches server exactly)
+    this.fallbackCharmPricing = {
+      "Red": {
+        "Hot Howl": 70.0,
+        "Baby Karat T": 50.0,
+        "Hot Wurst": 30.0,
+        "Baby Karat CT": 30.0
+      },
+      "Pink": {
+        "Semi-Precious": 40.0,
+        "Diamond Dog": 25.0,
+        "Titeenium AWP": 10.0,
+        "Lil' Monster": 10.0,
+        "Diner Dog": 5.00,
+        "Lil' Squirt": 5.00
+      },
+      "Purple": {
+        "Die-cast AK": 9.00,
+        "Lil' Teacup": 4.50,
+        "Chicken Lil'": 3.00,
+        "That's Bananas": 3.00,
+        "Lil' Whiskers": 3.00,
+        "Glamour Shot": 2.50,
+        "Lil' Sandy": 2.50,
+        "Hot Hands": 2.00,
+        "POP Art": 2.00,
+        "Disco MAC": 1.60,
+        "Lil' Squatch": 1.50
+      },
+      "Blue": {
+        "Lil' SAS": 1.00,
+        "Baby's AK": 0.80,
+        "Hot Sauce": 0.90,
+        "Pinch O' Salt": 1.0,
+        "Big Kev": 0.70,
+        "Whittle Knife": 0.65,
+        "Lil' Crass": 0.60,
+        "Pocket AWP": 0.60,
+        "Lil' Ava": 0.50,
+        "Stitch-Loaded": 0.30,
+        "Backsplash": 0.28,
+        "Lil' Cap Gun": 0.30
+      }
+    };
     
     this.init();
   }
@@ -38,8 +93,17 @@ class CSGOEmpireNotificationOverlay {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       switch (message.type) {
         case 'KEYCHAIN_FOUND':
+          console.log('🔍 DEBUG: Received KEYCHAIN_FOUND message:', message.data);
           if (this.monitoringEnabled) {
             this.showKeychainNotification(message.data);
+          }
+          sendResponse({success: true});
+          break;
+        case 'ITEM_TARGET_FOUND':
+          // 🔥 NEW: Handle item target notifications
+          console.log('🎯 DEBUG: Received ITEM_TARGET_FOUND message:', message.data);
+          if (this.monitoringEnabled) {
+            this.showItemTargetNotification(message.data);
           }
           sendResponse({success: true});
           break;
@@ -249,6 +313,12 @@ class CSGOEmpireNotificationOverlay {
         0%, 100% { box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05); }
         50% { box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1); }
       }
+
+      /* 🔥 NEW: Item target specific animations */
+      @keyframes targetPulse {
+        0%, 100% { box-shadow: 0 8px 32px rgba(16, 185, 129, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05); }
+        50% { box-shadow: 0 12px 40px rgba(16, 185, 129, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1); }
+      }
       
       /* SAFE: Only target our notification elements with specific IDs/classes */
       #keychain-notification-container .keychain-notification {
@@ -270,6 +340,14 @@ class CSGOEmpireNotificationOverlay {
         background-clip: text;
         display: inline-block;
       }
+
+      /* 🔥 NEW: Item target gradient text */
+      #keychain-notification-container .gradient-text.item-target {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
       
       #keychain-notification-container .premium-button {
         border: none;
@@ -284,6 +362,85 @@ class CSGOEmpireNotificationOverlay {
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
       }
 
+      /* Enhanced charm display styles */
+      #keychain-notification-container .charm-info {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        border-left: 3px solid;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* 🔥 NEW: Item target info styles */
+      #keychain-notification-container .target-info {
+        background: rgba(16, 185, 129, 0.1);
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        border-left: 3px solid #10b981;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      #keychain-notification-container .charm-icon,
+      #keychain-notification-container .target-icon {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: bold;
+        color: white;
+        flex-shrink: 0;
+      }
+
+      #keychain-notification-container .target-icon {
+        background: #10b981;
+      }
+
+      #keychain-notification-container .charm-details,
+      #keychain-notification-container .target-details {
+        flex: 1;
+        min-width: 0;
+      }
+
+      #keychain-notification-container .charm-name,
+      #keychain-notification-container .target-keyword {
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 2px;
+        word-break: break-word;
+      }
+
+      #keychain-notification-container .target-keyword {
+        color: #10b981;
+      }
+
+      #keychain-notification-container .charm-price,
+      #keychain-notification-container .target-description {
+        font-size: 11px;
+        opacity: 0.8;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      #keychain-notification-container .price-badge {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
       /* ===== THEME 1: NEBULA STYLES ===== */
       .keychain-notification-container.theme-nebula .keychain-notification {
         background: rgba(255, 255, 255, 0.06);
@@ -292,16 +449,35 @@ class CSGOEmpireNotificationOverlay {
         box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
       }
 
+      .keychain-notification-container.theme-nebula .keychain-notification.item-target {
+        box-shadow: 0 8px 32px rgba(16, 185, 129, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      }
+
       .keychain-notification-container.theme-nebula .keychain-notification:hover {
         box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+      }
+
+      .keychain-notification-container.theme-nebula .keychain-notification.item-target:hover {
+        box-shadow: 0 20px 40px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
       }
 
       .keychain-notification-container.theme-nebula .pulse-glow { 
         animation: pulseGlow 3s infinite; 
       }
 
+      .keychain-notification-container.theme-nebula .pulse-glow.item-target { 
+        animation: targetPulse 3s infinite; 
+      }
+
       .keychain-notification-container.theme-nebula .gradient-text {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .keychain-notification-container.theme-nebula .gradient-text.item-target {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -312,8 +488,17 @@ class CSGOEmpireNotificationOverlay {
         box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
       }
 
+      .keychain-notification-container.theme-nebula .premium-button.item-target {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      }
+
       .keychain-notification-container.theme-nebula .premium-button:hover {
         box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+      }
+
+      .keychain-notification-container.theme-nebula .premium-button.item-target:hover {
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
       }
 
       .keychain-notification-container.theme-nebula .secondary-button {
@@ -336,6 +521,11 @@ class CSGOEmpireNotificationOverlay {
         overflow: hidden;
       }
 
+      .keychain-notification-container.theme-shooting-star .keychain-notification.item-target {
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15), 0 0 0 1px rgba(16, 185, 129, 0.1);
+      }
+
       .keychain-notification-container.theme-shooting-star .keychain-notification::before {
         content: '';
         position: absolute;
@@ -354,6 +544,14 @@ class CSGOEmpireNotificationOverlay {
         z-index: -1;
       }
 
+      .keychain-notification-container.theme-shooting-star .keychain-notification.item-target::before {
+        background: 
+          radial-gradient(1px 1px at 20% 30%, rgba(16, 185, 129, 0.4), transparent),
+          radial-gradient(1px 1px at 80% 70%, rgba(5, 150, 105, 0.3), transparent),
+          radial-gradient(1px 1px at 60% 20%, rgba(16, 185, 129, 0.2), transparent),
+          radial-gradient(1px 1px at 40% 80%, rgba(5, 150, 105, 0.3), transparent);
+      }
+
       @keyframes starFieldMove {
         0% { transform: translateY(0px); }
         100% { transform: translateY(-20px); }
@@ -364,8 +562,20 @@ class CSGOEmpireNotificationOverlay {
         border-color: rgba(135, 206, 235, 0.5);
       }
 
+      .keychain-notification-container.theme-shooting-star .keychain-notification.item-target:hover {
+        box-shadow: 0 20px 40px rgba(16, 185, 129, 0.25), 0 0 0 1px rgba(16, 185, 129, 0.2) !important;
+        border-color: rgba(16, 185, 129, 0.5);
+      }
+
       .keychain-notification-container.theme-shooting-star .gradient-text {
         background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .keychain-notification-container.theme-shooting-star .gradient-text.item-target {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -376,8 +586,17 @@ class CSGOEmpireNotificationOverlay {
         box-shadow: 0 4px 15px rgba(135, 206, 235, 0.3);
       }
 
+      .keychain-notification-container.theme-shooting-star .premium-button.item-target {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      }
+
       .keychain-notification-container.theme-shooting-star .premium-button:hover {
         box-shadow: 0 8px 25px rgba(135, 206, 235, 0.5);
+      }
+
+      .keychain-notification-container.theme-shooting-star .premium-button.item-target:hover {
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
       }
 
       .keychain-notification-container.theme-shooting-star .secondary-button {
@@ -402,6 +621,375 @@ class CSGOEmpireNotificationOverlay {
     document.head.appendChild(styles);
   }
 
+  // 🔥 ENHANCED: Fallback method to get charm details from fallback data (matches server logic exactly)
+  getFallbackCharmDetails(itemData) {
+    console.log('🔍 DEBUG: Using fallback charm detection for:', itemData);
+    
+    if (!itemData.keychains || !Array.isArray(itemData.keychains)) {
+      console.log('❌ No keychains array found');
+      return null;
+    }
+
+    for (const keychain of itemData.keychains) {
+      const keychainName = keychain.name || keychain;
+      console.log('🔍 Checking keychain:', keychainName);
+      
+      for (const category in this.fallbackCharmPricing) {
+        if (this.fallbackCharmPricing[category].hasOwnProperty(keychainName)) {
+          console.log('✅ Found charm in fallback data:', category, keychainName);
+          return {
+            category: category,
+            name: keychainName,
+            price: this.fallbackCharmPricing[category][keychainName]
+          };
+        }
+      }
+    }
+    
+    console.log('❌ No charm found in fallback data');
+    return null;
+  }
+
+  // 🔥 ENHANCED: Method to format charm information with consistent percentage calculation (matches server exactly)
+  formatCharmInfo(itemData) {
+    console.log('🔍 DEBUG: formatCharmInfo called with:', {
+      charm_name: itemData.charm_name,
+      charm_category: itemData.charm_category,
+      charm_price: itemData.charm_price,
+      keychains: itemData.keychains,
+      market_value: itemData.market_value
+    });
+
+    // Priority 1: Check if we have charm data from the server
+    if (itemData.charm_name && itemData.charm_category && itemData.charm_price !== undefined) {
+      console.log('✅ Using server-provided charm data');
+      const charmName = itemData.charm_name;
+      const charmCategory = itemData.charm_category;
+      const charmPrice = itemData.charm_price;
+      const marketValue = itemData.market_value ? (itemData.market_value / 100) : 0;
+      
+      // 🔥 CRITICAL: Calculate percentage EXACTLY like the server does
+      let percentageOfMarket = 0;
+      if (marketValue > 0 && charmPrice > 0) {
+        percentageOfMarket = (charmPrice / marketValue) * 100;
+      }
+      
+      const charmColor = this.charmColors[charmCategory] || '#ffffff';
+      const categoryIcon = this.getCategoryIcon(charmCategory);
+      
+      console.log('🔍 Server charm calculation:', {
+        charmPrice,
+        marketValue,
+        percentage: percentageOfMarket.toFixed(2)
+      });
+      
+      return {
+        hasCharmData: true,
+        charmName,
+        charmCategory,
+        charmPrice,
+        charmColor,
+        categoryIcon,
+        percentageOfMarket,
+        formattedDisplay: `${charmName} – $${charmPrice.toFixed(2)}`,
+        percentageDisplay: percentageOfMarket > 0 ? `${percentageOfMarket.toFixed(2)}% of market` : 'N/A'
+      };
+    }
+    
+    // Priority 2: Try fallback charm detection from local data
+    console.log('⚠️ No server charm data, trying fallback detection...');
+    const fallbackCharm = this.getFallbackCharmDetails(itemData);
+    
+    if (fallbackCharm) {
+      console.log('✅ Using fallback charm data');
+      const marketValue = itemData.market_value ? (itemData.market_value / 100) : 0;
+      
+      // 🔥 CRITICAL: Calculate percentage EXACTLY like the server does
+      let percentageOfMarket = 0;
+      if (marketValue > 0 && fallbackCharm.price > 0) {
+        percentageOfMarket = (fallbackCharm.price / marketValue) * 100;
+      }
+      
+      const charmColor = this.charmColors[fallbackCharm.category] || '#ffffff';
+      const categoryIcon = this.getCategoryIcon(fallbackCharm.category);
+      
+      console.log('🔍 Fallback charm calculation:', {
+        charmPrice: fallbackCharm.price,
+        marketValue: marketValue,
+        percentage: percentageOfMarket.toFixed(2)
+      });
+      
+      return {
+        hasCharmData: true,
+        charmName: fallbackCharm.name,
+        charmCategory: fallbackCharm.category,
+        charmPrice: fallbackCharm.price,
+        charmColor,
+        categoryIcon,
+        percentageOfMarket,
+        formattedDisplay: `${fallbackCharm.name} – $${fallbackCharm.price.toFixed(2)}`,
+        percentageDisplay: percentageOfMarket > 0 ? `${percentageOfMarket.toFixed(2)}% of market` : 'N/A'
+      };
+    }
+    
+    // Priority 3: Fallback to basic keychain names if no charm data
+    console.log('❌ No charm data found, using fallback display');
+    const keychainNames = itemData.keychains ? 
+      (Array.isArray(itemData.keychains) ? itemData.keychains.map(k => k.name || k).join(', ') : itemData.keychains) : 
+      'Unknown';
+      
+    return {
+      hasCharmData: false,
+      fallbackDisplay: keychainNames
+    };
+  }
+
+  getCategoryIcon(category) {
+    const icons = {
+      'Red': '🔴',
+      'Pink': '🌸',
+      'Purple': '🟣',
+      'Blue': '🔵'
+    };
+    return icons[category] || '🔑';
+  }
+
+  // 🔥 NEW: Show item target notification
+  showItemTargetNotification(itemData) {
+    if (!this.monitoringEnabled) {
+      console.log('🚫 Item target notification ignored - monitoring disabled');
+      return;
+    }
+
+    console.log('🎯 Showing item target notification overlay:', itemData);
+    console.log('🔍 DEBUG: Full item target data received:', JSON.stringify(itemData, null, 2));
+
+    // Check if we already have a notification for this item ID to prevent duplicates
+    const existingNotification = document.getElementById(`notification-${itemData.id}`);
+    if (existingNotification) {
+      console.log('🚫 Duplicate notification prevented for item:', itemData.id);
+      return;
+    }
+
+    // Check if sound is enabled
+    const soundEnabled = itemData.soundEnabled !== undefined ? itemData.soundEnabled : this.soundEnabled;
+
+    // Format the data
+    const marketValue = itemData.market_value ? (itemData.market_value / 100).toFixed(2) : 'Unknown';
+    const purchasePrice = itemData.purchase_price ? (itemData.purchase_price / 100).toFixed(2) : marketValue;
+    
+    // Get Float value from wear field
+    const floatValue = itemData.wear !== undefined && itemData.wear !== null ? 
+      parseFloat(itemData.wear).toFixed(6) : 'Unknown';
+    
+    const aboveRecommended = itemData.above_recommended_price !== undefined && itemData.above_recommended_price !== null && !isNaN(itemData.above_recommended_price) 
+      ? itemData.above_recommended_price.toFixed(2) 
+      : 'Unknown';
+
+    // Create notification element with unique ID based on item ID
+    const notification = document.createElement('div');
+    const notificationId = `notification-${itemData.id}`;
+    notification.id = notificationId;
+    notification.className = 'keychain-notification pulse-glow item-target'; // Add item-target class
+    notification.style.cssText = `
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      max-width: 320px;
+      min-width: 300px;
+      color: #e2e8f0;
+      pointer-events: auto;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+      position: relative;
+      overflow: hidden;
+    `;
+
+    // Create target icon SVG
+    const targetGradientId = `targetGradient${itemData.id}`;
+    const targetSVG = `
+      <svg class="crown-float crown-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="${targetGradientId}" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#059669;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#34d399;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <circle cx="12" cy="12" r="10" fill="none" stroke="url(#${targetGradientId})" stroke-width="2"/>
+        <circle cx="12" cy="12" r="6" fill="none" stroke="url(#${targetGradientId})" stroke-width="1.5"/>
+        <circle cx="12" cy="12" r="2" fill="url(#${targetGradientId})"/>
+      </svg>
+    `;
+
+    // Generate target info HTML
+    const targetKeyword = itemData.target_item_matched?.name || itemData.matched_keyword || 'Unknown';
+    const floatRange = itemData.target_item_matched?.floatFilter?.enabled 
+      ? `${itemData.target_item_matched.floatFilter.min.toFixed(3)} - ${itemData.target_item_matched.floatFilter.max.toFixed(3)}`
+      : 'Any float';
+
+    const targetDisplayHTML = `
+      <div class="target-info">
+        <div class="target-icon">🎯</div>
+        <div class="target-details">
+          <div class="target-keyword">
+            "${targetKeyword}"
+          </div>
+          <div class="target-description">
+            <span class="price-badge">Keyword Match</span>
+            <span style="opacity: 0.6;">${floatRange}</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    notification.innerHTML = `
+      <!-- Compact premium header -->
+      <div style="display: flex; align-items: center; margin-bottom: 12px;">
+        <div style="margin-right: 10px;">
+          ${targetSVG}
+        </div>
+        <div style="flex: 1;">
+          <div style="font-size: 14px; font-weight: 700; margin-bottom: 2px;" class="gradient-text item-target">
+            ITEM TARGET FOUND
+          </div>
+          <div style="font-size: 10px; opacity: 0.6; color: #94a3b8; font-weight: 500;">
+            Target Match!
+          </div>
+        </div>
+        <button onclick="this.closest('.keychain-notification').remove()" style="
+          background: rgba(239, 68, 68, 0.12);
+          border: 1px solid rgba(239, 68, 68, 0.25);
+          color: #f87171;
+          border-radius: 6px;
+          width: 24px;
+          height: 24px;
+          cursor: pointer;
+          font-size: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          font-weight: 600;
+        " onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.12)'">×</button>
+      </div>
+      
+      <!-- Premium item info section -->
+      <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+        <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #f1f5f9; line-height: 1.3; letter-spacing: -0.2px;">
+          ${itemData.market_name || 'Unknown Item'}
+        </div>
+        ${targetDisplayHTML}
+      </div>
+      
+      <!-- Compact price grid -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+        <div style="background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 8px; padding: 10px; text-align: center;">
+          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Market Value</div>
+          <div style="font-size: 14px; font-weight: 800; color: #22c55e;">$${marketValue}</div>
+        </div>
+        <div style="background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 10px; text-align: center;">
+          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Float</div>
+          <div style="font-size: 14px; font-weight: 800; color: #a855f7;">${floatValue}</div>
+        </div>
+      </div>
+      
+      <!-- Compact above recommended percentage -->
+      <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+        <div style="background: rgba(${parseFloat(aboveRecommended) > 0 ? '239, 68, 68' : '34, 197, 94'}, 0.12); border: 1px solid rgba(${parseFloat(aboveRecommended) > 0 ? '239, 68, 68' : '34, 197, 94'}, 0.25); border-radius: 12px; padding: 6px 12px; display: flex; align-items: center; gap: 4px;">
+          <span style="font-size: 10px;">${parseFloat(aboveRecommended) > 0 ? '📈' : '📉'}</span>
+          <span style="font-size: 11px; font-weight: 700; color: ${parseFloat(aboveRecommended) > 0 ? '#f87171' : '#4ade80'};">
+            ${parseFloat(aboveRecommended) > 0 ? '+' : ''}${aboveRecommended}% above rec.
+          </span>
+        </div>
+      </div>
+      
+      <!-- Compact action buttons -->
+      <div style="display: flex; gap: 8px;">
+        <button onclick="window.open('https://csgoempire.com/item/${itemData.id}', '_blank')" 
+                class="premium-button item-target"
+                style="
+          flex: 1;
+          color: white;
+          padding: 10px 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+        ">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15,3 21,3 21,9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          View Item
+        </button>
+        <button onclick="this.closest('.keychain-notification').remove()" 
+                class="secondary-button"
+                style="
+          color: #e2e8f0;
+          padding: 10px 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+        ">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          Close
+        </button>
+      </div>
+      
+      <!-- Compact footer info -->
+      <div style="font-size: 9px; color: #64748b; margin-top: 10px; text-align: center; opacity: 0.7; font-weight: 500;">
+        ID: ${itemData.id || 'Unknown'} • ${new Date().toLocaleTimeString()} • Target Match
+      </div>
+    `;
+
+    // Add click handler to open specific item page
+    notification.addEventListener('click', (e) => {
+      if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+        window.open(`https://csgoempire.com/item/${itemData.id}`, '_blank');
+      }
+    });
+
+    // Add notification to container
+    this.notificationContainer.appendChild(notification);
+    this.notifications.push(notificationId);
+
+    // Play notification sound only if enabled
+    if (soundEnabled) {
+      this.playItemTargetNotificationSound();
+    }
+
+    // Auto-remove after 30 seconds
+    setTimeout(() => {
+      this.removeNotification(notificationId);
+    }, 30000);
+
+    // Remove oldest notifications if we have too many
+    if (this.notifications.length > this.maxNotifications) {
+      const oldestId = this.notifications.shift();
+      this.removeNotification(oldestId);
+    }
+
+    // Flash the page title
+    this.flashPageTitle('🎯 Item Target Found!');
+
+    console.log('✅ Item target notification displayed successfully');
+  }
+
   showKeychainNotification(itemData) {
     if (!this.monitoringEnabled) {
       console.log('🚫 Notification ignored - monitoring disabled');
@@ -409,6 +997,7 @@ class CSGOEmpireNotificationOverlay {
     }
 
     console.log('🔑 Showing keychain notification overlay:', itemData);
+    console.log('🔍 DEBUG: Full item data received:', JSON.stringify(itemData, null, 2));
 
     // Check if we already have a notification for this item ID to prevent duplicates
     const existingNotification = document.getElementById(`notification-${itemData.id}`);
@@ -432,9 +1021,9 @@ class CSGOEmpireNotificationOverlay {
       ? itemData.above_recommended_price.toFixed(2) 
       : 'Unknown';
     
-    const keychainNames = itemData.keychains ? 
-      (Array.isArray(itemData.keychains) ? itemData.keychains.map(k => k.name || k).join(', ') : itemData.keychains) : 
-      'Unknown';
+    // Get enhanced charm information with fallback support
+    const charmInfo = this.formatCharmInfo(itemData);
+    console.log('🔍 DEBUG: Charm info result:', charmInfo);
 
     // Create notification element with unique ID based on item ID
     const notification = document.createElement('div');
@@ -445,8 +1034,8 @@ class CSGOEmpireNotificationOverlay {
       border-radius: 12px;
       padding: 16px;
       margin-bottom: 12px;
-      max-width: 300px;
-      min-width: 280px;
+      max-width: 320px;
+      min-width: 300px;
       color: #e2e8f0;
       pointer-events: auto;
       cursor: pointer;
@@ -478,6 +1067,46 @@ class CSGOEmpireNotificationOverlay {
         <circle cx="16" cy="14" r="1" fill="${crownColors.start}"/>
       </svg>
     `;
+
+    // 🔥 ENHANCED: Generate charm display HTML with debugging information
+    let charmDisplayHTML = '';
+    if (charmInfo.hasCharmData) {
+      console.log('✅ Rendering ENHANCED charm display with consistent pricing');
+      console.log('🔍 Charm details:', {
+        name: charmInfo.charmName,
+        category: charmInfo.charmCategory,
+        price: charmInfo.charmPrice,
+        percentage: charmInfo.percentageOfMarket.toFixed(2)
+      });
+      
+      charmDisplayHTML = `
+        <div class="charm-info" style="border-left-color: ${charmInfo.charmColor};">
+          <div class="charm-icon" style="background: ${charmInfo.charmColor};">
+            ${charmInfo.categoryIcon}
+          </div>
+          <div class="charm-details">
+            <div class="charm-name" style="color: ${charmInfo.charmColor};">
+              ${charmInfo.formattedDisplay}
+            </div>
+            <div class="charm-price">
+              <span class="price-badge">${charmInfo.percentageDisplay}</span>
+              <span style="opacity: 0.6;">${charmInfo.charmCategory} Rarity</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      console.log('⚠️ Rendering fallback charm display');
+      // Fallback display for items without charm data
+      charmDisplayHTML = `
+        <div style="font-size: 12px; color: #36d1dc; display: flex; align-items: center; font-weight: 600; margin-bottom: 12px;">
+          <div style="width: 10px; height: 10px; background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%); border-radius: 50%; margin-right: 6px; display: flex; align-items: center; justify-content: center;">
+            <div style="width: 4px; height: 4px; background: white; border-radius: 50%;"></div>
+          </div>
+          ${charmInfo.fallbackDisplay}
+        </div>
+      `;
+    }
 
     notification.innerHTML = `
       <!-- Compact premium header -->
@@ -512,15 +1141,10 @@ class CSGOEmpireNotificationOverlay {
       
       <!-- Premium item info section -->
       <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-        <div style="font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #f1f5f9; line-height: 1.3; letter-spacing: -0.2px;">
+        <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #f1f5f9; line-height: 1.3; letter-spacing: -0.2px;">
           ${itemData.market_name || 'Unknown Item'}
         </div>
-        <div style="font-size: 12px; color: #36d1dc; display: flex; align-items: center; font-weight: 600;">
-          <div style="width: 10px; height: 10px; background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%); border-radius: 50%; margin-right: 6px; display: flex; align-items: center; justify-content: center;">
-            <div style="width: 4px; height: 4px; background: white; border-radius: 50%;"></div>
-          </div>
-          ${keychainNames}
-        </div>
+        ${charmDisplayHTML}
       </div>
       
       <!-- Compact price grid -->
@@ -591,9 +1215,10 @@ class CSGOEmpireNotificationOverlay {
         </button>
       </div>
       
-      <!-- Compact footer info -->
+      <!-- Compact footer info with charm percentage (if available) -->
       <div style="font-size: 9px; color: #64748b; margin-top: 10px; text-align: center; opacity: 0.7; font-weight: 500;">
         ID: ${itemData.id || 'Unknown'} • ${new Date().toLocaleTimeString()}
+        ${charmInfo.hasCharmData ? ` • Charm: ${charmInfo.percentageOfMarket.toFixed(1)}%` : ''}
       </div>
     `;
 
@@ -626,6 +1251,8 @@ class CSGOEmpireNotificationOverlay {
 
     // Flash the page title
     this.flashPageTitle();
+
+    console.log('✅ Enhanced notification with consistent charm pricing displayed successfully');
   }
 
   removeNotification(notificationId) {
@@ -638,6 +1265,46 @@ class CSGOEmpireNotificationOverlay {
         }
         this.notifications = this.notifications.filter(id => id !== notificationId);
       }, 300);
+    }
+  }
+
+  // 🔥 NEW: Play different sound for item targets
+  playItemTargetNotificationSound() {
+    if (!this.soundEnabled) return;
+
+    try {
+      // Create audio context for notification sound
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Different sound pattern for item targets (more upbeat)
+      const playTone = (frequency, duration, delay = 0) => {
+        setTimeout(() => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+          gainNode.gain.linearRampToValueAtTime(0.08, audioContext.currentTime + 0.01);
+          gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + duration);
+        }, delay);
+      };
+
+      // Item target sound sequence (different from keychain)
+      playTone(523, 0.15, 0);      // C5
+      playTone(659, 0.15, 150);    // E5
+      playTone(784, 0.15, 300);    // G5
+      playTone(1047, 0.2, 450);    // C6
+
+    } catch (error) {
+      console.error('Could not play item target notification sound:', error);
     }
   }
 
@@ -686,13 +1353,14 @@ class CSGOEmpireNotificationOverlay {
     }
   }
 
-  flashPageTitle() {
+  flashPageTitle(customTitle = null) {
     const originalTitle = document.title;
     let flashCount = 0;
     const maxFlashes = 6;
+    const flashTitle = customTitle || '♔ Empire Enhanced';
 
     const flashInterval = setInterval(() => {
-      document.title = flashCount % 2 === 0 ? '♔ Empire Enhanced' : originalTitle;
+      document.title = flashCount % 2 === 0 ? flashTitle : originalTitle;
       flashCount++;
 
       if (flashCount >= maxFlashes) {

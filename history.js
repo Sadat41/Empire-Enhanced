@@ -1,4 +1,4 @@
-// history.js - Updated with theme support for modern card-based layout
+// history.js - Enhanced with charm pricing display and color coding
 
 class NotificationHistory {
     constructor() {
@@ -7,6 +7,15 @@ class NotificationHistory {
         this.autoRefreshInterval = null;
         this.currentFilter = 'All Items'; // Track current filter state
         this.currentTheme = 'nebula'; // Default theme
+        
+        // Charm category color mapping
+        this.charmColors = {
+            'Red': '#ef4444',      // Red
+            'Pink': '#ec4899',     // Pink
+            'Purple': '#a855f7',   // Purple
+            'Blue': '#3b82f6'      // Blue
+        };
+        
         this.init();
     }
 
@@ -87,11 +96,11 @@ class NotificationHistory {
         const refreshBtn = document.getElementById('refreshBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
-                console.log('🔄 Manual refresh triggered');
+                console.log(' Manual refresh triggered');
                 
                 // Add loading state using CSS classes
                 refreshBtn.classList.add('loading');
-                refreshBtn.innerHTML = '<span class="refresh-icon spinning">🔄</span> Refreshing...';
+                refreshBtn.innerHTML = '<span class="refresh-icon spinning"></span> Refreshing...';
                 refreshBtn.disabled = true;
                 
                 this.loadHistory().finally(() => {
@@ -158,6 +167,63 @@ class NotificationHistory {
         this.renderFilteredHistory(sortedNotifications);
     }
 
+    // Enhanced method to format charm information with pricing and colors
+    formatCharmInfo(item) {
+        // Check if we have charm data from the server
+        if (item.charm_name && item.charm_category && item.charm_price !== undefined) {
+            const charmName = item.charm_name;
+            const charmCategory = item.charm_category;
+            const charmPrice = item.charm_price;
+            const marketValue = item.market_value ? (item.market_value / 100) : 0;
+            
+            // Calculate percentage of charm price relative to market price
+            let percentageOfMarket = 0;
+            if (marketValue > 0 && charmPrice > 0) {
+                percentageOfMarket = (charmPrice / marketValue) * 100;
+            }
+            
+            const charmColor = this.charmColors[charmCategory] || '#ffffff';
+            const categoryIcon = this.getCategoryIcon(charmCategory);
+            
+            return {
+                hasCharmData: true,
+                charmName,
+                charmCategory,
+                charmPrice,
+                charmColor,
+                categoryIcon,
+                percentageOfMarket,
+                formattedDisplay: `${charmName} – $${charmPrice.toFixed(2)}`,
+                percentageDisplay: percentageOfMarket > 0 ? `${percentageOfMarket.toFixed(2)}% of market` : 'N/A'
+            };
+        }
+        
+        // Fallback to keychain names if no charm data
+        let keychainDisplay = 'N/A';
+        if (item.keychains) {
+            if (Array.isArray(item.keychains)) {
+                keychainDisplay = item.keychains.length > 0 ? item.keychains.join(', ') : 'N/A';
+            } else if (typeof item.keychains === 'string') {
+                keychainDisplay = item.keychains;
+            }
+        }
+        
+        return {
+            hasCharmData: false,
+            fallbackDisplay: keychainDisplay
+        };
+    }
+
+    getCategoryIcon(category) {
+        const icons = {
+            'Red': '🔴',
+            'Pink': '🌸',
+            'Purple': '🟣',
+            'Blue': '🔵'
+        };
+        return icons[category] || '🔑';
+    }
+
     renderFilteredHistory(sortedNotifications) {
         console.log(`🎨 Rendering ${sortedNotifications.length} filtered/sorted notifications...`);
         
@@ -182,15 +248,8 @@ class NotificationHistory {
                 const recommendedValue = (item.suggested_price || 0) / 100;
                 const aboveRec = item.above_recommended_price || 0;
 
-                // Format keychains
-                let keychainDisplay = 'N/A';
-                if (item.keychains) {
-                    if (Array.isArray(item.keychains)) {
-                        keychainDisplay = item.keychains.length > 0 ? item.keychains.join(', ') : 'N/A';
-                    } else if (typeof item.keychains === 'string') {
-                        keychainDisplay = item.keychains;
-                    }
-                }
+                // Get enhanced charm information
+                const charmInfo = this.formatCharmInfo(item);
 
                 // Format timestamp using published_at primarily
                 const publishedTime = new Date(item.published_at || item.timestamp);
@@ -209,15 +268,35 @@ class NotificationHistory {
                 const percentageIcon = aboveRec >= 0 ? '📈' : '📉';
                 const percentageText = aboveRec >= 0 ? `+${aboveRec.toFixed(1)}%` : `${aboveRec.toFixed(1)}%`;
 
+                // Generate charm display HTML for history cards
+                let charmDisplayHTML = '';
+                if (charmInfo.hasCharmData) {
+                    charmDisplayHTML = `
+                        <div class="item-charm enhanced-charm" style="color: ${charmInfo.charmColor};">
+                            <div class="charm-icon" style="background: ${charmInfo.charmColor};">
+                                ${charmInfo.categoryIcon}
+                            </div>
+                            <div class="charm-details">
+                                <div class="charm-name">${charmInfo.formattedDisplay}</div>
+                                <div class="charm-percentage">${charmInfo.percentageDisplay}</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    charmDisplayHTML = `
+                        <div class="item-keychain">
+                            <div class="keychain-icon">🔑</div>
+                            ${charmInfo.fallbackDisplay}
+                        </div>
+                    `;
+                }
+
                 return `
                     <div class="item-card" style="animation-delay: ${index * 0.05}s;">
                         <div class="item-header">
                             <div>
                                 <div class="item-name" title="${item.market_name || 'Unknown Item'}">${item.market_name || 'Unknown Item'}</div>
-                                <div class="item-keychain">
-                                    <div class="keychain-icon">🔑</div>
-                                    ${keychainDisplay}
-                                </div>
+                                ${charmDisplayHTML}
                             </div>
                             <div class="item-id">#${item.id || 'Unknown'}</div>
                         </div>
@@ -260,8 +339,10 @@ class NotificationHistory {
                 itemsGrid.innerHTML = cardsHTML;
                 console.log(`✅ Filtered cards rendered successfully (${this.currentFilter})`);
                 
-                // 🟢 Attach event listeners here for CSP-safe action buttons
-
+                // Inject enhanced charm styles
+                this.injectEnhancedCharmStyles();
+                
+                // Attach event listeners for CSP-safe action buttons
                 // View Item buttons
                 itemsGrid.querySelectorAll('.view-item-btn').forEach(btn => {
                     btn.addEventListener('click', (event) => {
@@ -288,6 +369,101 @@ class NotificationHistory {
             console.error('❌ Error rendering filtered cards:', error);
             this.showError(`Error rendering filtered cards: ${error.message}`);
         }
+    }
+
+    injectEnhancedCharmStyles() {
+        // Remove existing enhanced charm styles
+        const existingStyles = document.getElementById('enhanced-charm-styles');
+        if (existingStyles) {
+            existingStyles.remove();
+        }
+
+        const styles = document.createElement('style');
+        styles.id = 'enhanced-charm-styles';
+        
+        styles.textContent = `
+            /* Enhanced charm display styles for history cards */
+            .enhanced-charm {
+                display: flex !important;
+                align-items: center !important;
+                gap: 8px !important;
+                font-size: 13px !important;
+                font-weight: 600 !important;
+                background: rgba(255, 255, 255, 0.04) !important;
+                padding: 8px 10px !important;
+                border-radius: 8px !important;
+                border-left: 3px solid currentColor !important;
+                margin-top: 6px !important;
+            }
+
+            .enhanced-charm .charm-icon {
+                width: 16px !important;
+                height: 16px !important;
+                border-radius: 50% !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 10px !important;
+                color: white !important;
+                flex-shrink: 0 !important;
+            }
+
+            .enhanced-charm .charm-details {
+                flex: 1 !important;
+                min-width: 0 !important;
+            }
+
+            .enhanced-charm .charm-name {
+                font-size: 12px !important;
+                font-weight: 700 !important;
+                margin-bottom: 2px !important;
+                line-height: 1.2 !important;
+                word-break: break-word !important;
+            }
+
+            .enhanced-charm .charm-percentage {
+                font-size: 10px !important;
+                opacity: 0.8 !important;
+                background: rgba(255, 255, 255, 0.1) !important;
+                padding: 2px 6px !important;
+                border-radius: 4px !important;
+                display: inline-block !important;
+                font-weight: 600 !important;
+            }
+
+            /* Fallback styles for regular keychain display */
+            .item-keychain {
+                display: flex !important;
+                align-items: center !important;
+                gap: 6px !important;
+                font-size: 13px !important;
+                color: #36d1dc !important;
+                font-weight: 600 !important;
+                margin-top: 6px !important;
+            }
+
+            body.theme-shooting-star .item-keychain {
+                color: #87ceeb !important;
+            }
+
+            .keychain-icon {
+                width: 14px !important;
+                height: 14px !important;
+                background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%) !important;
+                border-radius: 50% !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                color: white !important;
+                font-size: 9px !important;
+            }
+
+            body.theme-shooting-star .keychain-icon {
+                background: linear-gradient(135deg, #87ceeb 0%, #4a90e2 100%) !important;
+            }
+        `;
+        
+        document.head.appendChild(styles);
     }
 
     async loadHistory() {
@@ -319,7 +495,8 @@ class NotificationHistory {
                 
                 // Log each notification for debugging
                 this.notifications.forEach((notif, index) => {
-                    console.log(`  ${index + 1}. ${notif.market_name} | Keychains: ${notif.keychains?.join(', ') || 'None'} | $${((notif.market_value || 0) / 100).toFixed(2)}`);
+                    const charmInfo = notif.charm_name ? `${notif.charm_name} ($${notif.charm_price.toFixed(2)})` : (notif.keychains?.join(', ') || 'None');
+                    console.log(`  ${index + 1}. ${notif.market_name} | Keychains: ${charmInfo} | $${((notif.market_value || 0) / 100).toFixed(2)}`);
                 });
             } else {
                 console.log('⚠️ No notifications found');
@@ -441,7 +618,7 @@ class NotificationHistory {
 
     startAutoRefresh() {
         this.autoRefreshInterval = setInterval(() => {
-            console.log('🔄 Auto-refreshing...');
+            console.log(' Auto-refreshing...');
             this.loadHistory();
         }, 15000); // Refresh every 15 seconds
     }
@@ -474,7 +651,7 @@ if (document.readyState === 'loading') {
 }
 
 // Test function to verify JavaScript is working
-console.log('📝 History.js with theme support loaded successfully');
+console.log('📝 History.js with enhanced charm pricing display loaded successfully');
 
 // Add a global test function to debug CSP issues
 window.testButtonClick = function() {
