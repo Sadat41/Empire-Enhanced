@@ -10,12 +10,13 @@
 
 
 
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Sadat41/Empire-Enhanced)
 [![Repo Size](https://img.shields.io/github/repo-size/Sadat41/Empire-Enhanced?label=repo%20size&color=orange)](https://github.com/Sadat41/Empire-Enhanced)
 [![Last Commit](https://img.shields.io/github/last-commit/Sadat41/Empire-Enhanced?label=last%20commit&color=lightgrey)](https://github.com/Sadat41/Empire-Enhanced/commits/main)
+[![Counter-Strike 2](https://img.shields.io/badge/Counter--Strike%202-red?style=for-the-badge&logo=counterstrike&logoColor=white)](https://www.counter-strike.net/)
 ![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/w/Sadat41/Empire-Enhanced)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Counter-Strike 2](https://img.shields.io/badge/Counter--Strike%202-red?style=for-the-badge&logo=counterstrike&logoColor=white)](https://www.counter-strike.net/)
+
 
 ## Discord 
 <p align="center">
