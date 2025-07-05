@@ -108,13 +108,13 @@ npm start     # For production
 
 ### Step 2: Load the Browser Extension
 
-For Chrome: [![Chrome](https://img.shields.io/badge/Google_chrome-4285F4?style=for-the-badge&logo=Google-chrome&logoColor=white)](https://github.com/Sadat41)
+[![Chrome](https://img.shields.io/badge/Google_chrome-4285F4?style=for-the-badge&logo=Google-chrome&logoColor=white)](https://github.com/Sadat41)
 - Go to `chrome://extensions/`
 - Enable Developer Mode (top-right)
 - Click Load unpacked
 - Select the `/extension` folder inside the project
 
-For Firefox: [![FireFox](https://img.shields.io/badge/Firefox_Browser-FF7139?style=for-the-badge&logo=Firefox-Browser&logoColor=white)](https://github.com/Sadat41)
+[![FireFox](https://img.shields.io/badge/Firefox_Browser-FF7139?style=for-the-badge&logo=Firefox-Browser&logoColor=white)](https://github.com/Sadat41)
 - Visit `about:debugging#/runtime/this-firefox`
 - Click Load Temporary Add-on
 - Choose the `manifest.json` inside the `/extension` folder
