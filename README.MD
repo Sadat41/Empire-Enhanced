@@ -44,24 +44,23 @@
 Take a sneak peek at Empire Enhanced in action.
 
 ### Main Dashboard
-<p align="center"><strong>Dominate the Market. Customize Everything. Never Miss a Deal Again.</strong></p>
-
-![Dashboard](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Dashboard.gif)
-
-*An intuitive and powerful dashboard providing an overview of your settings and active enhancements.*
+<p align="center">
+  <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Dashboard.gif" alt="Dashboard">
+</p>
+<p align="center"><strong>An intuitive and powerful dashboard providing an overview of your settings and active enhancements.</strong></p>
 
 ### Notification Popup
 ![Popup](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/History%20Page.png)
-*Easily track missed or past alerts with the integrated Notification History page.*
+<p align="center"><strong>Instant alerts when your target items appear — never miss a deal.</strong></p>
 
 ### Notification History Page
 ![History Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/History%20Page.png)
-*Easily track missed or past alerts with the integrated Notification History page.*
+<p align="center"><strong>Easily track missed or past alerts with the integrated Notification History page.</strong></p>
 
 ### CSGOEmpire Home Page
 ![Home Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Homepage.png)
-*The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.*
----
+<p align="center"><strong>The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.</strong></p>
+
 
 ## ❓How It Works
 **Empire Enhanced** injects JavaScript into CSGOEmpire and listens to WebSocket data for real-time item monitoring.
@@ -114,15 +113,15 @@ npm start     # For production
 ### Step 2: Load the Browser Extension
 
 For Chrome:
-#### 1. Go to `chrome://extensions/`
-#### 2. Enable Developer Mode (top-right)
-#### 3. Click Load unpacked
-#### 4. Select the `/extension` folder inside the project
+- Go to `chrome://extensions/`
+- Enable Developer Mode (top-right)
+- Click Load unpacked
+- Select the `/extension` folder inside the project
 
 For Firefox:
-#### 1. Visit `about:debugging#/runtime/this-firefox`
-#### 2. Click Load Temporary Add-on
-#### 3. Choose the `manifest.json` inside the `/extension` folder
+- Visit `about:debugging#/runtime/this-firefox`
+- Click Load Temporary Add-on
+- Choose the `manifest.json` inside the `/extension` folder
 
 ### Step 3: Use the Extension
 Once both the server and extension are running:
@@ -135,7 +134,7 @@ Once both the server and extension are running:
 
 The extension will automatically connect to `http://localhost:3001` and start monitoring items based on your configuration.
 
-## 📋 Notes
+## API Usage
 Checkout CSGOEmpire API documentation:
 ```
 [CSGOEmpire API Documentation](https://docs.csgoempire.com/reference/getting-started-with-your-api)
