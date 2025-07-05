@@ -17,7 +17,7 @@
 
 
 
-## 🤝 Community & Support
+## Discord 
 <p align="center">
   <a href="https://discord.gg/tmX4HjmQKz">
     <picture>
@@ -25,7 +25,6 @@
       <img height="58" src="https://i.postimg.cc/Fzj7T05w/discord.png" alt="Discord"></picture></a>
 </p>
 
----
 
 ## Key Features
 **Empire Enhanced** is built to extend and streamline the experience on [CSGOEmpire](https://csgoempire.com) through a set of practical and performance-focused tools:
@@ -45,25 +44,23 @@
 Take a sneak peek at Empire Enhanced in action.
 
 ### Main Dashboard
+<p align="center"><strong>Dominate the Market. Customize Everything. Never Miss a Deal Again.</strong></p>
 
-![Dashboard Screenshot](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Extension%20Menu.png)
+![Dashboard](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Dashboard.gif)
+
 *An intuitive and powerful dashboard providing an overview of your settings and active enhancements.*
 
-### Notification History Page
+### Notification Popup
+![Popup](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/History%20Page.png)
+*Easily track missed or past alerts with the integrated Notification History page.*
 
+### Notification History Page
 ![History Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/History%20Page.png)
 *Easily track missed or past alerts with the integrated Notification History page.*
 
 ### CSGOEmpire Home Page
-
 ![Home Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Homepage.png)
 *The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.*
-
-### Short Demo Video (Optional)
-
-[![Demo Video Thumbnail](https://placehold.co/1200x675/777777/ffffff?text=YOUR_VIDEO_THUMBNAIL_HERE)](YOUR_VIDEO_LINK_HERE)
-*Click to watch a quick demonstration of Empire-Enhanced's key functionalities on [YouTube/Vimeo/etc.](YOUR_VIDEO_LINK_HERE)*
-
 ---
 
 ## ❓How It Works
