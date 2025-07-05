@@ -15,7 +15,8 @@
 [![Last Commit](https://img.shields.io/github/last-commit/Sadat41/Empire-Enhanced?label=last%20commit&color=lightgrey)](https://github.com/Sadat41/Empire-Enhanced/commits/main)
 [![Counter-Strike 2](https://img.shields.io/badge/Counter--Strike%202-red?style=for-the-badge&logo=counterstrike&logoColor=white)](https://www.counter-strike.net/)
 ![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/w/Sadat41/Empire-Enhanced)
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Sadat41)
+[![Lines of code](https://img.shields.io/tokei/lines/github/Sadat41/Empire-Enhanced?style=for-the-badge)](https://github.com/Sadat41/Empire-Enhanced)
+
 
 
 ## Discord 
@@ -108,13 +109,13 @@ npm start     # For production
 
 ### Step 2: Load the Browser Extension
 
-For Chrome:
+For Chrome: [![Chrome](https://img.shields.io/badge/Google_chrome-4285F4?style=for-the-badge&logo=Google-chrome&logoColor=white)](https://github.com/Sadat41)
 - Go to `chrome://extensions/`
 - Enable Developer Mode (top-right)
 - Click Load unpacked
 - Select the `/extension` folder inside the project
 
-For Firefox:
+For Firefox: [![FireFox](https://img.shields.io/badge/Firefox_Browser-FF7139?style=for-the-badge&logo=Firefox-Browser&logoColor=white)](https://github.com/Sadat41)
 - Visit `about:debugging#/runtime/this-firefox`
 - Click Load Temporary Add-on
 - Choose the `manifest.json` inside the `/extension` folder
@@ -138,3 +139,5 @@ Checkout CSGOEmpire API documentation:
 ## ⚠️ Note
 Please be aware of the following:
 * **Prohibited Activities:** We explicitly forbid the use of the Empire-Enhanced extension for illegal activities. This includes, but is not limited to, using the extension to gain an unfair advantage over other users, engaging in any form of malicious behavior, or violating platform terms of service. 
+
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Sadat41)
