@@ -48,7 +48,9 @@ Take a sneak peek at Empire Enhanced in action.
 
 <p align="center"><strong>Notification Popup</strong></p
 
-![Popup](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Notification.png)
+<p align="center">
+  <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Notification.png" alt="Popup">
+</p>
 <p align="center"><strong>Instant alerts when your target items appear — never miss a deal.</strong></p>
 
 <p align="center"><strong>Notification History Page</strong></p
