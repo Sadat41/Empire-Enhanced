@@ -15,7 +15,7 @@
 [![Last Commit](https://img.shields.io/github/last-commit/Sadat41/Empire-Enhanced?label=last%20commit&color=lightgrey)](https://github.com/Sadat41/Empire-Enhanced/commits/main)
 [![Counter-Strike 2](https://img.shields.io/badge/Counter--Strike%202-red?style=for-the-badge&logo=counterstrike&logoColor=white)](https://www.counter-strike.net/)
 ![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/w/Sadat41/Empire-Enhanced)
-[![Lines of code](https://img.shields.io/tokei/lines/github/Sadat41/Empire-Enhanced?style=for-the-badge)](https://github.com/Sadat41/Empire-Enhanced)
+[![Project Status: Active](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge)](https://github.com/Sadat41/Empire-Enhanced)
 
 
 
