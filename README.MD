@@ -8,13 +8,11 @@
 </p>
 <p align="center"><strong> Real-Time Monitoring, Smart Filters, and Seamless Customization. </strong></p>
 
-****
----
+
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Sadat41/Empire-Enhanced)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
 [![Repo Size](https://img.shields.io/github/repo-size/Sadat41/Empire-Enhanced?label=repo%20size&color=orange)](https://github.com/Sadat41/Empire-Enhanced)
 [![Last Commit](https://img.shields.io/github/last-commit/Sadat41/Empire-Enhanced?label=last%20commit&color=lightgrey)](https://github.com/Sadat41/Empire-Enhanced/commits/main)
-
 
 
 ## Discord 
@@ -42,22 +40,21 @@
 ## 📸 Preview
 
 Take a sneak peek at Empire Enhanced in action.
-
-### Main Dashboard
+<p align="center"><strong>Main Dashboard</strong></p>
 <p align="center">
   <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Dashboard.gif" alt="Dashboard">
 </p>
 <p align="center"><strong>An intuitive and powerful dashboard providing an overview of your settings and active enhancements.</strong></p>
 
-### Notification Popup
-![Popup](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/History%20Page.png)
+<p align="center"><strong>Notification Popup</strong></p
+![Popup](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Notification.png)
 <p align="center"><strong>Instant alerts when your target items appear — never miss a deal.</strong></p>
 
-### Notification History Page
+<p align="center"><strong>Notification History Page</strong></p
 ![History Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/History%20Page.png)
 <p align="center"><strong>Easily track missed or past alerts with the integrated Notification History page.</strong></p>
 
-### CSGOEmpire Home Page
+<p align="center"><strong>CSGOEmpire Home Page</strong></p
 ![Home Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Homepage.png)
 <p align="center"><strong>The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.</strong></p>
 
@@ -108,7 +105,7 @@ or
 ```bash
 npm start     # For production
 ```
-#### 6. Visit http://localhost:3001/health to confirm it's running.
+#### 6. Visit `http://localhost:3001/health` to confirm it's running.
 
 ### Step 2: Load the Browser Extension
 
@@ -136,12 +133,9 @@ The extension will automatically connect to `http://localhost:3001` and start mo
 
 ## API Usage
 Checkout CSGOEmpire API documentation:
-```
 [CSGOEmpire API Documentation](https://docs.csgoempire.com/reference/getting-started-with-your-api)
-```
+
 
 ## ⚠️ Note
-
 Please be aware of the following:
-
 * **Prohibited Activities:** We explicitly forbid the use of the Empire-Enhanced extension for illegal activities. This includes, but is not limited to, using the extension to gain an unfair advantage over other users, engaging in any form of malicious behavior, or violating platform terms of service. 
