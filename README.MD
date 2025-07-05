@@ -10,11 +10,12 @@
 
 
 
-<div align="center">
-  [![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat)](https://github.com/Sadat41/Empire-Enhanced)[![Repo Size](https://img.shields.io/github/repo-size/Sadat41/Empire-Enhanced?label=repo%20size&color=orange&style=flat)](https://github.com/Sadat41/Empire-Enhanced)[![Last Commit](https://img.shields.io/github/last-commit/Sadat41/Empire-Enhanced?label=last%20commit&color=lightgrey&style=flat)](https://github.com/Sadat41/Empire-Enhanced/commits/main)[![Counter-Strike 2](https://img.shields.io/badge/COUNTER--STRIKE%202-red?style=flat&logo=counterstrike&logoColor=white)](https://www.counter-strike.net/)[![GitHub commit activity](https://img.shields.io/github/commit-activity/w/Sadat41/Empire-Enhanced?label=commit%20activity&style=flat)](https://github.com/Sadat41/Empire-Enhanced)[![Project Status: Active](https://img.shields.io/badge/STATUS-ACTIVE-brightgreen?style=flat)](https://github.com/Sadat41/Empire-Enhanced)
-</div>
-
-
+[![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat)](https://github.com/Sadat41/Empire-Enhanced)
+[![Repo Size](https://img.shields.io/github/repo-size/Sadat41/Empire-Enhanced?label=repo%20size&color=orange&style=flat)](https://github.com/Sadat41/Empire-Enhanced)
+[![Last Commit](https://img.shields.io/github/last-commit/Sadat41/Empire-Enhanced?label=last%20commit&color=lightgrey&style=flat)](https://github.com/Sadat41/Empire-Enhanced/commits/main)
+[![Counter-Strike 2](https://img.shields.io/badge/COUNTER--STRIKE%202-red?style=flat&logo=counterstrike&logoColor=white)](https://www.counter-strike.net/)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/w/Sadat41/Empire-Enhanced?label=commit%20activity&style=flat)](https://github.com/Sadat41/Empire-Enhanced)
+[![Project Status: Active](https://img.shields.io/badge/STATUS-ACTIVE-brightgreen?style=flat)](https://github.com/Sadat41/Empire-Enhanced)
 
 ## Discord 
 <p align="center">
