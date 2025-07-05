@@ -1,0 +1,30 @@
+{
+  "name": "empire-enhanced-server",
+  "version": "1.0.0",
+  "description": "Backend server for Empire Enhanced - Advanced CSGOEmpire monitoring tool",
+  "main": "keychain-monitor-server.js",
+  "scripts": {
+    "start": "node keychain-monitor-server.js",
+    "dev": "nodemon keychain-monitor-server.js"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.5",
+    "axios": "^1.6.8",
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "keywords": [
+    "csgoempire",
+    "keychain",
+    "monitor",
+    "websocket",
+    "empire-enhanced",
+    "trading"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

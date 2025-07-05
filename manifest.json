@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "♔ Empire Enhanced",
+  "version": "1.0",
+  "description": "Advanced monitoring and enhancement tools for CSGOEmpire",
+  "permissions": [
+    "notifications",
+    "storage",
+    "activeTab",
+    "scripting",
+    "offscreen",
+    "alarms"
+  ],
+  "host_permissions": [
+    "http://localhost/*",
+    "https://csgoempire.com/*",
+    "https://csgoempire.gg/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://csgoempire.com/*", "https://csgoempire.gg/*"],
+      "js": ["content-script.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Empire Enhanced"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["history.html", "offscreen.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
