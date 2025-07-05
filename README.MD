@@ -16,7 +16,7 @@
 [![Counter-Strike 2](https://img.shields.io/badge/Counter--Strike%202-red?style=for-the-badge&logo=counterstrike&logoColor=white)](https://www.counter-strike.net/)
 ![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/w/Sadat41/Empire-Enhanced)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub][https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Sadat41)
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Sadat41)
 
 
 ## Discord 
