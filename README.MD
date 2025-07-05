@@ -38,26 +38,21 @@
 - Features are designed as self-contained modules to allow for easy expansion without modifying core files.
 ---
 ## 📸 Preview
-
-Take a sneak peek at Empire Enhanced in action.
-<p align="center"><strong>An intuitive and powerful dashboard providing an overview of your settings and active enhancements.</strong></p>
 <p align="center">
   <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Dashboard.gif" alt="Dashboard">
 </p>
+<p align="center"><strong>An intuitive and powerful dashboard providing an overview of your settings and active enhancements.</strong></p>
 
-<p align="center"><strong>Notification Popup: Instant alerts when your target items appear — never miss a deal.</strong></p>
 <p align="center">
   <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Notification.png" alt="Popup">
 </p>
-
-<p align="center"><strong>Easily track missed or past alerts with the integrated Notification History page.</strong></p>
+<p align="center"><strong>Notification Popup: Instant alerts when your target items appear — never miss a deal.</strong></p>
 
 ![History Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/History%20Page.png)
-
-<p align="center"><strong>Home Page: The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.</strong></p>
+<p align="center"><strong>Easily track missed or past alerts with the integrated Notification History page.</strong></p>
 
 ![Home Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Homepage.png)
-
+<p align="center"><strong>Home Page: The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.</strong></p>
 
 
 ## ❓How It Works
