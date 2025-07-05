@@ -11,7 +11,7 @@ class ExtensionManager {
       keychainsFound: 0,
       lastConnection: null,
       serverConnected: false,
-      startTime: Date.now()  // 🔥 ADD THIS LINE
+      startTime: Date.now() 
     };
     
     this.lastNotificationTimestamp = 0;
@@ -37,7 +37,7 @@ class ExtensionManager {
     // Attempt to sync with server immediately
     await this.performInitialServerSync();
     
-    // Set up storage sync
+    // storage sync
     chrome.storage.sync.set({
       serverUrl: this.httpUrl,
       notificationSound: this.isSoundEnabled,
@@ -52,7 +52,7 @@ class ExtensionManager {
       this.setupBackgroundPolling();
     }
 
-    // Set up periodic sync with server
+    
     this.setupPeriodicSync();
 
     this.updateBadge();
@@ -88,10 +88,10 @@ class ExtensionManager {
       console.error('❌ Initial server sync failed:', error);
       console.log('⚠️ Using local settings, will retry sync in background');
       
-      // Load from local storage as fallback
+      
       await this.loadItemTargetListFromLocal();
       
-      // Set up retry mechanism
+      
       this.setupSyncRetry();
     }
   }
