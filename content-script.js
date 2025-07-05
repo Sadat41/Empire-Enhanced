@@ -27,7 +27,7 @@ class CSGOEmpireNotificationOverlay {
       'Blue': '#3b82f6'      // Blue
     };
     
-    // Enhanced fallback charm pricing for offline mode (matches server exactly)
+    // 🔥 ENHANCED: Enhanced fallback charm pricing for offline mode (matches server exactly)
     this.fallbackCharmPricing = {
       "Red": {
         "Hot Howl": 70.0,
@@ -621,7 +621,7 @@ class CSGOEmpireNotificationOverlay {
     document.head.appendChild(styles);
   }
 
-  // Fallback method to get charm details from fallback data (matches server logic exactly)
+  // 🔥 ENHANCED: Fallback method to get charm details from fallback data (matches server logic exactly)
   getFallbackCharmDetails(itemData) {
     console.log('🔍 DEBUG: Using fallback charm detection for:', itemData);
     
@@ -650,7 +650,7 @@ class CSGOEmpireNotificationOverlay {
     return null;
   }
 
-  // Method to format charm information with consistent percentage calculation (matches server exactly)
+  // 🔥 ENHANCED: Method to format charm information with consistent percentage calculation (matches server exactly)
   formatCharmInfo(itemData) {
     console.log('🔍 DEBUG: formatCharmInfo called with:', {
       charm_name: itemData.charm_name,
@@ -668,7 +668,7 @@ class CSGOEmpireNotificationOverlay {
       const charmPrice = itemData.charm_price;
       const marketValue = itemData.market_value ? (itemData.market_value / 100) : 0;
       
-      // Calculate percentage EXACTLY like the server does
+      // 🔥 CRITICAL: Calculate percentage EXACTLY like the server does
       let percentageOfMarket = 0;
       if (marketValue > 0 && charmPrice > 0) {
         percentageOfMarket = (charmPrice / marketValue) * 100;
@@ -704,7 +704,7 @@ class CSGOEmpireNotificationOverlay {
       console.log('✅ Using fallback charm data');
       const marketValue = itemData.market_value ? (itemData.market_value / 100) : 0;
       
-      // Calculate percentage EXACTLY like the server does
+      // 🔥 CRITICAL: Calculate percentage EXACTLY like the server does
       let percentageOfMarket = 0;
       if (marketValue > 0 && fallbackCharm.price > 0) {
         percentageOfMarket = (fallbackCharm.price / marketValue) * 100;
@@ -754,7 +754,7 @@ class CSGOEmpireNotificationOverlay {
     return icons[category] || '🔑';
   }
 
-  // Show item target notification
+  // 🔥 NEW: Show item target notification
   showItemTargetNotification(itemData) {
     if (!this.monitoringEnabled) {
       console.log('🚫 Item target notification ignored - monitoring disabled');
@@ -1268,7 +1268,7 @@ class CSGOEmpireNotificationOverlay {
     }
   }
 
-  // Play different sound for item targets
+  // 🔥 NEW: Play different sound for item targets
   playItemTargetNotificationSound() {
     if (!this.soundEnabled) return;
 

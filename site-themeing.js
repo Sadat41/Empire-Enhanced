@@ -777,7 +777,7 @@
     }
   }
 
-  // theme injector
+  // Initialize the theme injector
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       new EmpireThemeInjector();

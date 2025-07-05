@@ -6,13 +6,13 @@ const WebSocket = require('ws');
 const fs = require('fs');
 const path = require('path');
 
-// Settings file for persistent storage
+// 🔥 NEW: Settings file for persistent storage
 const SETTINGS_FILE = path.join(__dirname, 'server-settings.json');
 
 // Configuration - EDIT THESE VALUES
 const CONFIG = {
   // Replace with your CSGOEmpire API key
-  apiKey: "YOUR_EMPIRE_API_KEY_HERE", // Get your API key from "https://csgoempire.com/trading/apikey"
+  apiKey: "1bbf0df01915e7159f82076fb64638d8", // Changed API Key just as an example.
   
   // Change to '.gg' if '.com' is blocked
   domain: "csgoempire.com",
@@ -20,18 +20,18 @@ const CONFIG = {
   // Port for the local server (extension will connect to this)
   port: 3001,
   
-  // Connection resilience settings
+  // 🔥 NEW: Connection resilience settings
   maxReconnectAttempts: 50,        // Maximum reconnection attempts
   reconnectDelay: 5000,            // Base delay between reconnection attempts (ms)
   maxReconnectDelay: 60000,        // Maximum delay between reconnection attempts (ms)
   heartbeatInterval: 30000,        // Send heartbeat every 30 seconds
   connectionTimeout: 10000,        // Timeout for initial connection (ms)
   
-  // PERSISTENT: Price filter range - will be loaded from file if available
+  // 🔥 PERSISTENT: Price filter range - will be loaded from file if available
   minAboveRecommended: -50, // Default: Allow items up to 50% below recommended
   maxAboveRecommended: 5,   // Default: Allow items up to 5% above recommended
   
-  // Keychain filter settings - will be loaded from file if available
+  // 🔥 PERSISTENT: Keychain filter settings - will be loaded from file if available
   keychainPercentageThreshold: 50, // Default: Only notify if charm price is >= 50% of market value
   enabledKeychains: new Set([     // Default: All keychains enabled initially
     "Hot Howl", "Baby Karat T", "Hot Wurst", "Baby Karat CT", "Semi-Precious", 
@@ -42,7 +42,7 @@ const CONFIG = {
     "Lil' Crass", "Pocket AWP", "Lil' Ava", "Stitch-Loaded", "Backsplash", "Lil' Cap Gun"
   ]),
   
-  // Item Target List settings - will be loaded from file if available
+  // 🔥 PERSISTENT: Item Target List settings - will be loaded from file if available
   itemTargetList: [], // Default: Empty array
   floatFilterEnabled: false, // Default: Float filter disabled
   
@@ -102,7 +102,7 @@ const CONFIG = {
   }
 };
 
-// New: storage functions
+// 🔥 NEW: Persistent storage functions
 function loadSettings() {
   try {
     if (fs.existsSync(SETTINGS_FILE)) {
@@ -195,7 +195,7 @@ function saveSettings() {
   }
 }
 
-// Helper function to get all keychain names (needed for loadSettings)
+// 🔥 Helper function to get all keychain names (needed for loadSettings)
 function getAllKeychainNames() {
   const keychains = [];
   for (const category in CONFIG.charmPricing) {
@@ -216,7 +216,7 @@ class KeychainMonitorServer {
     this.notifiedItems = new Set(); // Track notified items to prevent duplicates
     this.notificationHistory = []; // Store only successful notifications
     
-    // NEW: Connection management
+    // 🔥 NEW: Connection management
     this.reconnectAttempts = 0;
     this.isConnecting = false;
     this.heartbeatTimer = null;
@@ -233,7 +233,7 @@ class KeychainMonitorServer {
       itemsProcessed: 0,
       itemsFiltered: 0,
       filterReasons: {},
-      // NEW: Connection stats
+      // 🔥 NEW: Connection stats
       totalConnections: 0,
       totalDisconnections: 0,
       lastSuccessfulConnection: null,
@@ -241,18 +241,18 @@ class KeychainMonitorServer {
       uptime: 0
     };
     
-    // Load persistent settings before starting
+    // 🔥 NEW: Load persistent settings before starting
     console.log('🔧 Loading persistent settings...');
     loadSettings();
     
-    //  Setup process handlers for stability
+    // 🔥 NEW: Setup process handlers for stability
     this.setupProcessHandlers();
     
     this.setupExpressServer();
     this.startServer();
   }
 
-  // Setup process handlers for graceful shutdown and error handling
+  // 🔥 NEW: Setup process handlers for graceful shutdown and error handling
   setupProcessHandlers() {
     // Handle uncaught exceptions
     process.on('uncaughtException', (error) => {
@@ -284,7 +284,7 @@ class KeychainMonitorServer {
     }, 10000); // Update uptime every 10 seconds
   }
 
-  // Graceful shutdown handler
+  // 🔥 NEW: Graceful shutdown handler
   gracefulShutdown() {
     console.log('💾 Saving settings before shutdown...');
     saveSettings();
@@ -313,7 +313,7 @@ class KeychainMonitorServer {
     this.app.use(cors());
     this.app.use(express.json());
 
-    // Health check endpoint with connection status
+    // 🔥 ENHANCED: Health check endpoint with connection status
     this.app.get('/health', (req, res) => {
       res.json({
         status: 'running',
@@ -417,7 +417,7 @@ class KeychainMonitorServer {
       });
     });
 
-    // Update filter endpoint with persistent storage
+    // 🔥 UPDATED: Update filter endpoint with persistent storage
     this.app.post('/update-filter', (req, res) => {
       const { minPercentage, maxPercentage } = req.body;
       
@@ -452,7 +452,7 @@ class KeychainMonitorServer {
       });
     });
 
-    // Update Item Target List endpoint with persistent storage
+    // 🔥 UPDATED: Update Item Target List endpoint with persistent storage
     this.app.post('/update-item-target-list', (req, res) => {
       const { itemTargetList, floatFilterEnabled } = req.body;
       
@@ -504,7 +504,7 @@ class KeychainMonitorServer {
       });
     });
 
-    // Update keychain percentage threshold with persistent storage
+    // 🔥 UPDATED: Update keychain percentage threshold with persistent storage
     this.app.post('/update-keychain-percentage', (req, res) => {
       const { percentageThreshold } = req.body;
       
@@ -517,7 +517,7 @@ class KeychainMonitorServer {
       const oldThreshold = CONFIG.keychainPercentageThreshold;
       CONFIG.keychainPercentageThreshold = percentageThreshold;
       
-      // Save to storage
+      // 🔥 NEW: Save to persistent storage
       const saveSuccess = saveSettings();
       
       console.log(`🔧 Keychain percentage threshold updated: ${oldThreshold}% → ${percentageThreshold}% ${saveSuccess ? '(saved)' : '(save failed)'}`);
@@ -530,7 +530,7 @@ class KeychainMonitorServer {
       });
     });
 
-    // UPDATED: Update enabled keychains with persistent storage
+    // 🔥 UPDATED: Update enabled keychains with persistent storage
     this.app.post('/update-enabled-keychains', (req, res) => {
       const { enabledKeychains } = req.body;
       
@@ -554,7 +554,7 @@ class KeychainMonitorServer {
       const oldCount = CONFIG.enabledKeychains.size;
       CONFIG.enabledKeychains = new Set(enabledKeychains);
       
-      
+      // 🔥 NEW: Save to persistent storage
       const saveSuccess = saveSettings();
       
       console.log(`🔧 Enabled keychains updated: ${oldCount} → ${enabledKeychains.length} keychains enabled ${saveSuccess ? '(saved)' : '(save failed)'}`);
@@ -624,7 +624,7 @@ class KeychainMonitorServer {
       res.json(response);
     });
 
-    // Connection status endpoint
+    // 🔥 NEW: Connection status endpoint
     this.app.get('/connection-status', (req, res) => {
       res.json({
         connectionState: this.connectionState,
@@ -726,7 +726,7 @@ class KeychainMonitorServer {
     }
   }
 
-  // Improved connection method with better resilience
+  // 🔥 ENHANCED: Improved connection method with better resilience
   async connectToCSGOEmpire() {
     if (this.isConnecting) {
       console.log('🔄 Connection already in progress, skipping...');
@@ -764,7 +764,7 @@ class KeychainMonitorServer {
         }
       });
 
-      //  Enhanced connection event handlers
+      // 🔥 NEW: Enhanced connection event handlers
       this.csgoSocket.on('connect', async () => {
         console.log('✅ Connected to CSGOEmpire websocket');
         this.connectionState = 'connected';
@@ -825,7 +825,7 @@ class KeychainMonitorServer {
         console.log(`📊 Trade status update received`);
       });
 
-      // Better disconnect handling
+      // 🔥 ENHANCED: Better disconnect handling
       this.csgoSocket.on("disconnect", (reason) => {
         console.log(`❌ Socket disconnected: ${reason}`);
         this.handleDisconnection(reason);
@@ -855,7 +855,7 @@ class KeychainMonitorServer {
     }
   }
 
-  // Handle disconnections with smart reconnection
+  // 🔥 NEW: Handle disconnections with smart reconnection
   handleDisconnection(reason) {
     this.connectionState = 'disconnected';
     this.isConnecting = false;
@@ -893,7 +893,7 @@ class KeychainMonitorServer {
     }
   }
 
-  // Heartbeat mechanism to keep connection alive
+  // 🔥 NEW: Heartbeat mechanism to keep connection alive
   startHeartbeat() {
     this.stopHeartbeat(); // Clear any existing heartbeat
     
@@ -912,7 +912,7 @@ class KeychainMonitorServer {
     console.log(`💓 Heartbeat started (every ${CONFIG.heartbeatInterval / 1000}s)`);
   }
 
-  // Stop heartbeat
+  // 🔥 NEW: Stop heartbeat
   stopHeartbeat() {
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);

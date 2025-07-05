@@ -1,6 +1,6 @@
 {
   "minAboveRecommended": -100,
-  "maxAboveRecommended": 15,
+  "maxAboveRecommended": 10,
   "keychainPercentageThreshold": 5,
   "enabledKeychains": [
     "Hot Howl",
@@ -256,6 +256,6 @@
     }
   ],
   "floatFilterEnabled": true,
-  "lastUpdated": "2025-07-04T23:14:19.933Z",
+  "lastUpdated": "2025-07-05T00:56:53.326Z",
   "version": "1.0"
 }
