@@ -1,16 +1,17 @@
-// popup.js - Updated with proper theme handling
+// popup.js - Updated with proper theme handling and site theming toggle
 
 class PopupManager {
     constructor() {
         this.currentStats = null;
         this.currentTheme = 'nebula'; // Default theme
+        this.siteThemingEnabled = true; // 🔥 NEW: Site theming state
         this.init();
     }
 
     async init() {
         console.log('🚀 Popup initialized');
         
-        // Load theme first
+        // Load theme and site theming state first
         await this.loadTheme();
         
         // Setup event listeners
@@ -26,13 +27,15 @@ class PopupManager {
     async loadTheme() {
         try {
             const settings = await chrome.storage.sync.get({
-                selectedTheme: 'nebula'
+                selectedTheme: 'nebula',
+                siteThemingEnabled: true // 🔥 NEW: Load site theming state
             });
             
             this.currentTheme = settings.selectedTheme;
+            this.siteThemingEnabled = settings.siteThemingEnabled; // 🔥 NEW: Set site theming state
             this.applyTheme(this.currentTheme);
             
-            console.log(`🎨 Popup loaded theme: ${this.currentTheme}`);
+            console.log(`🎨 Popup loaded theme: ${this.currentTheme}, site theming: ${this.siteThemingEnabled}`);
         } catch (error) {
             console.error('Error loading theme:', error);
             // Fall back to default theme
@@ -111,6 +114,17 @@ class PopupManager {
             });
         }
 
+        // 🔥 NEW: Site theming toggle
+        const siteThemingToggle = document.getElementById('siteThemingToggle');
+        if (siteThemingToggle) {
+            siteThemingToggle.addEventListener('click', () => {
+                const isActive = siteThemingToggle.classList.contains('active');
+                this.setSiteThemingState(!isActive);
+            });
+        } else {
+            console.warn('🚨 Site theming toggle not found in popup HTML');
+        }
+
         // Theme selection
         document.querySelectorAll('.theme-option').forEach(option => {
             option.addEventListener('click', () => {
@@ -135,11 +149,22 @@ class PopupManager {
 
         // Listen for storage changes (theme updates from other parts)
         chrome.storage.onChanged.addListener((changes, namespace) => {
-            if (namespace === 'sync' && changes.selectedTheme) {
-                const newTheme = changes.selectedTheme.newValue;
-                if (newTheme !== this.currentTheme) {
-                    console.log(`🎨 Theme changed to: ${newTheme}`);
-                    this.applyTheme(newTheme);
+            if (namespace === 'sync') {
+                if (changes.selectedTheme) {
+                    const newTheme = changes.selectedTheme.newValue;
+                    if (newTheme !== this.currentTheme) {
+                        console.log(`🎨 Theme changed to: ${newTheme}`);
+                        this.applyTheme(newTheme);
+                    }
+                }
+                // 🔥 NEW: Listen for site theming changes
+                if (changes.siteThemingEnabled) {
+                    const newSiteThemingState = changes.siteThemingEnabled.newValue;
+                    if (newSiteThemingState !== this.siteThemingEnabled) {
+                        console.log(`🌟 Site theming changed to: ${newSiteThemingState}`);
+                        this.siteThemingEnabled = newSiteThemingState;
+                        this.updateToggleState('siteThemingToggle', newSiteThemingState);
+                    }
                 }
             }
         });
@@ -244,6 +269,27 @@ class PopupManager {
         }
     }
 
+    // 🔥 NEW: Site theming state management
+    async setSiteThemingState(enabled) {
+        console.log(`🌟 Setting site theming to: ${enabled ? 'enabled' : 'disabled'}`);
+        
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'SET_SITE_THEMING_STATE',
+                data: { enabled }
+            });
+
+            if (response && response.success) {
+                this.siteThemingEnabled = enabled;
+                this.updateToggleState('siteThemingToggle', enabled);
+                this.showMessage(enabled ? 'Site theming enabled' : 'Site theming disabled', 'success');
+            }
+        } catch (error) {
+            console.error('Error setting site theming state:', error);
+            this.showMessage('Failed to update site theming state', 'error');
+        }
+    }
+
     async setMonitoringState(enabled) {
         try {
             const response = await chrome.runtime.sendMessage({
@@ -289,6 +335,8 @@ class PopupManager {
             } else {
                 toggle.classList.remove('active');
             }
+        } else {
+            console.warn(`🚨 Toggle element ${toggleId} not found`);
         }
     }
 
@@ -336,6 +384,12 @@ class PopupManager {
         // Update toggles
         this.updateToggleState('monitoringToggle', data.monitoringEnabled);
         this.updateToggleState('soundToggle', data.soundEnabled);
+        
+        // 🔥 NEW: Update site theming toggle
+        if (data.siteThemingEnabled !== undefined) {
+            this.siteThemingEnabled = data.siteThemingEnabled;
+            this.updateToggleState('siteThemingToggle', data.siteThemingEnabled);
+        }
 
         // Update theme if it changed
         if (data.currentTheme && data.currentTheme !== this.currentTheme) {

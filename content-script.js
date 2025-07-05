@@ -1,13 +1,12 @@
-// Prevent multiple injections
+// content-script.js - FIXED VERSION - Better site theming coordination
 (function() {
   if (window.empireEnhancedLoaded) {
     console.log('Empire Enhanced already loaded, skipping...');
     return;
   }
-  })();
   window.empireEnhancedLoaded = true;
 
-// Content script for CSGOEmpire keychain notifications overlay with theme support
+// Content script for CSGOEmpire keychain notifications overlay with SAFE site theming
 class CSGOEmpireNotificationOverlay {
   constructor() {
     this.notifications = [];
@@ -15,19 +14,25 @@ class CSGOEmpireNotificationOverlay {
     this.notificationContainer = null;
     this.soundEnabled = true;
     this.monitoringEnabled = true;
-    this.currentTheme = 'nebula'; // Default theme
+    this.currentTheme = 'shooting-star'; // Default theme
+    this.siteThemingEnabled = true; // Site theming state
     
     this.init();
   }
 
   async init() {
-    console.log('♔ Empire Enhanced overlay initialized');
+    console.log('♔ Empire Enhanced notifications overlay initialized');
     
-    // Load settings from storage including theme
+    // Load settings from storage including theme and site theming
     await this.loadSettings();
     
     // Create notification container
     this.createNotificationContainer();
+    
+    // Initialize site theming coordination with safety delay
+    setTimeout(() => {
+      this.initSiteThemingCoordination();
+    }, 2000); // 2 second delay to ensure page is ready
     
     // Listen for messages from background script
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -48,14 +53,17 @@ class CSGOEmpireNotificationOverlay {
           break;
         case 'THEME_CHANGED':
           this.setTheme(message.data.theme);
+          // Safely notify site theming system
+          this.notifySiteThemeChange(message.data.theme, message.data.siteThemingEnabled !== false);
+          sendResponse({success: true});
+          break;
+        case 'SITE_THEMING_CHANGED':
+          this.setSiteThemingState(message.data.enabled);
           sendResponse({success: true});
           break;
       }
       return true;
     });
-
-    // Note: Removed direct WebSocket connection to prevent duplicate notifications
-    // All notifications now come through the background script
   }
 
   async loadSettings() {
@@ -63,25 +71,87 @@ class CSGOEmpireNotificationOverlay {
       const settings = await chrome.storage.sync.get({
         monitoringEnabled: true,
         soundEnabled: true,
-        selectedTheme: 'nebula'
+        selectedTheme: 'shooting-star',
+        siteThemingEnabled: true
       });
       
       this.monitoringEnabled = settings.monitoringEnabled;
       this.soundEnabled = settings.soundEnabled;
       this.currentTheme = settings.selectedTheme;
+      this.siteThemingEnabled = settings.siteThemingEnabled;
       
       console.log('Content script settings loaded:', { 
         monitoring: this.monitoringEnabled, 
         sound: this.soundEnabled,
-        theme: this.currentTheme
+        theme: this.currentTheme,
+        siteTheming: this.siteThemingEnabled
       });
     } catch (error) {
       console.error('Error loading settings in content script:', error);
     }
   }
 
+  // SAFE: Initialize site theming coordination with error handling
+  initSiteThemingCoordination() {
+    try {
+      // Only apply theming if enabled and we're on the right page
+      if (this.siteThemingEnabled && this.isCSGOEmpirePage()) {
+        this.notifySiteThemeChange(this.currentTheme, this.siteThemingEnabled);
+      }
+
+      // Listen for storage changes to keep in sync
+      chrome.storage.onChanged.addListener((changes, namespace) => {
+        if (namespace === 'sync') {
+          if (changes.selectedTheme) {
+            this.currentTheme = changes.selectedTheme.newValue;
+            this.setTheme(this.currentTheme);
+            if (this.siteThemingEnabled && this.isCSGOEmpirePage()) {
+              this.notifySiteThemeChange(this.currentTheme, this.siteThemingEnabled);
+            }
+          }
+          if (changes.siteThemingEnabled) {
+            this.siteThemingEnabled = changes.siteThemingEnabled.newValue;
+            this.setSiteThemingState(this.siteThemingEnabled);
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error initializing site theming coordination:', error);
+    }
+  }
+
+  // SAFE: Check if we're on a CSGOEmpire page
+  isCSGOEmpirePage() {
+    return window.location.hostname.includes('csgoempire.com') || 
+           window.location.hostname.includes('csgoempire.gg');
+  }
+
+  // SAFE: Notify site theming system with error handling
+  notifySiteThemeChange(theme, siteThemingEnabled) {
+    try {
+      if (!this.isCSGOEmpirePage()) {
+        console.log('🎨 Not on CSGOEmpire page, skipping site theming');
+        return;
+      }
+
+      // Dispatch custom event for site theming system with safety delay
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('empireThemeChanged', {
+          detail: { 
+            theme: theme,
+            siteThemingEnabled: siteThemingEnabled !== false
+          }
+        }));
+
+        console.log(`🎨 Safely notified site theming system: ${theme}, enabled: ${siteThemingEnabled !== false}`);
+      }, 100); // Small delay for safety
+    } catch (error) {
+      console.error('Error notifying site theming system:', error);
+    }
+  }
+
   setTheme(themeName) {
-    console.log(`🎨 Content script setting theme to: ${themeName}`);
+    console.log(`🎨 Notifications: Setting theme to ${themeName}`);
     this.currentTheme = themeName;
     
     // Update notification container theme
@@ -89,8 +159,19 @@ class CSGOEmpireNotificationOverlay {
       this.notificationContainer.className = `keychain-notification-container theme-${themeName}`;
     }
     
-    // Re-inject theme styles if needed
+    // Re-inject theme styles
     this.injectThemeStyles();
+  }
+
+  // Site theming state management
+  setSiteThemingState(enabled) {
+    console.log(`🌟 Site theming state changed: ${enabled ? 'enabled' : 'disabled'}`);
+    this.siteThemingEnabled = enabled;
+    
+    // Safely notify site theming system
+    if (this.isCSGOEmpirePage()) {
+      this.notifySiteThemeChange(this.currentTheme, this.siteThemingEnabled);
+    }
   }
 
   setMonitoringState(enabled) {
@@ -117,7 +198,7 @@ class CSGOEmpireNotificationOverlay {
       existing.remove();
     }
 
-    // Create container for notifications
+    // Create container for notifications with SAFE positioning
     this.notificationContainer = document.createElement('div');
     this.notificationContainer.id = 'keychain-notification-container';
     this.notificationContainer.className = `keychain-notification-container theme-${this.currentTheme}`;
@@ -135,8 +216,8 @@ class CSGOEmpireNotificationOverlay {
     
     // Inject theme-specific styles
     this.injectThemeStyles();
-
   }
+
   injectThemeStyles() {
     // Remove existing theme styles
     const existingStyles = document.getElementById('keychain-notification-theme-styles');
@@ -148,27 +229,15 @@ class CSGOEmpireNotificationOverlay {
     styles.id = 'keychain-notification-theme-styles';
     
     styles.textContent = `
-      /* ===== BASE NOTIFICATION STYLES ===== */
+      /* ===== SAFE NOTIFICATION STYLES - NO INTERFERENCE WITH CHAT ===== */
       @keyframes slideInRight {
-        from {
-          transform: translateX(350px);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
+        from { transform: translateX(350px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
       }
       
       @keyframes slideOutRight {
-        from {
-          transform: translateX(0);
-          opacity: 1;
-        }
-        to {
-          transform: translateX(350px);
-          opacity: 0;
-        }
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(350px); opacity: 0; }
       }
       
       @keyframes float {
@@ -177,50 +246,42 @@ class CSGOEmpireNotificationOverlay {
       }
       
       @keyframes pulseGlow {
-        0%, 100% {
-          box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
-        }
-        50% {
-          box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
-        }
+        0%, 100% { box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05); }
+        50% { box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1); }
       }
       
-      .keychain-notification {
+      /* SAFE: Only target our notification elements with specific IDs/classes */
+      #keychain-notification-container .keychain-notification {
         animation: slideInRight 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
       }
       
-      .keychain-notification:hover {
-        transform: translateY(-4px) !important;
+      #keychain-notification-container .keychain-notification:hover { 
+        transform: translateY(-4px) !important; 
       }
       
-      .crown-float {
-        animation: float 3s ease-in-out infinite;
+      #keychain-notification-container .crown-float { 
+        animation: float 3s ease-in-out infinite; 
       }
       
-      /* Fixed gradient text - no background box */
-      .gradient-text {
+      #keychain-notification-container .gradient-text {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
         display: inline-block;
-        padding: 0;
-        margin: 0;
-        border: none;
-        box-shadow: none;
       }
       
-      .premium-button {
+      #keychain-notification-container .premium-button {
         border: none;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
       
-      .premium-button:hover {
-        transform: translateY(-2px);
+      #keychain-notification-container .premium-button:hover { 
+        transform: translateY(-2px); 
       }
       
-      .secondary-button {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      #keychain-notification-container .secondary-button { 
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
       }
 
       /* ===== THEME 1: NEBULA STYLES ===== */
@@ -235,8 +296,8 @@ class CSGOEmpireNotificationOverlay {
         box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
       }
 
-      .keychain-notification-container.theme-nebula .pulse-glow {
-        animation: pulseGlow 3s infinite;
+      .keychain-notification-container.theme-nebula .pulse-glow { 
+        animation: pulseGlow 3s infinite; 
       }
 
       .keychain-notification-container.theme-nebula .gradient-text {
@@ -275,7 +336,6 @@ class CSGOEmpireNotificationOverlay {
         overflow: hidden;
       }
 
-      /* 🔥 NEW: Subtle shooting star background effect for notifications */
       .keychain-notification-container.theme-shooting-star .keychain-notification::before {
         content: '';
         position: absolute;
@@ -299,52 +359,9 @@ class CSGOEmpireNotificationOverlay {
         100% { transform: translateY(-20px); }
       }
 
-      /* 🔥 NEW: Subtle shooting star trail effect */
-      .keychain-notification-container.theme-shooting-star .keychain-notification::after {
-        content: '';
-        position: absolute;
-        top: 10px;
-        right: 15px;
-        width: 30px;
-        height: 1px;
-        background: linear-gradient(to left, rgba(135, 206, 235, 0.6), transparent);
-        opacity: 0;
-        animation: subtleShootingStar 4s ease-in-out infinite;
-        pointer-events: none;
-        z-index: 1;
-      }
-
-      @keyframes subtleShootingStar {
-        0%, 85% { 
-          opacity: 0; 
-          transform: translateX(-40px) translateY(-5px); 
-        }
-        90%, 95% { 
-          opacity: 1; 
-          transform: translateX(20px) translateY(8px); 
-        }
-        100% { 
-          opacity: 0; 
-          transform: translateX(30px) translateY(10px); 
-        }
-      }
-
       .keychain-notification-container.theme-shooting-star .keychain-notification:hover {
         box-shadow: 0 20px 40px rgba(135, 206, 235, 0.25), 0 0 0 1px rgba(135, 206, 235, 0.2) !important;
         border-color: rgba(135, 206, 235, 0.5);
-      }
-
-      .keychain-notification-container.theme-shooting-star .pulse-glow {
-        animation: pulseGlowStar 3s infinite;
-      }
-
-      @keyframes pulseGlowStar {
-        0%, 100% {
-          box-shadow: 0 8px 32px rgba(135, 206, 235, 0.15), 0 0 0 1px rgba(135, 206, 235, 0.1);
-        }
-        50% {
-          box-shadow: 0 12px 40px rgba(135, 206, 235, 0.3), 0 0 0 1px rgba(135, 206, 235, 0.2);
-        }
       }
 
       .keychain-notification-container.theme-shooting-star .gradient-text {
@@ -373,7 +390,6 @@ class CSGOEmpireNotificationOverlay {
         border-color: rgba(135, 206, 235, 0.3);
       }
 
-      /* Crown SVG theming */
       .keychain-notification-container.theme-shooting-star .crown-svg {
         filter: drop-shadow(0 4px 8px rgba(135, 206, 235, 0.4));
       }
@@ -695,3 +711,4 @@ if (document.readyState === 'loading') {
 } else {
   new CSGOEmpireNotificationOverlay();
 }
+})();

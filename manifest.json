@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "♔ Empire Enhanced",
-  "version": "1.0",
-  "description": "Advanced monitoring and enhancement tools for CSGOEmpire",
+  "version": "1.1",
+  "description": "Advanced monitoring and enhancement tools for CSGOEmpire with safe site theming",
   "permissions": [
     "notifications",
     "storage",
@@ -19,7 +19,7 @@
   "content_scripts": [
     {
       "matches": ["https://csgoempire.com/*", "https://csgoempire.gg/*"],
-      "js": ["content-script.js"],
+      "js": ["content-script.js", "site-themeing.js"],
       "run_at": "document_end"
     }
   ],
@@ -30,6 +30,7 @@
     "default_popup": "popup.html",
     "default_title": "Empire Enhanced"
   },
+  
   "web_accessible_resources": [
     {
       "resources": ["history.html", "offscreen.html"],

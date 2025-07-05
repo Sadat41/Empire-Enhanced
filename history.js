@@ -116,12 +116,15 @@ class NotificationHistory {
 
         // Listen for storage changes (theme updates from popup)
         chrome.storage.onChanged.addListener((changes, namespace) => {
-            if (namespace === 'sync' && changes.selectedTheme) {
-                const newTheme = changes.selectedTheme.newValue;
-                if (newTheme !== this.currentTheme) {
-                    console.log(`🎨 Theme changed to: ${newTheme}`);
-                    this.applyTheme(newTheme);
+            if (namespace === 'sync') {
+                if (changes.selectedTheme) {
+                    const newTheme = changes.selectedTheme.newValue;
+                    if (newTheme !== this.currentTheme) {
+                        console.log(`🎨 Theme changed to: ${newTheme}`);
+                        this.applyTheme(newTheme);
+                    }
                 }
+                // Note: Site theming changes are handled by site-themeing.js, not history.js
             }
         });
     }
