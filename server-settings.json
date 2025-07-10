@@ -1,7 +1,7 @@
 {
   "minAboveRecommended": -100,
   "maxAboveRecommended": 10,
-  "keychainPercentageThreshold": 5,
+  "keychainPercentageThreshold": 10,
   "enabledKeychains": [
     "Hot Howl",
     "Baby Karat T",
@@ -256,6 +256,6 @@
     }
   ],
   "floatFilterEnabled": true,
-  "lastUpdated": "2025-07-05T00:56:53.326Z",
+  "lastUpdated": "2025-07-09T06:55:15.094Z",
   "version": "1.0"
 }

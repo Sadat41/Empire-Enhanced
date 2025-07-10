@@ -1,385 +1,310 @@
-// empire-theme-injector.js - Inject polished theme into CSGOEmpire
+
+// --- Start of Starfield Class (formerly part of starfield.js) ---
+class Starfield {
+    constructor(containerId = 'starfield-container') {
+        this.starCount = 80; // Number of twinkling stars
+        this.shootingStarCount = 2; // Number of shooting stars
+        
+        this.starContainer = null;
+        this.shootingStarIntervals = [];
+        this.resizeTimer = null;
+        
+        this.containerId = containerId;
+    }
+
+    /**
+     * Creates the container for the starfield if it doesn't exist.
+     */
+    _setupContainer() {
+        this.starContainer = document.getElementById(this.containerId);
+        if (!this.starContainer) {
+            this.starContainer = document.createElement('div');
+            this.starContainer.id = this.containerId;
+            // Basic styles are applied here, more specific styles are in the theme CSS
+            this.starContainer.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                pointer-events: none; z-index: -2; overflow: hidden; display: none;
+            `;
+            document.body.appendChild(this.starContainer);
+        }
+    }
+
+    /**
+     * Generates the twinkling background stars.
+     */
+    _generateTwinklingStars() {
+        // Clear only twinkling stars
+        this.starContainer.querySelectorAll('.star').forEach(star => star.remove());
+
+        for (let i = 0; i < this.starCount; i++) {
+            const star = document.createElement('div');
+            star.classList.add('star');
+
+            const size = Math.random() * 2.5 + 1;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.top = `${Math.random() * 100}vh`;
+            star.style.left = `${Math.random() * 100}vw`;
+            star.style.animationDelay = `${Math.random() * 4}s`;
+            star.style.animationDuration = `${3 + Math.random() * 2}s`;
+            const brightness = 200 + Math.random() * 55;
+            star.style.backgroundColor = `rgb(${brightness}, ${brightness}, ${brightness})`;
+            
+            this.starContainer.appendChild(star);
+        }
+    }
+
+    /**
+     * Creates and animates a single shooting star.
+     * @param {HTMLElement} starElement The div element for the shooting star.
+     */
+    _animateShootingStar(starElement) {
+        starElement.style.animation = 'none';
+        void starElement.offsetWidth; // Trigger reflow to restart animation
+
+        const startX = -200 - (Math.random() * 300);
+        const startY = -100 - (Math.random() * 200);
+        const pathLength = Math.max(window.innerWidth, window.innerHeight) * 1.2 + (Math.random() * 500);
+        const endX = startX + pathLength;
+        const endY = startY + pathLength;
+        const duration = 4 + Math.random() * 4;
+
+        starElement.style.setProperty('--start-x', `${startX}px`);
+        starElement.style.setProperty('--start-y', `${startY}px`);
+        starElement.style.setProperty('--end-x', `${endX}px`);
+        starElement.style.setProperty('--end-y', `${endY}px`);
+        starElement.style.animation = `shootingStarPath ${duration}s linear forwards`;
+        
+        // Hide the star after animation to prevent it from sitting at the end point
+        setTimeout(() => { starElement.style.opacity = '0'; }, duration * 1000);
+    }
+    
+    /**
+     * Initializes the creation and timed animations of shooting stars.
+     */
+    _startShootingStars() {
+        this._stopShootingStars(); // Clear existing ones first
+
+        for (let i = 0; i < this.shootingStarCount; i++) {
+            const shootingStar = document.createElement('div');
+            shootingStar.classList.add('shooting-star-js');
+            this.starContainer.appendChild(shootingStar);
+
+            // Stagger the start times and intervals for a more random appearance
+            const initialDelay = i * (Math.random() * 5 + 2); // Initial delay before the first animation
+            const intervalId = setTimeout(() => {
+                this._animateShootingStar(shootingStar);
+                // Set up the repeating interval after the first run
+                const repeatInterval = setInterval(() => this._animateShootingStar(shootingStar), 15000 + Math.random() * 10000);
+                this.shootingStarIntervals.push(repeatInterval);
+            }, initialDelay * 1000);
+
+            this.shootingStarIntervals.push(intervalId); // Keep track to clear it later
+        }
+    }
+
+    /**
+     * Clears all shooting star intervals and removes their elements.
+     */
+    _stopShootingStars() {
+        this.shootingStarIntervals.forEach(id => clearInterval(id));
+        this.shootingStarIntervals = [];
+        this.starContainer?.querySelectorAll('.shooting-star-js').forEach(star => star.remove());
+    }
+    
+    /**
+     * Handles window resize events to regenerate stars for the new viewport size.
+     */
+    _handleResize() {
+        clearTimeout(this.resizeTimer);
+        this.resizeTimer = setTimeout(() => {
+            if (this.starContainer && this.starContainer.style.display !== 'none') {
+                this.stop();
+                this.start();
+            }
+        }, 250);
+    }
+    
+    /**
+     * Public method to start the entire starfield effect.
+     */
+    start() {
+        this._setupContainer();
+        this.starContainer.style.display = 'block';
+        
+        this._generateTwinklingStars();
+        this._startShootingStars();
+        
+        // Add resize listener only when started
+        window.addEventListener('resize', this._boundResizeHandler);
+        
+        console.log('✨ Starfield started.');
+    }
+
+    /**
+     * Public method to stop the starfield effect and clean up.
+     */
+    stop() {
+        this._stopShootingStars();
+        if (this.starContainer) {
+            this.starContainer.innerHTML = ''; // Clear all stars
+            this.starContainer.style.display = 'none';
+        }
+        
+        // Remove resize listener when stopped
+        window.removeEventListener('resize', this._boundResizeHandler);
+
+        console.log('✨ Starfield stopped.');
+    }
+}
+// --- End of Starfield Class ---
+
+
+// --- Start of Theme Injector (formerly site-themeing.js) ---
 (function() {
   'use strict';
 
-  // Check if theme already injected
   if (document.getElementById('empire-enhanced-theme')) {
     console.log('Empire Enhanced theme already loaded');
     return;
   }
 
-  // --- Start of Starfield Class (Optimized with original DOM/CSS approach) ---
-  class Starfield {
-    constructor(starContainerId = 'empire-starfield-container') {
-      this.starCount = 150; // Optimized: Reduced from 200 for lower CPU usage
-      this.shootingStarCount = 5; // Optimized: Reduced from 7 for lower CPU usage
-      this.starContainer = null;
-      this.shootingStarsElements = []; // Store references to shooting star elements
-      this.shootingStarIntervals = []; // Store animation intervals/timeouts
-      this.resizeTimer = null; // For debouncing resize event
-
-      this.setupStarfield(starContainerId);
-      console.log('✨ Starfield module initialized within EmpireThemeInjector.');
-    }
-
-    setupStarfield(containerId) {
-      this.starContainer = document.getElementById(containerId);
-      if (!this.starContainer) {
-        this.starContainer = document.createElement('div');
-        this.starContainer.id = containerId;
-        this.starContainer.classList.add('starfield-container');
-        document.body.appendChild(this.starContainer);
-      }
-      this.starContainer.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: -2; /* Ensure it's behind everything */
-        overflow: hidden; /* Prevent stars from creating scrollbars */
-        max-width: 100vw;
-        max-height: 100vh;
-      `;
-    }
-
-    generateStars() {
-      // Clear existing static stars (only those generated by this function specifically)
-      this.starContainer.querySelectorAll('.star').forEach(star => star.remove());
-
-      for (let i = 0; i < this.starCount; i++) {
-        const star = document.createElement('div');
-        star.classList.add('star');
-
-        const size = Math.random() * 2 + 1; // 1px to 3px
-        star.style.width = `${size}px`;
-        star.style.height = `${size}px`;
-        star.style.top = `${Math.random() * 100}vh`;
-        star.style.left = `${Math.random() * 100}vw`;
-        star.style.animationDelay = `${Math.random() * 4}s`; //
-        star.style.animationDuration = `${3 + Math.random() * 2}s`; // 3 to 5 seconds
-        const brightness = 200 + Math.random() * 55; // 200 to 255
-        star.style.backgroundColor = `rgb(${brightness}, ${brightness}, ${brightness})`; //
-
-        this.starContainer.appendChild(star);
-      }
-      console.log(`✨ Generated ${this.starCount} static stars.`);
-    }
-
-    startShootingStars() {
-      // Clear only previous shooting stars, not static ones
-      this.shootingStarIntervals.forEach(id => clearInterval(id));
-      this.shootingStarIntervals = [];
-      this.starContainer.querySelectorAll('.shooting-star-js').forEach(star => star.remove()); // Target only shooting stars
-      this.shootingStarsElements = [];
-
-      for (let i = 0; i < this.shootingStarCount; i++) {
-        const shootingStar = document.createElement('div');
-        shootingStar.classList.add('shooting-star-js'); // Use the class for styling
-        this.starContainer.appendChild(shootingStar); // Append to the starfield container
-        this.shootingStarsElements.push(shootingStar);
-
-        // Staggered start and continuous animation
-        const initialDelay = i * (Math.random() * 5 + 2); // 2-7 seconds stagger
-        const intervalId = setTimeout(() => {
-          this.animateShootingStar(shootingStar); // Start first animation
-          // After the first one, ensure continuous random re-animation
-          const repeatInterval = setInterval(() => this.animateShootingStar(shootingStar), 8000 + Math.random() * 5000); // Repeat every 8-13 seconds
-          this.shootingStarIntervals.push(repeatInterval); // Store for cleanup
-        }, initialDelay * 1000); // Convert to milliseconds
-        this.shootingStarIntervals.push(intervalId); // Store initial timeout for cleanup
-      }
-      console.log(`🌠 Started ${this.shootingStarCount} shooting stars.`);
-    }
-
-    animateShootingStar(starElement) {
-      // Reset animation to force re-trigger if needed
-      starElement.style.animation = 'none';
-      void starElement.offsetWidth; // Trigger reflow
-
-      // Define a random starting point off-screen top-left, similar to original style
-      const startX = -200 - (Math.random() * 300); // Start off-screen left, more random offset
-      const startY = -100 - (Math.random() * 200); // Start off-screen top, more random offset
-
-      // Define the length of the diagonal path, ensuring it crosses the screen
-      const pathLength = Math.max(window.innerWidth, window.innerHeight) * 1.2 + (Math.random() * 500); //
-
-      // Calculate end points for a 45-degree downward movement (x and y increase equally)
-      const endX = startX + pathLength; //
-      const endY = startY + pathLength; //
-
-      const duration = 4 + Math.random() * 4; // 4 to 8 seconds
-
-      // Set CSS custom properties (variables) for the animation
-      starElement.style.setProperty('--start-x', `${startX}px`);
-      starElement.style.setProperty('--start-y', `${startY}px`);
-      starElement.style.setProperty('--end-x', `${endX}px`);
-      starElement.style.setProperty('--end-y', `${endY}px`);
-
-      // Apply the animation using the CSS variables
-      starElement.style.animation = `shootingStarPath ${duration}s linear forwards`;
-
-      // Set a timeout to hide the star after its animation finishes
-      setTimeout(() => {
-        starElement.style.opacity = '0'; // Hide at the end of the path
-      }, duration * 1000);
-    }
-
-    stopAll() {
-      // Clear all scheduled intervals and timeouts
-      this.shootingStarIntervals.forEach(id => clearInterval(id));
-      this.shootingStarIntervals = [];
-
-      // Remove all star elements from the container
-      if (this.starContainer) {
-        this.starContainer.innerHTML = ''; // This clears all, static and shooting
-      }
-      this.shootingStarsElements = [];
-      console.log('🌠 Starfield and shooting stars stopped and cleared.');
-    }
-  }
-  // --- End of Starfield Class ---
-
+  // NOTE: The Starfield class is now defined above in this same file.
 
   class EmpireThemeInjector {
     constructor() {
       this.themeId = 'empire-enhanced-theme';
-      this.currentTheme = 'nebula'; // Default theme
-      this.siteThemingEnabled = false; // Default to disabled for safety
-      this.starfieldInstance = null; // To hold the Starfield instance
-      this.domObserver = null; // To hold the MutationObserver instance
-
-      console.log('🎨 EmpireThemeInjector constructor - initial state: disabled');
+      this.currentTheme = 'nebula';
+      this.siteThemingEnabled = false;
+      this.starfieldInstance = null; // Will hold the instance of the Starfield class
+      this.domObserver = null;
+      this.observerDebounceTimer = null;
       this.init();
     }
 
     init() {
-      console.log('🎨 Empire Enhanced Theme Injector initialized');
-
-      // Load preferences first, then decide what to do
       this.loadThemePreference().then(() => {
-        // Only inject theme if site theming is explicitly enabled
         if (this.siteThemingEnabled === true) {
-          console.log(`✅ Site theming ENABLED - applying ${this.currentTheme} theme`);
           this.injectTheme();
         } else {
-          console.log('🚫 Site theming DISABLED - CSGOEmpire will use default styling');
-          // Make sure no theme classes are applied
           document.body.className = document.body.className.replace(/empire-theme-\w+/g, '');
         }
-
-        // Setup other functionality
-        this.applyDynamicFixes();
         this.observeDOMChanges();
+        this.setupScrollListener();
       });
 
-      // Updated event listener to handle both enabled and disabled states
       window.addEventListener('empireThemeChanged', (event) => {
         if (event.detail) {
           const { theme, siteThemingEnabled } = event.detail;
-
-          console.log(`🎨 Theme event received: theme=${theme}, enabled=${siteThemingEnabled}`);
-
-          this.siteThemingEnabled = siteThemingEnabled !== false; // Default to true if undefined
-
+          this.siteThemingEnabled = siteThemingEnabled !== false;
           if (this.siteThemingEnabled) {
-            // Site theming is enabled - apply the theme
             this.currentTheme = theme || 'nebula';
-            console.log(`✅ Enabling site theming with ${this.currentTheme} theme`);
-
-            // Inject theme if not already injected
             if (!document.getElementById(this.themeId)) {
               this.injectTheme();
             } else {
               this.updateTheme();
             }
           } else {
-            // Site theming is disabled - remove the theme
-            console.log('🚫 Disabling site theming - removing all themes');
             this.removeTheme();
           }
         }
       });
+    }
 
-      // Listen for window resize to regenerate stars if needed
-      window.addEventListener('resize', () => {
-        // Debounce resize event to prevent excessive calls
-        clearTimeout(this.resizeTimer);
-        this.resizeTimer = setTimeout(() => {
-          if (this.currentTheme === 'shooting-star' && this.starfieldInstance && this.siteThemingEnabled) {
-            this.starfieldInstance.generateStars(); //
-            this.starfieldInstance.startShootingStars(); //
-          }
-        }, 250); // Wait 250ms after the last resize event
-      });
+    setupScrollListener() {
+        let scrollTimeout = null;
+        window.addEventListener('scroll', () => {
+            document.body.classList.add('is-scrolling');
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                document.body.classList.remove('is-scrolling');
+            }, 150);
+        }, { passive: true });
     }
 
     async loadThemePreference() {
       try {
-        const settings = await chrome.storage.sync.get({
-          selectedTheme: 'nebula',
-          siteThemingEnabled: true
-        });
-
-        // Always load the theme preference, but only apply if enabled
+        const settings = await chrome.storage.sync.get({ selectedTheme: 'nebula', siteThemingEnabled: true });
         this.currentTheme = settings.selectedTheme;
         this.siteThemingEnabled = settings.siteThemingEnabled;
-
-        console.log(`🎨 Loaded preferences: theme=${this.currentTheme}, siteTheming=${this.siteThemingEnabled}`);
-
-        // IMPORTANT: If site theming is disabled, make sure no theme is applied
-        if (!this.siteThemingEnabled) {
-          console.log('🚫 Site theming is DISABLED - will not apply any theme');
-        }
-      } catch (error) {
-        console.log('🚨 Chrome storage not available - using fallback settings');
-        // If chrome.storage.sync fails, default to disabled site theming
-        this.currentTheme = 'nebula';
-        this.siteThemingEnabled = false; // Default to disabled when storage fails
-        console.log('🚫 Fallback: Site theming DISABLED');
+      } catch (e) {
+        this.currentTheme = 'nebula'; this.siteThemingEnabled = false;
       }
     }
 
     injectTheme() {
-      // Double-check if site theming is enabled before injecting
-      if (!this.siteThemingEnabled) {
-        console.log('🚫 BLOCKED: Site theming disabled - refusing to inject theme');
-        return;
-      }
-
-      console.log(`🎨 INJECTING: ${this.currentTheme} theme to CSGOEmpire`);
-
+      if (!this.siteThemingEnabled) return;
       const style = document.createElement('style');
       style.id = this.themeId;
       style.textContent = this.getThemeCSS();
       document.head.appendChild(style);
-
       document.body.classList.add(`empire-theme-${this.currentTheme}`);
-      this.updateStarfieldDisplay(); // Initial display update
-
-      console.log(`✅ Theme ${this.currentTheme} successfully injected and applied`);
+      this.updateStarfieldDisplay();
     }
 
     updateTheme() {
-      // Double-check if site theming is enabled before updating
-      if (!this.siteThemingEnabled) {
-        console.log('🚫 BLOCKED: Site theming disabled - refusing to update theme');
-        return;
-      }
-
-      console.log(`🎨 UPDATING: CSGOEmpire theme to ${this.currentTheme}`);
-
+      if (!this.siteThemingEnabled) return;
       document.body.className = document.body.className.replace(/empire-theme-\w+/g, '');
       document.body.classList.add(`empire-theme-${this.currentTheme}`);
-
       const themeElement = document.getElementById(this.themeId);
-      if (themeElement) {
-        themeElement.textContent = this.getThemeCSS();
-      }
-      this.updateStarfieldDisplay(); // Update starfield based on new theme
-
-      console.log(`✅ Theme successfully updated to ${this.currentTheme}`);
+      if (themeElement) themeElement.textContent = this.getThemeCSS();
+      this.updateStarfieldDisplay();
     }
 
-    // Method to remove theme when site theming is disabled
     removeTheme() {
-      console.log('🗑️ REMOVING: Empire Enhanced theme from CSGOEmpire');
-
-      // Remove theme styles
       const themeElement = document.getElementById(this.themeId);
-      if (themeElement) {
-        themeElement.remove();
-        console.log('✅ Theme CSS removed');
-      }
-
-      // Remove theme classes from body
-      const removedClasses = document.body.className.match(/empire-theme-\w+/g);
+      if (themeElement) themeElement.remove();
       document.body.className = document.body.className.replace(/empire-theme-\w+/g, '');
-      if (removedClasses) {
-        console.log(`✅ Theme classes removed: ${removedClasses.join(', ')}`);
-      }
-
-      // Stop and remove starfield
       if (this.starfieldInstance) {
-        this.starfieldInstance.stopAll();
-        if (this.starfieldInstance.starContainer) {
-          this.starfieldInstance.starContainer.remove();
-        }
-        this.starfieldInstance = null; // Clean up the instance
-        console.log('✅ Starfield removed');
+        this.starfieldInstance.stop();
+        this.starfieldInstance = null;
       }
-
-      console.log('✅ Theme completely removed - CSGOEmpire restored to default styling');
+      if (this.domObserver) {
+        this.domObserver.disconnect();
+        this.domObserver = null;
+      }
     }
 
     getThemeCSS() {
-      const baseCSS = `
-        /* ===== Empire Enhanced Theme Base ===== */
+      return `
         ${this.getBaseStyles()}
-
-        /* ===== Theme-specific styles ===== */
         ${this.currentTheme === 'shooting-star' ? this.getShootingStarStyles() : this.getNebulaStyles()}
-
-        /* Global CSS for stars managed by Starfield class */
-        .starfield-container {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            pointer-events: none !important;
-            z-index: -2 !important;
-            overflow: hidden !important; /* Only the starfield container should hide overflow */
-            max-width: 100vw !important;
-            max-height: 100vh !important;
-        }
+        /* Starfield and animation styles now live here */
         .star {
-            position: absolute;
-            background-color: white; /* Default star color */
-            border-radius: 50%; /* Make them circular */
-            opacity: 0; /* Start invisible for animation */
-            animation: twinkle 4s infinite ease-in-out alternate; /* Twinkling animation */
+            position: absolute; background-color: white; border-radius: 50%;
+            opacity: 0; animation: twinkle 4s infinite ease-in-out alternate;
         }
         @keyframes twinkle {
             0% { opacity: 0.2; transform: scale(0.8); }
             50% { opacity: 1; transform: scale(1); }
             100% { opacity: 0.2; transform: scale(0.8); }
         }
-
         .shooting-star-js {
-            position: absolute;
-            width: 80px; /* Length of the trail - original from your file */
-            height: 2px; /* Thickness of the trail - original from your file */
-            /* Adjusted gradient direction to match the visual of the original animation */
+            position: absolute; width: 80px; height: 2px;
             background: linear-gradient(to right, transparent, rgba(74, 144, 226, 0.6), rgba(135, 206, 235, 0.9));
-            border-radius: 1px;
-            pointer-events: none;
-            z-index: -1;
-            opacity: 0; /* Starts hidden, shown by JS/animation */
+            border-radius: 1px; pointer-events: none; z-index: -1; opacity: 0;
+        }
+        @keyframes shootingStarPath {
+            0% { transform: translate(var(--start-x), var(--start-y)) rotate(45deg); opacity: 0; }
+            1% { opacity: 1; }
+            99% { opacity: 1; }
+            100% { transform: translate(var(--end-x), var(--end-y)) rotate(45deg); opacity: 0; }
         }
 
-        /* Reverted to original keyframes for diagonal movement as per your original file*/
-        @keyframes shootingStarPath {
-            0% {
-                transform: translate(var(--start-x), var(--start-y)) rotate(45deg);
-                opacity: 0;
-            }
-            1% { opacity: 1; } /* Fade in quickly */
-            99% { opacity: 1; }
-            100% {
-                transform: translate(var(--end-x), var(--end-y)) rotate(45deg);
-                opacity: 0;
-            }
+        /* * FIX: Removed '.shooting-star-js' from this rule.
+         * Now, only twinkling stars and pulse animations pause during scroll for performance.
+         * Shooting stars will continue their animation, looking much more natural.
+        */
+        body.is-scrolling .star,
+        body.is-scrolling [style*="animation-name: pulse-magenta"] {
+            animation-play-state: paused !important;
         }
       `;
-      return baseCSS;
     }
 
-    getBaseStyles() {
-      return `
+    getBaseStyles() { return `
         /* ===== Base Structure & Nav ===== */
-        .navbar-nav > li, .nav-pills > li, ul.nav > li {
+        .navbar-nav > li, .nav-pills > li, ul.nav > li, .trade-list-wrapper, .trade-item-wrapper, .filters-wrapper, .filter-wrapper, .notifications-wrapper, .notification-item {
           background: transparent !important; border: none !important; box-shadow: none !important;
         }
         [href*="/games"], [data-toggle="dropdown"] {
@@ -389,228 +314,118 @@
         [href*="/games"]:hover, [data-toggle="dropdown"]:hover {
           background: rgba(255, 255, 255, 0.04) !important;
         }
-
         /* ===== Main Content Panels (Trade & Filters) ===== */
-        .trade-list-wrapper, .trade-item-wrapper {
-          background: transparent !important; border: none !important;
-        }
-        .trade-list-wrapper > div {
+        .trade-list-wrapper > div, .filters-wrapper > div {
           background: rgba(15, 15, 25, 0.75) !important;
-          backdrop-filter: blur(10px) !important; /* Optimized: Reduced blur from 20px */
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
-          border-radius: 24px !important;
+          /* OPTIMIZED: Further reduced blur for maximum scroll performance */
+          backdrop-filter: blur(5px) !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 24px !important;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-          overflow: hidden !important;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important; overflow: hidden !important;
         }
-
-        /* ===== Filter Panels ===== */
-        .filters-wrapper, .filter-wrapper {
-          background: transparent !important; border: none !important; padding: 0 !important;
-        }
-        .filters-wrapper > div {
-          background: rgba(15, 15, 25, 0.75) !important;
-          backdrop-filter: blur(10px) !important; /* Optimized: Reduced blur from 20px */
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
-          border-radius: 24px !important;
-          padding: 20px !important;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        }
-
+        .filters-wrapper > div { padding: 20px !important; }
         /* ===== Notifications ===== */
-        .notifications-wrapper, .notification-item {
-          background: transparent !important; border: none !important;
-        }
         .notification-item > div {
-          background: rgba(255, 255, 255, 0.08) !important;
-          backdrop-filter: blur(10px) !important; /* Optimized: Reduced blur from 20px */
-          border: 1px solid rgba(255, 255, 255, 0.12) !important;
-          border-radius: 16px !important;
+          background: rgba(255, 255, 255, 0.08) !important; backdrop-filter: blur(8px) !important;
+          border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 16px !important;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
-
         /* ===== Inputs & Price Range ===== */
         .price-range-wrapper, input[placeholder*="Min"], input[placeholder*="Max"] {
-          background: rgba(255, 255, 255, 0.08) !important;
-          border: 1px solid rgba(255, 255, 255, 0.12) !important;
-          border-radius: 10px !important;
-          padding: 8px 12px !important;
-          box-shadow: none !important;
+          background: rgba(255, 255, 255, 0.08) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important;
+          border-radius: 10px !important; padding: 8px 12px !important; box-shadow: none !important;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
         .price-range-wrapper:hover, input[placeholder*="Min"]:hover, input[placeholder*="Max"]:hover {
           border-color: rgba(102, 126, 234, 0.4) !important;
         }
-
         /* ===== Dropdowns & Popovers ===== */
         .dropdown-menu, .popover-panel, div[class*="room-box_desktop"] {
-          background: rgba(10, 10, 20, 0.9) !important;
-          backdrop-filter: blur(16px) !important; /* Optimized: Reduced blur from 32px */
-          border: 1px solid rgba(255, 255, 255, 0.12) !important;
-          border-radius: 12px !important;
-          box-shadow: 0 16px 64px rgba(0, 0, 0, 0.6) !important;
-          color: #e2e8f0 !important;
+          background: rgba(10, 10, 20, 0.9) !important; backdrop-filter: blur(10px) !important;
+          border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 12px !important;
+          box-shadow: 0 16px 64px rgba(0, 0, 0, 0.6) !important; color: #e2e8f0 !important;
         }
         .dropdown-item:hover, .popover-panel button:hover, div[class*="room-box_desktop"] button:hover {
           background: rgba(255, 255, 255, 0.04) !important;
         }
-        .popover-panel *, div[class*="room-box_desktop"] * {
-          color: #e2e8f0 !important;
-        }
-
+        .popover-panel *, div[class*="room-box_desktop"] * { color: #e2e8f0 !important; }
         /* ===== General Dark Backgrounds & Sidebars ===== */
-        .bg-dark-7, .bg-dark-2, [class*="bg-dark"],
-        .sidebar_inner, .sidebar-structure, .content_inner, [data-v-ebe404fd].sidebar_inner,
-        [data-v-ecf11097].sidebar-structure, [data-v-ecf11097].content, [data-v-ecf11097].content_inner,
-        [data-v-7fedfc59].bg-dark-3, #scrollable-sidebar-element, .bg-dark-3.p-1g,
-        .sidebar [data-testid="trades"], .sidebar [data-testid="filters"], .sidebar-content,
-        [class*="sidebar"] [class*="trade"], [class*="sidebar"] [class*="filter"] {
-          background: rgba(15, 15, 25, 0.75) !important;
-          backdrop-filter: blur(10px) !important; /* Optimized: Reduced blur from 20px */
+        .bg-dark-7, .bg-dark-2, [class*="bg-dark"], .sidebar_inner, .sidebar-structure, .content_inner, [data-v-ebe404fd].sidebar_inner,
+        [data-v-ecf11097].sidebar-structure, [data-v-ecf11097].content, [data-v-ecf11097].content_inner, [data-v-7fedfc59].bg-dark-3,
+        #scrollable-sidebar-element, .bg-dark-3.p-1g, .sidebar [data-testid="trades"], .sidebar [data-testid="filters"],
+        .sidebar-content, [class*="sidebar"] [class*="trade"], [class*="sidebar"] [class*="filter"] {
+          background: rgba(15, 15, 25, 0.75) !important; backdrop-filter: blur(5px) !important;
           border: 1px solid rgba(255, 255, 255, 0.1) !important;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
         }
-
-        /* FIXED: Ensure sidebar and its nested containers use flexbox to fill height */
-        #app > div.sidebar.sidebar__desktop.z-30 > div,
-        #app > div.sidebar.sidebar__desktop.z-30 > div > div,
-        #app > div.sidebar.sidebar__desktop.z-30 > div > div > div,
-        #app > div.sidebar.sidebar__desktop.z-30 > div > div > div > div.content,
-        #app > div.sidebar.sidebar__desktop.z-30 > div > div > div > div.content > div,
+        #app > div.sidebar.sidebar__desktop.z-30 > div, #app > div.sidebar.sidebar__desktop.z-30 > div > div, #app > div.sidebar.sidebar__desktop.z-30 > div > div > div,
+        #app > div.sidebar.sidebar__desktop.z-30 > div > div > div > div.content, #app > div.sidebar.sidebar__desktop.z-30 > div > div > div > div.content > div,
         #scrollable-sidebar-element {
-            display: flex !important;
-            flex-direction: column !important;
-            flex-grow: 1 !important;
-            min-height: 0; /* Prevents flexbox overflow issues */
+            display: flex !important; flex-direction: column !important;
+            flex-grow: 1 !important; min-height: 0;
         }
-
-        /* General Cleanup of Borders & Shadows */
-        [style*="border: 1px solid"], [style*="border:1px solid"],
-        .border-dark-2, .border-dark, [class*="border-dark"] {
+        [style*="border: 1px solid"], [style*="border:1px solid"], .border-dark-2, .border-dark, [class*="border-dark"] {
           border-color: rgba(255, 255, 255, 0.12) !important;
         }
-        [style*="box-shadow"] {
-          box-shadow: none !important;
-        }
-
-        /* Reverted to original broad transition as it was in your provided file*/
-        *, *::before, *::after {
-          transition: all 0.3s ease !important;
-        }
-      `;
-    }
-
-    getNebulaStyles() {
-      return `
-        body.empire-theme-nebula {
-          background: linear-gradient(135deg, #0a0f1c 0%, #1a1f2e 25%, #2a2f3e 50%, #1a1f2e 75%, #0a0f1c 100%) !important;
-        }
+        [style*="box-shadow"] { box-shadow: none !important; }
+      `; }
+    getNebulaStyles() { return `
+        body.empire-theme-nebula { background: linear-gradient(135deg, #0a0f1c 0%, #1a1f2e 25%, #2a2f3e 50%, #1a1f2e 75%, #0a0f1c 100%) !important; }
         body.empire-theme-nebula::before {
           content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-          background:
-            radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+          background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
             radial-gradient(circle at 80% 20%, rgba(255, 107, 107, 0.1) 0%, transparent 50%),
             radial-gradient(circle at 40% 40%, rgba(54, 215, 183, 0.1) 0%, transparent 50%);
           pointer-events: none; z-index: -1;
         }
-        .empire-theme-nebula .btn-primary, .empire-theme-nebula .active {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        }
+        .empire-theme-nebula .btn-primary, .empire-theme-nebula .active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; }
         .empire-theme-nebula a { color: #667eea !important; }
         .empire-theme-nebula a:hover { color: #764ba2 !important; }
-      `;
-    }
-
-    getShootingStarStyles() {
-      return `
-        /* ===== Shooting Star Theme Base ===== */
-        body.empire-theme-shooting-star {
-          /* This background provides the deep blue space look*/
-          background: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 35%, #0f0f1e 100%) !important;
-          /* Removed overflow: hidden from body as it can prevent page scrolling if not careful */
-        }
-        /* IMPORTANT: Static stars and shooting stars are handled dynamically by JS */
-
-        /* ===== THEME STYLES ===== */
-
-        /* 1. Main Panels & Sidebars */
-        body.empire-theme-shooting-star .trade-list-wrapper > div,
-        body.empire-theme-shooting-star .filters-wrapper > div,
+      `; }
+    getShootingStarStyles() { return `
+        body.empire-theme-shooting-star { background: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 35%, #0f0f1e 100%) !important; }
+        body.empire-theme-shooting-star .trade-list-wrapper > div, body.empire-theme-shooting-star .filters-wrapper > div,
         body.empire-theme-shooting-star #app > div.chat--open.chat.h-full.z-30 > div,
         body.empire-theme-shooting-star #app > div.sidebar.sidebar__desktop.z-30 > div > div > div.sidebar-structure,
-        body.empire-theme-shooting-star div.item-card,
-        body.empire-theme-shooting-star div.main-item-info\\.grid,
-        /* NEW: Target chat item card button for styling */
+        body.empire-theme-shooting-star div.item-card, body.empire-theme-shooting-star div.main-item-info\\.grid,
         body.empire-theme-shooting-star .chat__messages button.block {
             background: linear-gradient(145deg, rgba(20, 30, 55, 0.85), rgba(30, 20, 50, 0.85)) !important;
-            backdrop-filter: blur(10px) !important; /* Optimized: Reduced blur from 20px */
-            border: 1px solid rgba(135, 206, 235, 0.2) !important;
-            box-shadow: 0 8px 32px rgba(135, 206, 235, 0.1) !important;
-            border-radius: 24px !important;
+            backdrop-filter: blur(5px) !important; border: 1px solid rgba(135, 206, 235, 0.2) !important;
+            box-shadow: 0 8px 32px rgba(135, 206, 235, 0.1) !important; border-radius: 24px !important;
             overflow: hidden !important;
         }
-
-        /* 2. Hover Glow Effect */
-        body.empire-theme-shooting-star .item-card:hover,
-        /* NEW: Apply hover glow to chat item card button */
-        body.empire-theme-shooting-star .chat__messages button.block:hover {
-          transform: translateY(-8px) !important;
-          border-color: rgba(135, 206, 235, 0.6) !important;
+        body.empire-theme-shooting-star .item-card:hover, body.empire-theme-shooting-star .chat__messages button.block:hover {
+          transform: translateY(-8px) !important; border-color: rgba(135, 206, 235, 0.6) !important;
           box-shadow: 0 12px 40px rgba(135, 206, 235, 0.2), 0 0 15px rgba(135, 206, 235, 0.15) !important;
         }
-
-        /* 3. Seamless Inner Containers */
-        body.empire-theme-shooting-star .sidebar_inner,
-        body.empire-theme-shooting-star .content,
-        body.empire-theme-shooting-star .content_inner,
-        body.empire-theme-shooting-star #scrollable-sidebar-element,
-        body.empire-theme-shooting-star div.trading-items > div,
-        body.empire-theme-shooting-star .chat__messages,
-        body.empire-theme-shooting-star .bg-dark-3,
-        body.empire-theme-shooting-star div.main-item-info\\.grid > div,
-        body.empire-theme-shooting-star #scrollable-sidebar-element > div > div {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
+        body.empire-theme-shooting-star .sidebar_inner, body.empire-theme-shooting-star .content, body.empire-theme-shooting-star .content_inner,
+        body.empire-theme-shooting-star #scrollable-sidebar-element, body.empire-theme-shooting-star div.trading-items > div,
+        body.empire-theme-shooting-star .chat__messages, body.empire-theme-shooting-star .bg-dark-3,
+        body.empire-theme-shooting-star div.main-item-info\\.grid > div, body.empire-theme-shooting-star #scrollable-sidebar-element > div > div {
+            background: transparent !important; border: none !important; box-shadow: none !important;
         }
-
-        /* 4. Sidebar Tabs (Right) */
         #app > div.sidebar.sidebar__desktop.z-30 > div > div > div > div.extra-sidebar-header {
-            display: flex !important; background: rgba(0, 0, 10, 0.2) !important;
-            border-top-left-radius: 24px !important; border-top-right-radius: 24px !important;
-            padding: 4px !important; margin: 0 !important;
+            display: flex !important; background: rgba(0, 0, 10, 0.2) !important; border-top-left-radius: 24px !important;
+            border-top-right-radius: 24px !important; padding: 4px !important; margin: 0 !important;
             border-bottom: 1px solid rgba(135, 206, 235, 0.2) !important;
         }
         #app > div.sidebar.sidebar__desktop.z-30 > div > div > div > div.extra-sidebar-header > div {
-            flex: 1 !important; text-align: center !important; padding: 12px 0 !important;
-            cursor: pointer !important; border-radius: 20px !important;
-            transition: all 0.2s ease-in-out !important; color: rgba(255, 255, 255, 0.7) !important;
+            flex: 1 !important; text-align: center !important; padding: 12px 0 !important; cursor: pointer !important;
+            border-radius: 20px !important; transition: all 0.2s ease-in-out !important; color: rgba(255, 255, 255, 0.7) !important;
         }
         #app > div.sidebar.sidebar__desktop.z-30 > div > div > div > div.extra-sidebar-header > div:hover {
             background-color: rgba(135, 206, 235, 0.1) !important; color: #fff !important;
         }
         #app > div.sidebar.sidebar__desktop.z-30 > div > div > div > div.extra-sidebar-header > div.extra-sidebar-header__tab.selected {
-            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%) !important;
-            color: #fff !important;
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%) !important; color: #fff !important;
             box-shadow: 0 2px 10px rgba(135, 206, 235, 0.2) !important;
         }
-
-        /* 5. Inset Cards & Compact Layout */
-        #scrollable-sidebar-element > div,
-        div.item-info > div,
-        .chat__messages .message__main button {
-            background: rgba(0, 0, 10, 0.25) !important;
-            border: 1px solid rgba(135, 206, 235, 0.15) !important;
-            border-radius: 12px !important;
-            padding: 10px !important;
-            margin: 0 10px 10px 10px !important;
-            box-shadow: inset 0 1px 8px rgba(0,0,0,0.25) !important;
-            box-sizing: border-box !important;
+        #scrollable-sidebar-element > div, div.item-info > div, .chat__messages .message__main button {
+            background: rgba(0, 0, 10, 0.25) !important; border: 1px solid rgba(135, 206, 235, 0.15) !important;
+            border-radius: 12px !important; padding: 10px !important; margin: 0 10px 10px 10px !important;
+            box-shadow: inset 0 1px 8px rgba(0,0,0,0.25) !important; box-sizing: border-box !important;
         }
-
-        /* 6. Themed Buttons & Search Bar */
         button.btn-primary, .btn-primary, button.bg-gold-4, .btn-filter > .btn-primary, .filters-wrapper .btn-primary {
              background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%) !important;
              box-shadow: 0 4px 20px rgba(135, 206, 235, 0.3) !important;
@@ -618,171 +433,106 @@
         }
         button.btn-secondary {
             background: rgba(135, 206, 235, 0.1) !important;
-            border: 1px solid rgba(135, 206, 235, 0.2) !important;
-            border-radius: 12px !important;
+            border: 1px solid rgba(135, 206, 235, 0.2) !important; border-radius: 12px !important;
         }
-        .box-border.flex.h-\\[38px\\] > input {
-            background: transparent !important;
-        }
-
-        /* 7. Full-height Sidebar Layout */
-        #app > div.sidebar.sidebar__desktop.z-30 > div,
-        #app > div.sidebar.sidebar__desktop.z-30 > div > div,
-        #app > div.sidebar.sidebar__desktop.z-30 > div > div > div,
-        #app > div.sidebar.sidebar__desktop.z-30 > div > div > div > div.content,
-        #app > div.sidebar.sidebar__desktop.z-30 > div > div > div > div.content > div,
-        #scrollable-sidebar-element {
-            display: flex !important; flex-direction: column !important;
-            flex-grow: 1 !important; min-height: 0;
-        }
-
-        /* 8. Theme Header and Footer */
-        #empire-header > div.hidden.w-full.bg-dark-grey-3.xl\\:block,
-        #empire-footer {
+        .box-border.flex.h-\\[38px\\] > input { background: transparent !important; }
+        #empire-header > div.hidden.w-full.bg-dark-grey-3.xl\\:block, #empire-footer {
             background: linear-gradient(145deg, rgba(20, 30, 55, 0.8), rgba(30, 20, 50, 0.8)) !important;
-            backdrop-filter: blur(10px) !important; /* Optimized: Reduced blur from 20px */
-            border-color: rgba(135, 206, 235, 0.2) !important;
+            backdrop-filter: blur(5px) !important; border-color: rgba(135, 206, 235, 0.2) !important;
         }
-        #empire-header > div.hidden.w-full.bg-dark-grey-3.xl\\:block > div > div,
-        #empire-footer > div, #empire-footer > div > div {
+        #empire-header > div.hidden.w-full.bg-dark-grey-3.xl\\:block > div > div, #empire-footer > div, #empire-footer > div > div {
             background: transparent !important;
         }
-
-        /* 9. Marketplace Tabs */
         .mb-0.flex > div > div {
-            background: rgba(0, 0, 10, 0.2) !important;
-            padding: 4px; border-radius: 16px;
+            background: rgba(0, 0, 10, 0.2) !important; padding: 4px; border-radius: 16px;
         }
         .mb-0.flex > div > div > a > button {
-            background: transparent !important;
-            border-radius: 12px;
-            color: rgba(255, 255, 255, 0.7) !important;
+            background: transparent !important; border-radius: 12px; color: rgba(255, 255, 255, 0.7) !important;
         }
         .mb-0.flex > div > div > a:hover > button {
-            background: rgba(135, 206, 235, 0.1) !important;
-            color: #fff !important;
+            background: rgba(135, 206, 235, 0.1) !important; color: #fff !important;
         }
         .mb-0.flex > div > div > a.router-link-active > button {
-            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%) !important;
-            color: #fff !important;
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%) !important; color: #fff !important;
             box-shadow: 0 2px 10px rgba(135, 206, 235, 0.2) !important;
         }
-
-        /* 10. Polished Status Badge & Overflow Fix */
         @keyframes pulse-magenta {
             0% { box-shadow: 0 0 6px rgba(214, 101, 255, 0.4); }
             50% { box-shadow: 0 0 14px rgba(214, 101, 255, 0.7); }
             100% { box-shadow: 0 0 6px rgba(214, 101, 255, 0.4); }
         }
         #scrollable-sidebar-element .flex.h-\\[42px\\] {
-            width: 100% !important;
-            background: linear-gradient(135deg, #d665ff 0%, #a855f7 100%) !important;
-            border-radius: 8px !important;
-            animation: pulse-magenta 2s infinite ease-in-out;
-            padding: 0 10px !important;
-            margin-bottom: 8px !important;
+            width: 100% !important; background: linear-gradient(135deg, #d665ff 0%, #a855f7 100%) !important;
+            border-radius: 8px !important; animation: pulse-magenta 2s infinite ease-in-out;
+            padding: 0 10px !important; margin-bottom: 8px !important;
         }
-        #scrollable-sidebar-element .flex.h-\\[42px\\] p,
-        #scrollable-sidebar-element .flex.h-\\[42px\\] div.truncate {
-            color: #fff !important;
-        }
+        #scrollable-sidebar-element .flex.h-\\[42px\\] p, #scrollable-sidebar-element .flex.h-\\[42px\\] div.truncate { color: #fff !important; }
         #scrollable-sidebar-element .flex.h-\\[42px\\] .truncate.rounded {
-            background: transparent !important;
-            box-shadow: none !important;
-            animation: none !important;
+            background: transparent !important; box-shadow: none !important; animation: none !important;
         }
-      `;
-    }
+      `; }
 
     /**
-     * Controls the initialization and destruction of the Starfield instance
-     * based on the currently active theme and site theming state.
+     * Manages the Starfield instance based on the current theme.
      */
     updateStarfieldDisplay() {
-      // Only show starfield if site theming is enabled AND current theme is shooting-star
       if (this.siteThemingEnabled && this.currentTheme === 'shooting-star') {
+        // If the starfield is needed, create an instance if it doesn't exist.
         if (!this.starfieldInstance) {
-          this.starfieldInstance = new Starfield(); //
+          // The Starfield class is now defined in this file, so this will work.
+          this.starfieldInstance = new Starfield('empire-starfield-container');
         }
-        this.starfieldInstance.generateStars(); // Generate static stars
-        this.starfieldInstance.startShootingStars(); // Start shooting stars (which now only clears shooting stars)
-        if (this.starfieldInstance.starContainer) {
-          this.starfieldInstance.starContainer.style.display = 'block'; //
-        }
-        console.log('✨ Starfield and shooting stars enabled for Shooting Star theme.');
+        this.starfieldInstance.start();
       } else {
+        // If starfield is not needed, stop and remove it.
         if (this.starfieldInstance) {
-          this.starfieldInstance.stopAll(); //
-          if (this.starfieldInstance.starContainer) {
-            this.starfieldInstance.starContainer.style.display = 'none'; //
-          }
-          this.starfieldInstance = null; // Clean up the instance
+          this.starfieldInstance.stop();
+          this.starfieldInstance = null; // Allow for garbage collection
         }
-        console.log('✨ Starfield and shooting stars disabled.');
       }
-    }
-
-    applyDynamicFixes() {
-      // Only apply fixes if site theming is enabled
-      if (!this.siteThemingEnabled) {
-        return;
-      }
-
-      setTimeout(() => {
-        document.querySelectorAll('.nav-item, .navbar-item, .nav-link').forEach(el => {
-          el.style.removeProperty('border');
-          el.style.removeProperty('box-shadow');
-          el.style.removeProperty('background');
-        });
-        console.log('🎨 Applied dynamic theme fixes');
-      }, 500); // Changed from 1000ms to 500ms for quicker application
     }
 
     observeDOMChanges() {
-      // Only observe changes if site theming is enabled
-      if (!this.siteThemingEnabled) {
-        // If observer already exists and theming is disabled, disconnect it
-        if (this.domObserver) {
-            this.domObserver.disconnect();
-            this.domObserver = null;
-            console.log('🚫 DOM observer disconnected as site theming is disabled.');
+        if (!this.siteThemingEnabled) {
+            if (this.domObserver) this.domObserver.disconnect();
+            return;
         }
-        return;
-      }
 
-      // Initialize observer only if it doesn't exist
-      if (!this.domObserver) {
-          this.domObserver = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-              if (mutation.addedNodes.length) {
-                mutation.addedNodes.forEach((node) => {
-                  if (node.nodeType === 1 && node.style) {
-                    // Only target elements with existing 'border' or 'box-shadow' styles for efficiency
-                    if (node.style.border && node.style.border.includes('1px solid')) {
-                      node.style.border = '1px solid rgba(255, 255, 255, 0.12)';
-                    }
-                    if (node.style.boxShadow && node.style.boxShadow !== 'none') { // Only remove if there's a shadow
-                      node.style.boxShadow = 'none';
-                    }
-                  }
-                });
-              }
-            });
-          });
+        const fixNodeStyles = (node) => {
+            if (node.nodeType === 1 && node.style) {
+                if (node.style.border && node.style.border.includes('1px solid')) {
+                    node.style.border = '1px solid rgba(255, 255, 255, 0.12)';
+                }
+                if (node.style.boxShadow && node.style.boxShadow !== 'none') {
+                    node.style.boxShadow = 'none';
+                }
+            }
+        };
 
-          // Re-added 'attributes: true, attributeFilter: ['style', 'class']' to observe options based on your original code
-          this.domObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
-          console.log('✅ DOM observer started for dynamic fixes.');
-      }
+        this.domObserver = new MutationObserver((mutations) => {
+            clearTimeout(this.observerDebounceTimer);
+            this.observerDebounceTimer = setTimeout(() => {
+                for (const mutation of mutations) {
+                    if (mutation.addedNodes.length) {
+                        for (const node of mutation.addedNodes) {
+                            if (node.nodeType === 1) {
+                                fixNodeStyles(node);
+                                node.querySelectorAll('*').forEach(fixNodeStyles);
+                            }
+                        }
+                    }
+                }
+            }, 100);
+        });
+
+        this.domObserver.observe(document.body, { childList: true, subtree: true });
     }
   }
 
-  // Initialize the theme injector
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      new EmpireThemeInjector();
-    });
+    document.addEventListener('DOMContentLoaded', () => new EmpireThemeInjector());
   } else {
     new EmpireThemeInjector();
   }
 })();
+// --- End of Theme Injector ---

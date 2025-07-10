@@ -31,13 +31,9 @@
 **Empire Enhanced** is built to extend and streamline the experience on [CSGOEmpire](https://csgoempire.com) through a set of practical and performance-focused tools:
 Custom Item Tracking  
 - Track any item by name using the Item Target List. Supports partial keyword matching and optional float (wear) value filtering.
-Real-Time Notifications  
-- Receive instant alerts when matching items appear in the marketplace. Includes customizable notification sounds with live preview.
-Persistent Filters and Settings  
+- Receive instant notifications when matching items appear in the marketplace. Includes customizable notification sounds with live preview. 
 - Price ranges, keychain thresholds, and item lists are saved locally and restored automatically after browser or system restarts.
-heming
-- The extension offers different themes ("Nebula" and "Shooting Star") for both the popup and the CSGOEmpire website itself.
-Modular and Scalable Design  
+- The extension offers different themes ("Nebula" and "Shooting Star") for both the popup and the CSGOEmpire website itself. 
 - Features are designed as self-contained modules to allow for easy expansion without modifying core files.
 ---
 ## 📸 Preview

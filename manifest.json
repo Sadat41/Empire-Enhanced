@@ -14,12 +14,21 @@
   "host_permissions": [
     "http://localhost/*",
     "https://csgoempire.com/*",
-    "https://csgoempire.gg/*"
+    "https://csgoempire.gg/*",
+    "https://api.tradeit.gg/*"
   ],
   "content_scripts": [
     {
       "matches": ["https://csgoempire.com/*", "https://csgoempire.gg/*"],
       "js": ["content-script.js", "site-themeing.js"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "https://csgoempire.com/withdraw/steam/market*", 
+        "https://csgoempire.gg/withdraw/steam/market*"
+      ],
+      "js": ["features/tradeit-price-compare.js"],
       "run_at": "document_end"
     }
   ],
@@ -33,7 +42,7 @@
   
   "web_accessible_resources": [
     {
-      "resources": ["history.html", "offscreen.html"],
+      "resources": ["history.html", "offscreen.html", "features/*", "core/*"],
       "matches": ["<all_urls>"]
     }
   ],

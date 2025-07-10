@@ -1,4 +1,4 @@
-// starfield.js - Dynamically generates a random starfield background.
+// starfield.js 
 
 class Starfield {
     constructor() {

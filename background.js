@@ -1,4 +1,4 @@
-// background.js - Fixed with proper class syntax and bidirectional sync
+// background.js 
 
 class ExtensionManager {
   constructor() {
@@ -11,7 +11,7 @@ class ExtensionManager {
       keychainsFound: 0,
       lastConnection: null,
       serverConnected: false,
-      startTime: Date.now()  // 🔥 ADD THIS LINE
+      startTime: Date.now() 
     };
     
     this.lastNotificationTimestamp = 0;
@@ -26,6 +26,9 @@ class ExtensionManager {
     this.isInitialSyncComplete = false;
     
     this.init();
+
+    this.tradeitDataCache = null;
+    this.tradeitCacheExpiry = 0;
   }
 
   async init() {
@@ -34,7 +37,7 @@ class ExtensionManager {
     // Load local settings first
     await this.loadSettings();
     
-    // Attempt to sync with server immediately
+    
     await this.performInitialServerSync();
     
     // Set up storage sync
@@ -63,7 +66,7 @@ class ExtensionManager {
     console.log('🔄 Performing initial server sync...');
     
     try {
-      // Check if server is available
+      
       const healthResponse = await fetch(`${this.httpUrl}/health`, { 
         method: 'GET',
         timeout: 5000 
@@ -88,10 +91,10 @@ class ExtensionManager {
       console.error('❌ Initial server sync failed:', error);
       console.log('⚠️ Using local settings, will retry sync in background');
       
-      // Load from local storage as fallback
+      
       await this.loadItemTargetListFromLocal();
       
-      // Set up retry mechanism
+      
       this.setupSyncRetry();
     }
   }
@@ -160,12 +163,12 @@ class ExtensionManager {
     }
   }
 
-  // Intelligent merge of server and local item target lists
+  
   mergeItemTargetLists(serverList, localList) {
     const merged = [...serverList];
     const serverIds = new Set(serverList.map(item => item.id));
     
-    // Add any local items that aren't on the server (preserve local additions)
+    
     for (const localItem of localList) {
       if (!serverIds.has(localItem.id)) {
         console.log(`📱 Found local-only item: ${localItem.keyword || localItem.name}`);
@@ -919,7 +922,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     sendResponse({success: true});
   } else if (message.type === 'UPDATE_ITEM_TARGET_LIST') {
-    // Smart append instead of replace with proper float handling
+    
     (async () => {
       try {
         // Get current server state first
@@ -949,7 +952,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // If it's smaller or same size, it might be a replacement/removal
         let finalList;
         if (processedNewList.length === 1 && currentList.length > 0) {
-          // Likely adding a single new item - append it
+          
           const newItem = processedNewList[0];
           const exists = currentList.some(item => 
             item.id === newItem.id || 
@@ -1193,10 +1196,55 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     })();
     return true;
+
+
+} else if (message.type === 'FETCH_TRADEIT_DATA') {
+  // Handle TradeIt.gg data fetching to bypass CORS
+  (async () => {
+    try {
+      // Check cache first
+      if (extensionManager.tradeitDataCache && Date.now() < extensionManager.tradeitCacheExpiry) {
+        console.log('🔥 Returning cached TradeIt.gg data');
+        sendResponse({
+          success: true,
+          data: extensionManager.tradeitDataCache
+        });
+        return;
+      }
+
+      console.log('📡 Background: Fetching fresh TradeIt.gg data...');
+      const response = await fetch('https://api.tradeit.gg/items/730');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Cache the data in extensionManager
+      extensionManager.tradeitDataCache = data;
+      extensionManager.tradeitCacheExpiry = Date.now() + (10 * 60 * 1000); // 10 minutes
+      
+      console.log(`✅ Background: Fetched ${data.length} TradeIt.gg items`);
+      
+      sendResponse({
+        success: true,
+        data: data
+      });
+      
+    } catch (error) {
+      console.error('❌ Background: Failed to fetch TradeIt.gg data:', error);
+      sendResponse({
+        success: false,
+        error: error.message
+      });
+    }
+  })();
+  return true; // Keep message channel open for async response
   }
-  
   return true;
 });
+
 
 // Extension lifecycle events
 chrome.runtime.onStartup.addListener(() => {
@@ -1212,9 +1260,7 @@ chrome.runtime.onInstalled.addListener(() => {
 // Global instance
 let extensionManager = new ExtensionManager();
 
-// Add this at the very end of your existing background.js file
 
-// 🚀 MODULE SYSTEM BOOTSTRAP - Add this once, never touch again
 (async function initModuleSystem() {
   try {
     // Load core framework

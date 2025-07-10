@@ -1,4 +1,4 @@
-// popup.js - Fixed with proper server sync and persistent state management
+// popup.js 
 
 class PopupManager {
     constructor() {
@@ -22,7 +22,7 @@ class PopupManager {
         // Load theme and site theming state first
         await this.loadTheme();
         
-        // 🔥 NEW: Sync with server before loading local data
+        // Sync with server before loading local data
         await this.syncWithServer();
         
         // Setup event listeners
@@ -34,14 +34,14 @@ class PopupManager {
         // Load keychain filter settings with retry
         await this.loadKeychainFilterSettingsWithRetry();
 
-        // 🔥 ADD THIS LINE:
+        
         await this.loadCurrentFilterSettings();
         
         // Setup auto-refresh
         setInterval(() => this.loadStats(), 5000);
     }
 
-    // 🔥 NEW: Sync with server on popup load
+    // Sync with server on popup load
     async syncWithServer() {
         console.log('🔄 Syncing popup with server...');
         
@@ -83,7 +83,7 @@ class PopupManager {
         }
     }
 
-    // 🔥 NEW: Helper method for fetch with timeout
+    // Helper method for fetch with timeout
     async fetchWithTimeout(url, timeout = 5000) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -101,7 +101,7 @@ class PopupManager {
         }
     }
 
-    // 🔥 NEW: Show sync status to user
+    // Show sync status to user
     showSyncStatus(isSuccess, message) {
         console.log(`🔄 Sync status: ${isSuccess ? 'success' : 'failed'} - ${message}`);
         
@@ -131,7 +131,7 @@ class PopupManager {
         }
     }
 
-    // 🔥 UPDATED: Load item target list with server priority
+    // Load item target list with server priority
     async loadItemTargetList() {
         try {
             // If we're synced with server, local storage should have the correct data
@@ -149,7 +149,7 @@ class PopupManager {
         }
     }
 
-    // 🔥 UPDATED: Save item target list with immediate server sync
+    // UPDATED: Save item target list with immediate server sync
     async saveItemTargetList() {
         try {
             // Save to local storage first
@@ -175,7 +175,7 @@ class PopupManager {
         }
     }
 
-    // 🔥 UPDATED: Add new item with better conflict handling
+    
     async addItemTarget() {
         const keywordInput = document.getElementById('itemKeyword');
         const minFloatInput = document.getElementById('minFloat');
@@ -238,7 +238,7 @@ class PopupManager {
         console.log(`➕ Added item target: ${keyword} (${minFloat}-${maxFloat})`);
     }
 
-    // 🔥 UPDATED: Remove item with immediate sync
+    // Remove item with immediate sync
     async removeItemTarget(itemId) {
         const itemIndex = this.itemTargetList.findIndex(item => item.id === itemId);
         if (itemIndex === -1) {
@@ -972,7 +972,7 @@ class PopupManager {
     }
 
 
-    // 🔥 NEW: Load current filter settings from server
+    
     async loadCurrentFilterSettings() {
         try {
             console.log('🔄 Loading current filter settings from server...');
@@ -1163,7 +1163,7 @@ class PopupManager {
             this.updateElement('lastConnection', new Date(data.stats.lastConnection).toLocaleTimeString());
         }
 
-        // 🔥 NEW: Update sync status
+        
         if (data.syncStatus) {
             this.isServerSynced = data.syncStatus.isInitialSyncComplete;
             if (this.isServerSynced) {
