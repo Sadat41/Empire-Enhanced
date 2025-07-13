@@ -1,4 +1,4 @@
-// features/tradeit-price-compare.js - TradeIt.gg Price Comparison Module
+// features/tradeit-price-compare.js
 
 (function() {
     'use strict';
@@ -15,53 +15,92 @@
 
     class SimpleTradeItComparison {
         constructor() {
-            this.tradeitData = new Map();
+            this.tradeitDataCache = new Map();
             this.currentTheme = 'nebula';
             this.init();
         }
 
         async init() {
-            this.loadCache();
+            
+            const settings = await chrome.storage.sync.get({ selectedTheme: 'nebula' });
+            this.currentTheme = settings.selectedTheme;
+            this.applyDynamicStylesToAllInjectedElements(); // Apply initial theme styles
 
             window.addEventListener('empireThemeChanged', (event) => {
                 this.currentTheme = event.detail.theme;
                 this.applyDynamicStylesToAllInjectedElements();
             });
 
-            await this.loadTradeItData();
+        
+            await this.loadAndCachePriceData(); 
 
-            if (this.tradeitData.size > 0) {
+            if (this.tradeitDataCache.size > 0) { 
                 this.startItemProcessing();
             } else {
-                console.warn('⚠️ TradeIt.gg data not loaded or empty. Price comparison will not run.');
+                console.warn('⚠️ Price comparison data not loaded or empty. Comparison will not run fully.');
             }
         }
 
-        loadCache() {
+        
+        async loadAndCachePriceData() {
+            const CACHE_KEY = 'tradeitAndBuffPrices';
+            const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+            // Try to load from chrome.storage.local first
+            const cachedData = await chrome.storage.local.get(CACHE_KEY);
+            if (cachedData[CACHE_KEY] && (Date.now() - cachedData[CACHE_KEY].timestamp < CACHE_EXPIRY_MS)) {
+                this.tradeitDataCache = new Map(cachedData[CACHE_KEY].data);
+                if (DEBUG_MODE) console.log(`✅ Loaded ${this.tradeitDataCache.size} prices from chrome.storage.local cache.`);
+                return;
+            }
+
+            if (DEBUG_MODE) console.log('🔄 Cache is stale or empty, fetching from background script.');
+            
             try {
-                const storedTradeItData = localStorage.getItem("tradeitDataCache");
-                if (storedTradeItData) {
-                    this.tradeitData = new Map(Object.entries(JSON.parse(storedTradeItData)));
-                    if (DEBUG_MODE) console.log(`✅ Loaded ${this.tradeitData.size} TradeIt.gg prices from local cache.`);
+                // Fetch ALL available data from background script (Tradeit.gg + GitHub JSON)
+                const response = await chrome.runtime.sendMessage({ type: 'FETCH_TRADEIT_DATA' });
+
+                if (response?.success && response.data) {
+                    this.tradeitDataCache.clear();
+                    response.data.forEach(item => {
+                        if (item.item && item.price) {
+                            this.tradeitDataCache.set(item.item.toLowerCase(), {
+                                price: item.price,
+                                source: item.source, // Store the source information
+                                timestamp: item.timestamp
+                            });
+                        }
+                    });
+                    
+                    // Save to chrome.storage.local
+                    await chrome.storage.local.set({
+                        [CACHE_KEY]: {
+                            data: Array.from(this.tradeitDataCache.entries()),
+                            timestamp: Date.now()
+                        }
+                    });
+
+                    if (DEBUG_MODE) console.log(`✅ Fetched ${this.tradeitDataCache.size} combined prices from background script and cached.`);
+                } else {
+                    console.error('❌ Combined price data fetch failed or response was empty from background script.');
                 }
-            } catch (e) {
-                console.error("❌ Error loading cache.", e);
-                this.tradeitData.clear();
+            } catch (error) {
+                console.error('❌ Error communicating with background script for combined price data:', error);
             }
         }
 
-        saveCache() {
-            try {
-                localStorage.setItem("tradeitDataCache", JSON.stringify(Object.fromEntries(this.tradeitData)));
-            } catch (e) {
-                console.error("❌ Error saving cache:", e);
-            }
-        }
 
         cleanMarketHashName(itemType, itemName, itemQuality) {
             const cleanedType = (itemType || '').replace(/\s+/g, ' ').trim();
             let cleanedName = (itemName || '').replace(/\s+/g, ' ').trim();
             const cleanedQuality = (itemQuality || '').replace(/\s+/g, ' ').trim();
+
+            // Handle stickers: "Sticker" + "Team Dignitas - Cologne 2014" -> "Sticker | Team Dignitas | Cologne 2014"
+    if (cleanedType.toLowerCase() === 'sticker') {
+        // Replace the first " - " with " | " for stickers
+        cleanedName = cleanedName.replace(' - ', ' | ');
+        return `${cleanedType} | ${cleanedName}`;
+    }
 
             let formattedName = cleanedQuality ? `${cleanedType} | ${cleanedName} (${cleanedQuality})` : `${cleanedType} | ${cleanedName}`;
 
@@ -78,28 +117,6 @@
             });
             
             return formattedName.replace(/\s+/g, ' ').trim();
-        }
-
-        async loadTradeItData() {
-            try {
-                const response = await chrome.runtime.sendMessage({ type: 'FETCH_TRADEIT_DATA' });
-
-                if (response?.success && response.data) {
-                    this.tradeitData.clear();
-                    response.data.forEach(tradeitItem => {
-                        if (tradeitItem.item) {
-                            this.tradeitData.set(tradeitItem.item.toLowerCase(), { price: tradeitItem.price });
-                        }
-                    });
-                    this.saveCache();
-                    if (DEBUG_MODE) console.log(`✅ TradeIt.gg data loaded from API. Total unique items: ${this.tradeitData.size}`);
-                } else {
-                    console.error('❌ TradeIt.gg data fetch failed or response was empty.');
-                }
-            }
-            catch (error) {
-                console.error('❌ Error communicating with background script for TradeIt.gg data:', error);
-            }
         }
 
         startItemProcessing() {
@@ -128,7 +145,7 @@
             document.querySelectorAll('div.item-card').forEach(this.processItemCard.bind(this));
         }
 
-        processItemCard(itemCard) {
+        async processItemCard(itemCard) {
             if (itemCard.dataset.cardProcessed) return;
             itemCard.dataset.cardProcessed = 'true';
 
@@ -136,13 +153,54 @@
             if (!itemData) return;
 
             const possibleNames = this.generatePossibleMarketHashNames(itemData.itemType, itemData.itemName, itemData.itemQuality);
-            
+            let foundPrice = false;
+
+            // First, try to find price in the already loaded cache
             for (const nameAttempt of possibleNames) {
-                if (this.tradeitData.has(nameAttempt)) {
-                    const tradeitInfo = this.tradeitData.get(nameAttempt);
-                    if (DEBUG_MODE) console.log(`✅ Match for: "${nameAttempt}"`);
-                    this.injectFullPriceBox(itemCard, itemData.csEmpirePrice, tradeitInfo.price);
-                    return; 
+                if (this.tradeitDataCache.has(nameAttempt)) { // Check the combined cache
+                    const priceInfo = this.tradeitDataCache.get(nameAttempt);
+                    this.injectFullPriceBox(itemCard, itemData.csEmpirePrice, priceInfo); // Pass the full priceInfo object
+                    foundPrice = true;
+                    break;
+                }
+            }
+
+            // If price is still missing after checking all local sources, request from backend
+            if (!foundPrice) {
+                if (DEBUG_MODE) console.log(`Item "${itemData.fullMarketName}" not found in cache. Requesting scrape from backend via background script.`);
+                this.injectLoadingState(itemCard); // Show loading indicator
+                try {
+                    const response = await chrome.runtime.sendMessage({ 
+                        type: 'FETCH_TRADEIT_DATA', // This message now triggers the full logic in background.js
+                        data: { itemName: itemData.fullMarketName } // Pass specific item name
+                    });
+
+                    if (response?.success && response.data) {
+                        // Re-process the item with potentially new data
+                        // Find the newly scraped item in the response data
+                        const newlyScrapedItem = response.data.find(d => 
+                            this.generatePossibleMarketHashNames(itemData.itemType, itemData.itemName, itemData.itemQuality)
+                                .includes(d.item?.toLowerCase())
+                        );
+                        
+                        if (newlyScrapedItem) {
+                            // Store the full item object (including source) in cache
+                            this.tradeitDataCache.set(newlyScrapedItem.item.toLowerCase(), {
+                                price: newlyScrapedItem.price,
+                                source: newlyScrapedItem.source,
+                                timestamp: newlyScrapedItem.timestamp
+                            });
+                            // Pass the full newlyScrapedItem object here
+                            this.injectFullPriceBox(itemCard, itemData.csEmpirePrice, newlyScrapedItem); // <--- CRITICAL CHANGE HERE
+                        } else {
+                            this.injectNotFoundState(itemCard); // No price found even after scrape
+                        }
+                    } else {
+                        this.injectNotFoundState(itemCard); // Backend scrape failed
+                    }
+                } catch (error) {
+                    console.error(`❌ Error requesting scrape for "${itemData.fullMarketName}":`, error);
+                    this.injectNotFoundState(itemCard); // Error during request
                 }
             }
         }
@@ -170,6 +228,7 @@
                 itemName: nameEl.textContent.trim(),
                 itemQuality: qualityEl.textContent.split('|')[0].trim(),
                 csEmpirePrice,
+                fullMarketName: this.cleanMarketHashName(typeEl.textContent.trim(), nameEl.textContent.trim(), qualityEl.textContent.split('|')[0].trim()) // Added for backend request
             };
         }
         
@@ -177,7 +236,7 @@
             document.querySelectorAll('.tradeit-comparison-box').forEach(this.applySpecificBoxStyles.bind(this));
         }
 
-        injectFullPriceBox(itemCard, csEmpirePriceRaw, tradeitRawPrice) {
+        injectFullPriceBox(itemCard, csEmpirePriceRaw, priceInfo) { // 'priceInfo' is now consistently an object
             let comparisonDiv = itemCard.querySelector('.tradeit-comparison-box');
             if (!comparisonDiv) {
                 comparisonDiv = document.createElement('div');
@@ -186,17 +245,33 @@
                 insertTarget?.parentNode?.insertBefore(comparisonDiv, insertTarget.nextSibling);
             }
 
-            const csFloatCalculatedPriceUSD = tradeitRawPrice * 0.925;
-            const formatPrice = (p) => p ? `$${p.toFixed(2)}` : 'N/A';
+            let csFloatFinalPriceUSD;
+            // Removed priceSourceDisplay as it's no longer used in the output HTML
+            const TRADEIT_ADJUSTMENT_MULTIPLIER = 0.925; 
+
+            // Apply multiplier conditionally based on the source
+            if (priceInfo.source === 'tradeit.gg') {
+                csFloatFinalPriceUSD = priceInfo.price * TRADEIT_ADJUSTMENT_MULTIPLIER;
+                if (DEBUG_MODE) console.log(`DEBUG: Tradeit.gg price: ${priceInfo.price}, adjusted to: ${csFloatFinalPriceUSD}`);
+            } else if (priceInfo.source && priceInfo.source.includes('buff.163.com')) {
+                csFloatFinalPriceUSD = priceInfo.price;
+                if (DEBUG_MODE) console.log(`DEBUG: Buff.163.com price (already USD): ${priceInfo.price}`);
+            } else {
+                csFloatFinalPriceUSD = priceInfo.price;
+                console.warn(`WARNING: Unknown price source '${priceInfo.source}'. Using price as-is.`);
+            }
+
+            const formatPrice = (p) => p ? `$${p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A';
             // *** MODIFIED ICON: Smaller size and adjusted alignment ***
             const coinIconSVG = `<svg width="12" height="12" viewBox="0 0 24 24" style="display: inline-block; vertical-align: -1px; margin-right: 4px;" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="empireCoinGradient"><stop offset="5%" stop-color="#fdd835"></stop><stop offset="95%" stop-color="#f57f17"></stop></linearGradient></defs><circle cx="12" cy="12" r="11" fill="url(#empireCoinGradient)" stroke="#c5871b" stroke-width="1.5"/></svg>`;
             
             let differenceHtml = '';
             const csEmpirePriceUSD = csEmpirePriceRaw; 
 
-            if (csEmpirePriceUSD > 0 && !isNaN(csFloatCalculatedPriceUSD)) {
-                const ratioPercent = (csFloatCalculatedPriceUSD / csEmpirePriceUSD) * 100;
-                const diffClass = ratioPercent < 100 ? 'positive' : 'negative';
+            if (csEmpirePriceUSD > 0 && !isNaN(csFloatFinalPriceUSD)) {
+                const ratioPercent = (csFloatFinalPriceUSD / csEmpirePriceUSD) * 100;
+                const diffClass = ratioPercent < 100 ? 'positive' : 'negative'; 
+                
                 differenceHtml = `
                     <div class="tradeit-line tradeit-difference ${diffClass}">
                         <span class="tradeit-label">Difference:</span>
@@ -204,13 +279,12 @@
                     </div>`;
             }
 
-            // *** FIXED: Removed broken comment from this section ***
             comparisonDiv.innerHTML = `
                 <div class="tradeit-header">COMPARISON</div>
                 <div class="tradeit-details-grid">
                     <div class="tradeit-line">
                         <span class="tradeit-label">CSFloat Price:</span>
-                        <span class="tradeit-value">${formatPrice(csFloatCalculatedPriceUSD)}</span>
+                        <span class="tradeit-value">${formatPrice(csFloatFinalPriceUSD)}</span>
                     </div>
                     <div class="tradeit-line">
                         <span class="tradeit-label">Empire Price:</span>
@@ -276,6 +350,42 @@
             comparisonDiv.querySelectorAll('.tradeit-difference.negative .tradeit-value').forEach(value => {
                 value.style.color = '#f87171';
             });
+        }
+
+        // injectLoadingState
+        injectLoadingState(itemCard) {
+            let comparisonDiv = itemCard.querySelector('.tradeit-comparison-box');
+            if (!comparisonDiv) {
+                comparisonDiv = document.createElement('div');
+                comparisonDiv.className = 'tradeit-comparison-box';
+                const insertTarget = itemCard.querySelector('[data-testid="item-card-bottom-area"]');
+                insertTarget?.parentNode?.insertBefore(comparisonDiv, insertTarget.nextSibling);
+            }
+            comparisonDiv.innerHTML = `
+                <div class="tradeit-header">COMPARISON</div>
+                <div style="text-align: center; padding: 10px; color: #94a3b8; font-size: 12px;">
+                    Loading price...
+                </div>
+            `;
+            this.applySpecificBoxStyles(comparisonDiv);
+        }
+
+        // injectNotFoundState
+        injectNotFoundState(itemCard) {
+            let comparisonDiv = itemCard.querySelector('.tradeit-comparison-box');
+            if (!comparisonDiv) {
+                comparisonDiv = document.createElement('div');
+                comparisonDiv.className = 'tradeit-comparison-box';
+                const insertTarget = itemCard.querySelector('[data-testid="item-card-bottom-area"]');
+                insertTarget?.parentNode?.insertBefore(comparisonDiv, insertTarget.nextSibling);
+            }
+            comparisonDiv.innerHTML = `
+                <div class="tradeit-header">COMPARISON</div>
+                <div style="text-align: center; padding: 10px; color: #f87171; font-size: 12px;">
+                    Price not found.
+                </div>
+            `;
+            this.applySpecificBoxStyles(comparisonDiv);
         }
     }
 

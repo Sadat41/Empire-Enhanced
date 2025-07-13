@@ -29,6 +29,10 @@ class ExtensionManager {
 
     this.tradeitDataCache = null;
     this.tradeitCacheExpiry = 0;
+    
+    // backend now handles everything locally
+    this.buffBackendUrl = 'http://localhost:5002/scrape-prices'; // Flask backend URL
+    this.buffCacheExpiry = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
   }
 
   async init() {
@@ -55,13 +59,153 @@ class ExtensionManager {
       this.setupBackgroundPolling();
     }
 
-    // Set up periodic sync with server
+    
     this.setupPeriodicSync();
 
     this.updateBadge();
   }
 
-  // Perform initial sync with server to get current state
+    async fetchTradeItDataWithFallback(itemName = null) {
+    console.log('📡 Background: Fetching TradeIt.gg data with fallback logic...');
+    
+    let tradeitData = null;
+
+    // 1. Try Tradeit.gg API (direct fetch)
+    try {
+      console.log('📡 Background: Attempting to fetch from TradeIt.gg...');
+      const tradeitResponse = await fetch('https://api.tradeit.gg/items/730');
+      if (tradeitResponse.ok) {
+        tradeitData = await tradeitResponse.json();
+        console.log(`✅ Background: Fetched ${tradeitData.length} items from TradeIt.gg`);
+      } else {
+        console.warn(`⚠️ TradeIt.gg API returned status: ${tradeitResponse.status}. Falling back.`);
+      }
+    } catch (error) {
+      console.error('❌ Background: Error fetching from TradeIt.gg API:', error);
+      console.log('🔄 Falling back to backend for Buff.163.com data.');
+    }
+
+    // Prepare combined data structure for the extension
+    const combinedPrices = new Map();
+
+    if (tradeitData) {
+      tradeitData.forEach(item => {
+        if (item.item && item.price) {
+          combinedPrices.set(item.item.toLowerCase(), {
+            source: 'tradeit.gg',
+            price: item.price,
+            timestamp: Date.now()
+          });
+        }
+      });
+    }
+
+    // 2. Get Buff.163.com data from Flask backend (which manages local JSON file)
+    const localBuffCacheKey = 'buffOverridesCache';
+    const localBuffCache = await chrome.storage.local.get(localBuffCacheKey);
+    let cachedBuffData = localBuffCache[localBuffCacheKey]?.data || {};
+    let cachedBuffTimestamp = localBuffCache[localBuffCacheKey]?.timestamp || 0;
+
+    const isBuffCacheStale = (Date.now() - cachedBuffTimestamp) > this.buffCacheExpiry;
+
+    if (isBuffCacheStale) {
+      console.log('🔄 Background: Buff.163.com cache is stale or missing. Fetching from backend...');
+      try {
+        // Get current data status from backend
+        const statusResponse = await fetch('http://localhost:5002/data-status');
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          console.log(`✅ Background: Backend has ${statusData.stats.total_items} items available.`);
+          
+          // For now, we'll trigger a scrape of common items or use existing data
+          // The backend maintains its own local JSON file
+          console.log(`✅ Background: Using backend-managed Buff.163.com data.`);
+        } else {
+          console.warn(`⚠️ Backend status check failed: ${statusResponse.status}.`);
+        }
+      } catch (error) {
+        console.error('❌ Background: Error communicating with backend:', error);
+      }
+    } else {
+      console.log(`✅ Background: Using cached Buff.163.com data (${Object.keys(cachedBuffData).length} items).`);
+    }
+
+    // Merge cached Buff data into combined prices, prioritizing TradeIt.gg
+    for (const itemKey in cachedBuffData) {
+      if (cachedBuffData.hasOwnProperty(itemKey)) {
+        const buffItem = cachedBuffData[itemKey];
+        if (!combinedPrices.has(itemKey.toLowerCase())) { // Simple merge: Buff as fallback
+          combinedPrices.set(itemKey.toLowerCase(), {
+            source: 'buff.163.com (Backend)',
+            price: buffItem.usd_price,
+            timestamp: buffItem.timestamp ? new Date(buffItem.timestamp).getTime() : Date.now()
+          });
+        }
+      }
+    }
+
+    // 3. Request updated data from Flask backend if specific item is needed
+    if (itemName && !combinedPrices.has(itemName.toLowerCase())) {
+        console.log(`🔄 Background: Item '${itemName}' not found in TradeIt or cached data. Requesting scrape from Flask backend.`);
+        try {
+            const backendResponse = await fetch(this.buffBackendUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ item: itemName }) // Request specific item
+            });
+
+            if (backendResponse.ok) {
+                const result = await backendResponse.json();
+                if (result.status === "success" && result.data) {
+                    console.log(`✅ Background: Scraped '${itemName}' from backend.`);
+                    cachedBuffData[itemName] = {
+                        usd_price: result.data.usd_price,
+                        yuan_price: result.data.yuan_price,
+                        timestamp: result.data.timestamp
+                    };
+                    await chrome.storage.local.set({
+                        [localBuffCacheKey]: {
+                            data: cachedBuffData,
+                            timestamp: Date.now() // Update cache timestamp
+                        }
+                    });
+                    combinedPrices.set(itemName.toLowerCase(), {
+                        source: 'buff.163.com (Backend Scrape)',
+                        price: result.data.usd_price,
+                        timestamp: new Date(result.data.timestamp).getTime()
+                    });
+                } else {
+                    console.warn(`⚠️ Backend scrape for '${itemName}' failed: ${result.message}`);
+                }
+            } else {
+                console.error(`❌ Background: Flask backend request failed with status: ${backendResponse.status}`);
+            }
+        } catch (error) {
+            console.error('❌ Background: Error communicating with Flask backend:', error);
+        }
+    }
+
+    // Convert the Map back to an array for the content script
+    const finalDataArray = Array.from(combinedPrices.values()).map((val, idx) => ({
+      item: Array.from(combinedPrices.keys())[idx], // Reconstruct item name
+      price: val.price,
+      source: val.source,
+      timestamp: val.timestamp
+    }));
+
+    return {
+      success: true,
+      data: finalDataArray
+    };
+  }
+  // --- END OF fetchTradeItDataWithFallback METHOD ---
+
+
+ 
+  async pollServerForNotifications() { /* ... */ }
+  setupBackgroundPolling() { /* ... */ }
+
+
   async performInitialServerSync() {
     console.log('🔄 Performing initial server sync...');
     
@@ -193,7 +337,7 @@ class ExtensionManager {
     }));
   }
 
-  // Improved sync to server with proper float handling
+ 
   async syncItemTargetListToServer(itemTargetList) {
     try {
       console.log(`📤 Syncing ${itemTargetList.length} items to server...`);
@@ -251,7 +395,7 @@ class ExtensionManager {
     }
   }
 
-  // Sync other settings from server
+  
   async syncSettingsFromServer() {
     try {
       console.log('📥 Syncing other settings from server...');
@@ -279,7 +423,7 @@ class ExtensionManager {
     }
   }
 
-  // Set up retry mechanism for failed sync
+  
   setupSyncRetry() {
     if (this.syncRetryInterval) {
       clearInterval(this.syncRetryInterval);
@@ -304,7 +448,7 @@ class ExtensionManager {
     }, 30000); // Retry every 30 seconds
   }
 
-  // Set up periodic sync to keep extension and server in sync
+ 
   setupPeriodicSync() {
     // Sync every 5 minutes to ensure consistency
     setInterval(async () => {
@@ -318,7 +462,7 @@ class ExtensionManager {
     }, 5 * 60 * 1000); // 5 minutes
   }
 
-  // Enhanced load and sync method
+ 
   async loadAndSyncItemTargetList() {
     try {
       if (!this.isInitialSyncComplete) {
@@ -932,7 +1076,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const result = await chrome.storage.local.get(['itemTargetList']);
         let currentList = result.itemTargetList || [];
         
-        // Check if this is an append operation or full replace
+        
         const newList = message.data.itemTargetList;
         
         // Ensure float values are preserved
@@ -948,8 +1092,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           };
         });
         
-        // If the new list contains items not in current list, it's an append
-        // If it's smaller or same size, it might be a replacement/removal
+        
         let finalList;
         if (processedNewList.length === 1 && currentList.length > 0) {
           
@@ -1199,49 +1342,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 
 } else if (message.type === 'FETCH_TRADEIT_DATA') {
-  // Handle TradeIt.gg data fetching to bypass CORS
+  // Pass the item name if available in the message for targeted scraping
   (async () => {
-    try {
-      // Check cache first
-      if (extensionManager.tradeitDataCache && Date.now() < extensionManager.tradeitCacheExpiry) {
-        console.log('🔥 Returning cached TradeIt.gg data');
-        sendResponse({
-          success: true,
-          data: extensionManager.tradeitDataCache
-        });
-        return;
-      }
-
-      console.log('📡 Background: Fetching fresh TradeIt.gg data...');
-      const response = await fetch('https://api.tradeit.gg/items/730');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      // Cache the data in extensionManager
-      extensionManager.tradeitDataCache = data;
-      extensionManager.tradeitCacheExpiry = Date.now() + (10 * 60 * 1000); // 10 minutes
-      
-      console.log(`✅ Background: Fetched ${data.length} TradeIt.gg items`);
-      
-      sendResponse({
-        success: true,
-        data: data
-      });
-      
-    } catch (error) {
-      console.error('❌ Background: Failed to fetch TradeIt.gg data:', error);
-      sendResponse({
-        success: false,
-        error: error.message
-      });
-    }
+    const response = await extensionManager.fetchTradeItDataWithFallback(message.data?.itemName);
+    sendResponse(response);
   })();
   return true; // Keep message channel open for async response
-  }
+}
   return true;
 });
 

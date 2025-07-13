@@ -535,4 +535,3 @@ class Starfield {
     new EmpireThemeInjector();
   }
 })();
-// --- End of Theme Injector ---

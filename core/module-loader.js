@@ -1,4 +1,4 @@
-// core/module-loader.js - Automatically discover and load feature modules
+// core/module-loader.js 
 class ModuleLoader {
   constructor() {
     this.eventBus = window.empireEventBus;
@@ -16,20 +16,7 @@ class ModuleLoader {
   async autoLoadModules() {
     console.log(`🔍 ModuleLoader: Auto-loading modules for "${this.context}" context...`);
     
-    // List of features to try loading
-    const featureList = [
-      'keychain-monitor',
-      'item-targets', 
-      'theme-system',
-      'notifications',
-      'price-filters',
-      'auto-bidder',
-      'market-analyzer',
-      'price-tracker',
-      'inventory-manager',
-      'trade-history'
-      // Add new features here, or they'll be auto-discovered
-    ];
+   
 
     let loadedCount = 0;
     
@@ -52,7 +39,7 @@ class ModuleLoader {
     });
   }
 
-  // Try to load a specific module
+ 
   async tryLoadModule(moduleName) {
     try {
       // Try to import the module
@@ -105,7 +92,7 @@ class ModuleLoader {
 
   // Check if module should load in current context
   shouldLoadInContext(moduleName) {
-    // Simple context rules - modules can override this
+    
     const contextRules = {
       'keychain-monitor': ['background'],
       'item-targets': ['background'], 
@@ -129,7 +116,7 @@ class ModuleLoader {
   }
 }
 
-// Create global instance
+
 window.empireModuleLoader = window.empireModuleLoader || new ModuleLoader();
 
 console.log('✅ Empire Enhanced Module Loader ready');

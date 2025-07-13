@@ -2,7 +2,7 @@
   "minAboveRecommended": -100,
   "maxAboveRecommended": 10,
   "keychainPercentageThreshold": 10,
-  "enabledKeychains": [
+  "enabledKeychains": [ 
     "Hot Howl",
     "Baby Karat T",
     "Hot Wurst",

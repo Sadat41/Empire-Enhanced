@@ -12,7 +12,7 @@ const SETTINGS_FILE = path.join(__dirname, 'server-settings.json');
 // Configuration - EDIT THESE VALUES
 const CONFIG = {
   // Replace with your CSGOEmpire API key
-  apiKey: "YOUR_API_KEY", // Get your API key from here: https://csgoempire.com/trading/apikey
+  apiKey: "YOUR_API_KEY_HERE", // Get your API key from here: https://csgoempire.com/trading/apikey
   
   // Change to '.gg' if '.com' is blocked
   domain: "csgoempire.com",
@@ -417,7 +417,7 @@ class KeychainMonitorServer {
       });
     });
 
-    // Update filter endpoint with persistent storage
+    // Update filter endpoint with storage
     this.app.post('/update-filter', (req, res) => {
       const { minPercentage, maxPercentage } = req.body;
       
@@ -437,7 +437,7 @@ class KeychainMonitorServer {
       CONFIG.minAboveRecommended = minPercentage;
       CONFIG.maxAboveRecommended = maxPercentage;
       
-      // Save to persistent storage
+      // Save to storage
       const saveSuccess = saveSettings();
       
       console.log(`🔧 Price filter updated: ${minPercentage}% to ${maxPercentage}% ${saveSuccess ? '(saved)' : '(save failed)'}`);
@@ -452,7 +452,7 @@ class KeychainMonitorServer {
       });
     });
 
-    // Update Item Target List endpoint with persistent storage
+    // Update Item Target List endpoint with storage
     this.app.post('/update-item-target-list', (req, res) => {
       const { itemTargetList, floatFilterEnabled } = req.body;
       
@@ -481,7 +481,7 @@ class KeychainMonitorServer {
       CONFIG.itemTargetList = itemTargetList;
       CONFIG.floatFilterEnabled = floatFilterEnabled !== undefined ? floatFilterEnabled : CONFIG.floatFilterEnabled;
       
-      // Save to persistent storage
+      // Save to storage
       const saveSuccess = saveSettings();
       
       console.log(`🔧 Item Target List updated: ${oldCount} → ${itemTargetList.length} items ${saveSuccess ? '(saved)' : '(save failed)'}`);
@@ -504,7 +504,7 @@ class KeychainMonitorServer {
       });
     });
 
-    // Update keychain percentage threshold with persistent storage
+    // Update keychain percentage threshold with storage
     this.app.post('/update-keychain-percentage', (req, res) => {
       const { percentageThreshold } = req.body;
       
@@ -517,7 +517,7 @@ class KeychainMonitorServer {
       const oldThreshold = CONFIG.keychainPercentageThreshold;
       CONFIG.keychainPercentageThreshold = percentageThreshold;
       
-      // Save to persistent storage
+      // Save to storage
       const saveSuccess = saveSettings();
       
       console.log(`🔧 Keychain percentage threshold updated: ${oldThreshold}% → ${percentageThreshold}% ${saveSuccess ? '(saved)' : '(save failed)'}`);
@@ -530,7 +530,7 @@ class KeychainMonitorServer {
       });
     });
 
-    // Update enabled keychains with persistent storage
+    // Update enabled keychains with storage
     this.app.post('/update-enabled-keychains', (req, res) => {
       const { enabledKeychains } = req.body;
       
@@ -950,46 +950,122 @@ class KeychainMonitorServer {
   }
 
   // Process items with comprehensive filtering and Item Target List support
-  processItems(items) {
-    if (!Array.isArray(items)) {
-      items = [items];
+processItems(items) {
+  if (!Array.isArray(items)) {
+    items = [items];
+  }
+
+  items.forEach(item => {
+    this.stats.itemsProcessed++;
+    
+    if (this.notifiedItems.has(item.id)) {
+      return;
     }
 
-    items.forEach(item => {
-      this.stats.itemsProcessed++;
+    console.log(`🔍 Processing item: ${item.market_name}`);
+    console.log(`💰 Market: $${(item.market_value / 100).toFixed(2)}, Float: ${item.wear ? item.wear.toFixed(6) : 'N/A'}`);
+
+    // Check Item Target List first (higher priority)
+    const targetItemMatch = this.checkItemTargetList(item);
+    if (targetItemMatch) {
+      console.log(`🎯 Found target item match: ${targetItemMatch.name}`);
       
-      if (this.notifiedItems.has(item.id)) {
+      const priceCheck = this.isGoodPrice(item);
+      if (!priceCheck.isGood) {
+        this.stats.itemsFiltered++;
+        this.incrementFilterReason('price_filter_target_item');
+        console.log(`🚫 FILTERED: Target item price filter failed`);
+        return;
+      }
+      
+      const floatCheck = this.checkFloatFilter(item, targetItemMatch);
+      if (!floatCheck.isGood) {
+        this.stats.itemsFiltered++;
+        this.incrementFilterReason('float_filter_target_item');
+        console.log(`🚫 FILTERED: Target item float filter failed`);
         return;
       }
 
-      console.log(`🔍 Processing item: ${item.market_name}`);
-      console.log(`💰 Market: $${(item.market_value / 100).toFixed(2)}, Float: ${item.wear ? item.wear.toFixed(6) : 'N/A'}`);
+      console.log('🎉 🎯 TARGET ITEM FOUND - ALL FILTERS PASSED! 🎯 🎉');
+      
+      item.notification_type = 'target_item';
+      item.target_item_matched = targetItemMatch;
 
-      // Check Item Target List first (higher priority)
-      const targetItemMatch = this.checkItemTargetList(item);
-      if (targetItemMatch) {
-        console.log(`🎯 Found target item match: ${targetItemMatch.name}`);
+      this.storeNotification(item);
+      this.notifiedItems.add(item.id);
+      
+      if (this.notifiedItems.size > 1000) {
+        const itemsArray = Array.from(this.notifiedItems);
+        this.notifiedItems = new Set(itemsArray.slice(-500));
+      }
+
+      this.stats.itemsFound++;
+      this.stats.lastItemFound = Date.now();
+
+      this.notifyClients('ITEM_TARGET_FOUND', item);
+      
+      return;
+    }
+
+    // Check for keychains if no target item match
+    if (item.keychains && item.keychains.length > 0) {
+      console.log(`🔑 Keychains: ${item.keychains.map(k => k.name).join(', ')}`);
+      
+      // *** NEW: Check if market name exactly matches any keychain name ***
+      const itemName = item.market_name.toLowerCase();
+      const allKeychainNames = this.getAllKeychainNames().map(name => name.toLowerCase());
+      
+      if (allKeychainNames.includes(itemName)) {
+        this.stats.itemsFiltered++;
+        this.incrementFilterReason('market_name_matches_keychain');
+        console.log(`🚫 FILTERED: Item market name "${item.market_name}" exactly matches a keychain keyword - skipping keychain notification`);
+        return;
+      }
+      
+      // Also check if market name contains "Charm |" or "charm |" followed by keychain name
+      const cleanedMarketName = itemName.replace(/^charm\s*\|\s*/, '').trim();
+      if (allKeychainNames.includes(cleanedMarketName)) {
+        this.stats.itemsFiltered++;
+        this.incrementFilterReason('market_name_is_charm_keychain');
+        console.log(`🚫 FILTERED: Item market name "${item.market_name}" is a charm with keychain name - skipping keychain notification`);
+        return;
+      }
+      
+      const charmDetails = this.getCharmDetails(item);
+
+      if (charmDetails) {
+        console.log(`🎯 Found target charm: ${charmDetails.name} (${charmDetails.category}) - $${charmDetails.price.toFixed(2)}`);
         
+        if (!CONFIG.enabledKeychains.has(charmDetails.name)) {
+          this.stats.itemsFiltered++;
+          this.incrementFilterReason('keychain_disabled');
+          console.log(`🚫 FILTERED: Keychain "${charmDetails.name}" disabled in settings`);
+          return;
+        }
+
         const priceCheck = this.isGoodPrice(item);
         if (!priceCheck.isGood) {
           this.stats.itemsFiltered++;
-          this.incrementFilterReason('price_filter_target_item');
-          console.log(`🚫 FILTERED: Target item price filter failed`);
+          this.incrementFilterReason('price_filter');
+          console.log(`🚫 FILTERED: Price filter failed`);
           return;
         }
         
-        const floatCheck = this.checkFloatFilter(item, targetItemMatch);
-        if (!floatCheck.isGood) {
+        const keychainPercentageCheck = this.checkKeychainPercentage(item, charmDetails);
+        if (!keychainPercentageCheck.isGood) {
           this.stats.itemsFiltered++;
-          this.incrementFilterReason('float_filter_target_item');
-          console.log(`🚫 FILTERED: Target item float filter failed`);
+          this.incrementFilterReason('keychain_percentage');
+          console.log(`🚫 FILTERED: Keychain percentage too low`);
           return;
         }
 
-        console.log('🎉 🎯 TARGET ITEM FOUND - ALL FILTERS PASSED! 🎯 🎉');
-        
-        item.notification_type = 'target_item';
-        item.target_item_matched = targetItemMatch;
+        console.log('🎉 🔑 TARGET FOUND - ALL FILTERS PASSED! 🔑 🎉');
+
+        item.charm_category = charmDetails.category;
+        item.charm_name = charmDetails.name;
+        item.charm_price = charmDetails.price;
+        item.charm_price_display = this.formatCharmPrice(charmDetails.price, item.purchase_price);
+        item.notification_type = 'keychain';
 
         this.storeNotification(item);
         this.notifiedItems.add(item.id);
@@ -999,94 +1075,47 @@ class KeychainMonitorServer {
           this.notifiedItems = new Set(itemsArray.slice(-500));
         }
 
-        this.stats.itemsFound++;
-        this.stats.lastItemFound = Date.now();
+        this.stats.keychainsFound++;
+        this.stats.lastKeychainFound = Date.now();
 
-        this.notifyClients('ITEM_TARGET_FOUND', item);
-        
-        return;
-      }
-
-      // Check for keychains if no target item match
-      if (item.keychains && item.keychains.length > 0) {
-        console.log(`🔑 Keychains: ${item.keychains.map(k => k.name).join(', ')}`);
-        
-        const charmDetails = this.getCharmDetails(item);
-
-        if (charmDetails) {
-          console.log(`🎯 Found target charm: ${charmDetails.name} (${charmDetails.category}) - $${charmDetails.price.toFixed(2)}`);
-          
-          if (!CONFIG.enabledKeychains.has(charmDetails.name)) {
-            this.stats.itemsFiltered++;
-            this.incrementFilterReason('keychain_disabled');
-            console.log(`🚫 FILTERED: Keychain "${charmDetails.name}" disabled in settings`);
-            return;
-          }
-
-          const priceCheck = this.isGoodPrice(item);
-          if (!priceCheck.isGood) {
-            this.stats.itemsFiltered++;
-            this.incrementFilterReason('price_filter');
-            console.log(`🚫 FILTERED: Price filter failed`);
-            return;
-          }
-          
-          const keychainPercentageCheck = this.checkKeychainPercentage(item, charmDetails);
-          if (!keychainPercentageCheck.isGood) {
-            this.stats.itemsFiltered++;
-            this.incrementFilterReason('keychain_percentage');
-            console.log(`🚫 FILTERED: Keychain percentage too low`);
-            return;
-          }
-
-          console.log('🎉 🔑 TARGET FOUND - ALL FILTERS PASSED! 🔑 🎉');
-
-          item.charm_category = charmDetails.category;
-          item.charm_name = charmDetails.name;
-          item.charm_price = charmDetails.price;
-          item.charm_price_display = this.formatCharmPrice(charmDetails.price, item.purchase_price);
-          item.notification_type = 'keychain';
-
-          this.storeNotification(item);
-          this.notifiedItems.add(item.id);
-          
-          if (this.notifiedItems.size > 1000) {
-            const itemsArray = Array.from(this.notifiedItems);
-            this.notifiedItems = new Set(itemsArray.slice(-500));
-          }
-
-          this.stats.keychainsFound++;
-          this.stats.lastKeychainFound = Date.now();
-
-          this.notifyClients('KEYCHAIN_FOUND', item);
-        } else {
-          console.log(`🔍 Unknown keychains found: ${item.keychains.map(k => k.name).join(', ')}`);
-          this.stats.itemsFiltered++;
-          this.incrementFilterReason('unknown_keychain');
-        }
-      }
-    });
-  }
-
-  // Check if item matches any target item in the list
-  checkItemTargetList(item) {
-    if (!item.market_name || CONFIG.itemTargetList.length === 0) {
-      return null;
-    }
-
-    const itemName = item.market_name.toLowerCase();
-    
-    for (const targetItem of CONFIG.itemTargetList) {
-      const targetName = targetItem.name.toLowerCase();
-      
-      if (itemName.includes(targetName) || targetName.includes(itemName)) {
-        console.log(`✅ Item name match found: "${targetItem.name}" matches "${item.market_name}"`);
-        return targetItem;
+        this.notifyClients('KEYCHAIN_FOUND', item);
+      } else {
+        console.log(`🔍 Unknown keychains found: ${item.keychains.map(k => k.name).join(', ')}`);
+        this.stats.itemsFiltered++;
+        this.incrementFilterReason('unknown_keychain');
       }
     }
-    
+  });
+}
+
+  // Fixed checkItemTargetList function to prevent keychain keyword conflicts
+checkItemTargetList(item) {
+  if (!item.market_name || CONFIG.itemTargetList.length === 0) {
     return null;
   }
+
+  const itemName = item.market_name.toLowerCase();
+  
+  // Get all keychain names to avoid false positives
+  const allKeychainNames = this.getAllKeychainNames().map(name => name.toLowerCase());
+  
+  // If the item name exactly matches a keychain name, don't treat it as an item target
+  if (allKeychainNames.includes(itemName)) {
+    console.log(`🚫 SKIPPED: Item name "${item.market_name}" exactly matches a keychain keyword, not treating as item target`);
+    return null;
+  }
+  
+  for (const targetItem of CONFIG.itemTargetList) {
+    const targetName = targetItem.name.toLowerCase();
+    
+    if (itemName.includes(targetName) || targetName.includes(itemName)) {
+      console.log(`✅ Item name match found: "${targetItem.name}" matches "${item.market_name}"`);
+      return targetItem;
+    }
+  }
+  
+  return null;
+}
 
   // Check float filter for target items
   checkFloatFilter(item, targetItem) {
