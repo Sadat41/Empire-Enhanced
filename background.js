@@ -61,143 +61,186 @@ class ExtensionManager {
 
     
     this.setupPeriodicSync();
-
+    this.setupPeriodicCacheUpdate();
     this.updateBadge();
+    
   }
 
-    async fetchTradeItDataWithFallback(itemName = null) {
-    console.log('📡 Background: Fetching TradeIt.gg data with fallback logic...');
-    
-    let tradeitData = null;
+// This function automatically updates stale items in the background.
+async updateStaleCacheItems() {
+  console.log('⏰ ALARM: Starting periodic cache update run...');
+  const localBuffCacheKey = 'buffOverridesCache';
+  const localBuffCache = await chrome.storage.local.get(localBuffCacheKey);
+  let originalCache = localBuffCache[localBuffCacheKey]?.data || {};
+  let itemsUpdatedCount = 0;
 
-    // 1. Try Tradeit.gg API (direct fetch)
-    try {
-      console.log('📡 Background: Attempting to fetch from TradeIt.gg...');
-      const tradeitResponse = await fetch('https://api.tradeit.gg/items/730');
-      if (tradeitResponse.ok) {
-        tradeitData = await tradeitResponse.json();
-        console.log(`✅ Background: Fetched ${tradeitData.length} items from TradeIt.gg`);
-      } else {
-        console.warn(`⚠️ TradeIt.gg API returned status: ${tradeitResponse.status}. Falling back.`);
-      }
-    } catch (error) {
-      console.error('❌ Background: Error fetching from TradeIt.gg API:', error);
-      console.log('🔄 Falling back to backend for Buff.163.com data.');
-    }
-
-    // Prepare combined data structure for the extension
-    const combinedPrices = new Map();
-
-    if (tradeitData) {
-      tradeitData.forEach(item => {
-        if (item.item && item.price) {
-          combinedPrices.set(item.item.toLowerCase(), {
-            source: 'tradeit.gg',
-            price: item.price,
-            timestamp: Date.now()
-          });
+  // FIX: Normalize all keys to lowercase to prevent duplicates
+for (const key in originalCache) {
+    if (originalCache.hasOwnProperty(key)) {
+        // Store with original format (with dash)
+        cachedBuffData[key.toLowerCase()] = originalCache[key];
+        
+        // ALSO store without dash for extension matching
+        if (key.includes('Gamma Doppler') || key.includes('Doppler')) {
+            const withoutDash = key.replace(/(Gamma Doppler|Doppler)\s*-\s*(Emerald|Sapphire|Ruby|Black Pearl|Phase [1-4])/gi, '$1 $2');
+            cachedBuffData[withoutDash.toLowerCase()] = originalCache[key];
         }
+    }
+}
+  for (const itemKey in cache) {
+      const buffItem = cache[itemKey];
+      const itemTimestamp = buffItem.timestamp ? new Date(buffItem.timestamp).getTime() : 0;
+      const isItemStale = (Date.now() - itemTimestamp) > this.buffCacheExpiry;
+
+      const itemAgeDays = (Date.now() - itemTimestamp) / (1000 * 60 * 60 * 24);
+      console.log(`- Checking: '${itemKey}'. Age: ${itemAgeDays.toFixed(2)} days. Stale: ${isItemStale}`);
+
+      if (isItemStale) {
+        console.log(`  🔄 Item is STALE. Requesting update from scraper...`);
+        try {
+          const backendResponse = await fetch(this.buffBackendUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ item: itemKey })
+          });
+
+          if (backendResponse.ok) {
+            const result = await backendResponse.json();
+            if (result.status === "success" && result.data) {
+              console.log(`  ✅ Successfully updated '${itemKey}'.`);
+              cache[itemKey] = {
+                ...cache[itemKey],
+                usd_price: result.data.usd_price,
+                yuan_price: result.data.yuan_price,
+                timestamp: result.data.timestamp
+              };
+              itemsUpdatedCount++;
+            } else {
+              console.warn(`  ⚠️ Update for '${itemKey}' failed: ${result.message}. Keeping old data.`);
+            }
+          } else {
+            console.error(`  ❌ Update request for '${itemKey}' failed with status: ${backendResponse.status}.`);
+          }
+        } catch (error) {
+          console.error(`  ❌ Error during update for '${itemKey}':`, error);
+        }
+      }
+  }
+
+  if (itemsUpdatedCount > 0) {
+    await chrome.storage.local.set({
+      [localBuffCacheKey]: {
+        data: cache,
+        timestamp: Date.now()
+      }
+    });
+    console.log(`✅ Periodic update finished. Updated ${itemsUpdatedCount} items in the cache.`);
+  } else {
+    console.log('✅ Periodic update finished. No stale items required an update.');
+  }
+}
+
+// Sets up the recurring alarm for the automatic update.
+setupPeriodicCacheUpdate() {
+    const alarmName = 'periodicCacheUpdate';
+    chrome.alarms.get(alarmName, (existingAlarm) => {
+        if (!existingAlarm) {
+            chrome.alarms.create(alarmName, {
+              delayInMinutes: 1,
+              periodInMinutes: 60
+            });
+            console.log('⏰ ALARM: Automatic cache update alarm has been set. It will run every hour.');
+        } else {
+            console.log('⏰ ALARM: Automatic cache update alarm already exists.');
+        }
+    });
+}
+
+// fetchTradeItDataWithFallback 
+async fetchTradeItDataWithFallback(itemName = null) {
+  console.log('📡 ON-DEMAND FETCH: Request received from content script.');
+  let tradeitData = null;
+  try {
+    const tradeitResponse = await fetch('https://api.tradeit.gg/items/730');
+    if (tradeitResponse.ok) {
+      tradeitData = await tradeitResponse.json();
+    }
+  } catch (error) {
+    console.error('❌ ON-DEMAND FETCH: Error fetching from TradeIt.gg API:', error);
+  }
+  const combinedPrices = new Map();
+  if (tradeitData) {
+    tradeitData.forEach(item => {
+      if (item.item && item.price) {
+        combinedPrices.set(item.item.toLowerCase(), {
+          source: 'tradeit.gg',
+          price: item.price,
+          timestamp: Date.now()
+        });
+      }
+    });
+  }
+  const localBuffCacheKey = 'buffOverridesCache';
+  const localBuffCache = await chrome.storage.local.get(localBuffCacheKey);
+  let originalCache = localBuffCache[localBuffCacheKey]?.data || {};
+  const cachedBuffData = {};
+  for (const key in originalCache) {
+      if (originalCache.hasOwnProperty(key)) {
+          cachedBuffData[key.toLowerCase()] = originalCache[key];
+      }
+  }
+  for (const itemKey in cachedBuffData) {
+    if (!combinedPrices.has(itemKey)) {
+      const buffItem = cachedBuffData[itemKey];
+      combinedPrices.set(itemKey, {
+        source: 'buff.163.com (Backend)',
+        price: buffItem.usd_price,
+        timestamp: buffItem.timestamp ? new Date(buffItem.timestamp).getTime() : Date.now()
       });
     }
-
-    // 2. Get Buff.163.com data from Flask backend (which manages local JSON file)
-    const localBuffCacheKey = 'buffOverridesCache';
-    const localBuffCache = await chrome.storage.local.get(localBuffCacheKey);
-    let cachedBuffData = localBuffCache[localBuffCacheKey]?.data || {};
-    let cachedBuffTimestamp = localBuffCache[localBuffCacheKey]?.timestamp || 0;
-
-    const isBuffCacheStale = (Date.now() - cachedBuffTimestamp) > this.buffCacheExpiry;
-
-    if (isBuffCacheStale) {
-      console.log('🔄 Background: Buff.163.com cache is stale or missing. Fetching from backend...');
-      try {
-        // Get current data status from backend
-        const statusResponse = await fetch('http://localhost:5002/data-status');
-        if (statusResponse.ok) {
-          const statusData = await statusResponse.json();
-          console.log(`✅ Background: Backend has ${statusData.stats.total_items} items available.`);
-          
-          // For now, we'll trigger a scrape of common items or use existing data
-          // The backend maintains its own local JSON file
-          console.log(`✅ Background: Using backend-managed Buff.163.com data.`);
-        } else {
-          console.warn(`⚠️ Backend status check failed: ${statusResponse.status}.`);
-        }
-      } catch (error) {
-        console.error('❌ Background: Error communicating with backend:', error);
-      }
-    } else {
-      console.log(`✅ Background: Using cached Buff.163.com data (${Object.keys(cachedBuffData).length} items).`);
-    }
-
-    // Merge cached Buff data into combined prices, prioritizing TradeIt.gg
-    for (const itemKey in cachedBuffData) {
-      if (cachedBuffData.hasOwnProperty(itemKey)) {
-        const buffItem = cachedBuffData[itemKey];
-        if (!combinedPrices.has(itemKey.toLowerCase())) { // Simple merge: Buff as fallback
-          combinedPrices.set(itemKey.toLowerCase(), {
-            source: 'buff.163.com (Backend)',
-            price: buffItem.usd_price,
-            timestamp: buffItem.timestamp ? new Date(buffItem.timestamp).getTime() : Date.now()
-          });
-        }
-      }
-    }
-
-    // 3. Request updated data from Flask backend if specific item is needed
-    if (itemName && !combinedPrices.has(itemName.toLowerCase())) {
-        console.log(`🔄 Background: Item '${itemName}' not found in TradeIt or cached data. Requesting scrape from Flask backend.`);
-        try {
-            const backendResponse = await fetch(this.buffBackendUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ item: itemName }) // Request specific item
-            });
-
-            if (backendResponse.ok) {
-                const result = await backendResponse.json();
-                if (result.status === "success" && result.data) {
-                    console.log(`✅ Background: Scraped '${itemName}' from backend.`);
-                    cachedBuffData[itemName] = {
-                        usd_price: result.data.usd_price,
-                        yuan_price: result.data.yuan_price,
-                        timestamp: result.data.timestamp
-                    };
-                    await chrome.storage.local.set({
-                        [localBuffCacheKey]: {
-                            data: cachedBuffData,
-                            timestamp: Date.now() // Update cache timestamp
-                        }
-                    });
-                    combinedPrices.set(itemName.toLowerCase(), {
-                        source: 'buff.163.com (Backend Scrape)',
-                        price: result.data.usd_price,
-                        timestamp: new Date(result.data.timestamp).getTime()
-                    });
-                } else {
-                    console.warn(`⚠️ Backend scrape for '${itemName}' failed: ${result.message}`);
-                }
-            } else {
-                console.error(`❌ Background: Flask backend request failed with status: ${backendResponse.status}`);
-            }
-        } catch (error) {
-            console.error('❌ Background: Error communicating with Flask backend:', error);
-        }
-    }
-
-    // Convert the Map back to an array for the content script
-    const finalDataArray = Array.from(combinedPrices.values()).map((val, idx) => ({
-      item: Array.from(combinedPrices.keys())[idx], // Reconstruct item name
-      price: val.price,
-      source: val.source,
-      timestamp: val.timestamp
-    }));
-
-    return {
-      success: true,
-      data: finalDataArray
-    };
   }
+  if (itemName && !combinedPrices.has(itemName.toLowerCase())) {
+      console.log(`🔄 ON-DEMAND FETCH: Item '${itemName}' not in cache. Requesting scrape...`);
+      try {
+          const backendResponse = await fetch(this.buffBackendUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ item: itemName })
+          });
+          if (backendResponse.ok) {
+              const result = await backendResponse.json();
+              if (result.status === "success" && result.data) {
+                  const normalizedItemName = itemName.toLowerCase();
+                  cachedBuffData[normalizedItemName] = {
+                      usd_price: result.data.usd_price,
+                      yuan_price: result.data.yuan_price,
+                      timestamp: result.data.timestamp
+                  };
+                  await chrome.storage.local.set({
+                      [localBuffCacheKey]: {
+                          data: cachedBuffData,
+                          timestamp: Date.now()
+                      }
+                  });
+                  combinedPrices.set(normalizedItemName, {
+                      source: 'buff.163.com (Backend Scrape)',
+                      price: result.data.usd_price,
+                      timestamp: new Date(result.data.timestamp).getTime()
+                  });
+              }
+          }
+      } catch (error) {
+          console.error('❌ ON-DEMAND FETCH: Error communicating with Flask backend:', error);
+      }
+  }
+  const finalDataArray = Array.from(combinedPrices.entries()).map(([key, value]) => ({
+    item: key,
+    price: value.price,
+    source: value.source,
+    timestamp: value.timestamp
+  }));
+  return { success: true, data: finalDataArray };
+}
   // --- END OF fetchTradeItDataWithFallback METHOD ---
 
 
@@ -1000,13 +1043,38 @@ class ExtensionManager {
   }
 }
 
-// Chrome alarms listener
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'pollNotifications') {
-    console.log('⏰ Chrome alarm fired (backup polling)');
-    if (extensionManager) {
-      extensionManager.pollServerForNotifications();
-    }
+// --- GLOBAL INSTANCE AND LIFECYCLE MANAGEMENT (ROBUST VERSION) ---
+// This makes sure the extensionManager is always available.
+let extensionManager;
+
+function getManager() {
+  if (!extensionManager) {
+    console.log('Creating new ExtensionManager instance...');
+    extensionManager = new ExtensionManager();
+  }
+  return extensionManager;
+}
+
+// Initialize on install or startup
+chrome.runtime.onInstalled.addListener(() => {
+  console.log('🔧 Extension installed/updated. Initializing...');
+  getManager();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  console.log('🚀 Browser starting up. Initializing...');
+  getManager();
+});
+
+
+// This is the NEW alarm listener
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  console.log(`🔔 Alarm fired: ${alarm.name}`); // This confirms the automatic task is running
+  const manager = getManager(); // Use the robust getter
+  if (alarm.name === 'periodicCacheUpdate') {
+    await manager.updateStaleCacheItems();
+  } else if (alarm.name === 'pollNotifications') {
+    await manager.pollServerForNotifications();
   }
 });
 
@@ -1364,21 +1432,18 @@ chrome.runtime.onInstalled.addListener(() => {
   new ExtensionManager();
 });
 
-// Global instance
-let extensionManager = new ExtensionManager();
+
 
 
 (async function initModuleSystem() {
   try {
-    // Load core framework
     await import('./core/event-bus.js');
     await import('./core/module-loader.js'); 
     await import('./core/base-module.js');
-    
-    // Set context and auto-load modules
+
     window.empireModuleLoader.setContext('background');
     await window.empireModuleLoader.autoLoadModules();
-    
+
     console.log('🎉 Empire Enhanced: Module system ready for infinite scalability!');
   } catch (error) {
     console.log('⚠️ Module system not ready yet (this is normal during initial setup)');

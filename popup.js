@@ -149,7 +149,7 @@ class PopupManager {
         }
     }
 
-    // UPDATED: Save item target list with immediate server sync
+    
     async saveItemTargetList() {
         try {
             // Save to local storage first
@@ -1324,7 +1324,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new PopupManager();
 });
 
-// 🚀 MODULE SYSTEM BOOTSTRAP  
+ 
 (async function() {
   try {
     await import('./core/event-bus.js');

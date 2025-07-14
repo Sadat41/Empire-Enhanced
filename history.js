@@ -1,4 +1,4 @@
-// history.js - Enhanced with charm pricing display and color coding
+// history.js 
 
 class NotificationHistory {
     constructor() {
