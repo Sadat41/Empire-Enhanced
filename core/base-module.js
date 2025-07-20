@@ -13,7 +13,7 @@ class BaseModule {
     console.log(`🔧 BaseModule: Creating ${this.name} for ${this.context}`);
   }
 
-  // Override in child classes
+  //  classes
   async init() {
     console.log(`🔧 ${this.name}: Initializing...`);
     
@@ -129,7 +129,6 @@ class BaseModule {
   }
 }
 
-// Make available globally
 window.BaseModule = BaseModule;
 
 console.log('✅ Empire Enhanced Base Module ready');

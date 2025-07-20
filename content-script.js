@@ -184,13 +184,13 @@ class CSGOEmpireNotificationOverlay {
     }
   }
 
-  // SAFE: Check if we're on a CSGOEmpire page
+  // Check if we're on a CSGOEmpire page
   isCSGOEmpirePage() {
     return window.location.hostname.includes('csgoempire.com') || 
            window.location.hostname.includes('csgoempire.gg');
   }
 
-  // SAFE: Notify site theming system with error handling
+  // Notify site theming system with error handling
   notifySiteThemeChange(theme, siteThemingEnabled) {
     try {
       if (!this.isCSGOEmpirePage()) {
@@ -1381,7 +1381,7 @@ if (document.readyState === 'loading') {
 }
 })();
 
-// 🚀 MODULE SYSTEM BOOTSTRAP
+
 (async function() {
   try {
     await import('./core/event-bus.js');

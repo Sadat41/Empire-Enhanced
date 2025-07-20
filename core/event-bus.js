@@ -69,7 +69,7 @@ class EventBus {
   }
 }
 
-// Create global instance
+
 window.empireEventBus = window.empireEventBus || new EventBus();
 
 console.log('✅ Empire Enhanced Event Bus loaded');

@@ -89,5 +89,5 @@ class Starfield {
     }
 }
 
-// Instantiate the Starfield class to start the process
+
 new Starfield();

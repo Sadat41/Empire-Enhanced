@@ -61,12 +61,10 @@ class ExtensionManager {
 
     
     this.setupPeriodicSync();
-    this.setupPeriodicCacheUpdate();
     this.updateBadge();
     
   }
 
-// Add this new function inside the ExtensionManager class
 async fetchPriceData() {
     // Use cache if it's less than 1 hour old
     if (this.priceDataCache && (Date.now() - this.priceCacheTimestamp < 3600000)) {
@@ -117,10 +115,8 @@ async fetchPriceData() {
         return this.priceDataCache || {}; // Return old cache if fetching fails
     }
 }
+
 // New comparison function for price data
-
-
- 
   async pollServerForNotifications() { /* ... */ }
   setupBackgroundPolling() { /* ... */ }
 
