@@ -1,8 +1,8 @@
 {
   "minAboveRecommended": -100,
   "maxAboveRecommended": 10,
-  "keychainPercentageThreshold": 10,
-  "enabledKeychains": [ 
+  "keychainPercentageThreshold": 15,
+  "enabledKeychains": [
     "Hot Howl",
     "Baby Karat T",
     "Hot Wurst",
@@ -253,9 +253,117 @@
         "min": 0,
         "max": 0.2
       }
+    },
+    {
+      "id": "1752582759140",
+      "name": "StatTrak™ M249 | Spectre (Minimal Wear)",
+      "floatFilter": {
+        "enabled": true,
+        "min": 0,
+        "max": 0.09
+      }
+    },
+    {
+      "id": "1752582792130",
+      "name": "StatTrak™ G3SG1 | Orange Crash (Minimal Wear)",
+      "floatFilter": {
+        "enabled": true,
+        "min": 0,
+        "max": 0.09
+      }
+    },
+    {
+      "id": "1752582830017",
+      "name": "StatTrak™ Dual Berettas | Ventilators (Minimal Wear)",
+      "floatFilter": {
+        "enabled": true,
+        "min": 0,
+        "max": 0.09
+      }
+    },
+    {
+      "id": "1752582846680",
+      "name": "StatTrak™ SG 553 | Atlas (Minimal Wear)",
+      "floatFilter": {
+        "enabled": true,
+        "min": 0,
+        "max": 0.09
+      }
+    },
+    {
+      "id": "1752582860854",
+      "name": "StatTrak™ P2000 | Oceanic (Minimal Wear)",
+      "floatFilter": {
+        "enabled": true,
+        "min": 0,
+        "max": 0.09
+      }
+    },
+    {
+      "id": "1752582912325",
+      "name": "StatTrak™ M249 | Spectre (Factory New)",
+      "floatFilter": {
+        "enabled": true,
+        "min": 0,
+        "max": 0.04
+      }
+    },
+    {
+      "id": "1752582927440",
+      "name": "StatTrak™ P2000 | Oceanic (Factory New)",
+      "floatFilter": {
+        "enabled": true,
+        "min": 0,
+        "max": 0.04
+      }
+    },
+    {
+      "id": "1752582956296",
+      "name": "StatTrak™ Dual Berettas | Ventilators (Factory New)",
+      "floatFilter": {
+        "enabled": true,
+        "min": 0,
+        "max": 0.04
+      }
+    },
+    {
+      "id": "1752582967375",
+      "name": "StatTrak™ G3SG1 | Orange Crash (Factory New)",
+      "floatFilter": {
+        "enabled": true,
+        "min": 0,
+        "max": 0.04
+      }
+    },
+    {
+      "id": "1752582975342",
+      "name": "StatTrak™ SG 553 | Atlas (Factory New)",
+      "floatFilter": {
+        "enabled": true,
+        "min": 0,
+        "max": 0.04
+      }
+    },
+    {
+      "id": "1753009622718",
+      "name": "Sawed-Off | Full Stop (Field-Tested)",
+      "floatFilter": {
+        "enabled": true,
+        "min": 0,
+        "max": 0.2
+      }
+    },
+    {
+      "id": "1753009682491",
+      "name": "FAMAS | Teardown (Field-Tested)",
+      "floatFilter": {
+        "enabled": true,
+        "min": 0,
+        "max": 0.2
+      }
     }
   ],
   "floatFilterEnabled": true,
-  "lastUpdated": "2025-07-10T10:32:09.505Z",
+  "lastUpdated": "2025-07-20T11:08:02.505Z",
   "version": "1.0"
 }

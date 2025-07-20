@@ -66,182 +66,58 @@ class ExtensionManager {
     
   }
 
-// This function automatically updates stale items in the background.
-async updateStaleCacheItems() {
-  console.log('⏰ ALARM: Starting periodic cache update run...');
-  const localBuffCacheKey = 'buffOverridesCache';
-  const localBuffCache = await chrome.storage.local.get(localBuffCacheKey);
-  let originalCache = localBuffCache[localBuffCacheKey]?.data || {};
-  let itemsUpdatedCount = 0;
+// Add this new function inside the ExtensionManager class
+async fetchPriceData() {
+    // Use cache if it's less than 1 hour old
+    if (this.priceDataCache && (Date.now() - this.priceCacheTimestamp < 3600000)) {
+        return this.priceDataCache;
+    }
 
-  // FIX: Normalize all keys to lowercase to prevent duplicates
-for (const key in originalCache) {
-    if (originalCache.hasOwnProperty(key)) {
-        // Store with original format (with dash)
-        cachedBuffData[key.toLowerCase()] = originalCache[key];
+    console.log('📡 Fetching fresh prices from csgotrader.app APIs...');
+    const csfloatUrl = 'https://prices.csgotrader.app/latest/csfloat.json';
+    const buffUrl = 'https://prices.csgotrader.app/latest/buff163.json';
+
+    try {
+        const [csfloatResponse, buffResponse] = await Promise.all([
+            fetch(csfloatUrl),
+            fetch(buffUrl)
+        ]);
+
+        if (!csfloatResponse.ok || !buffResponse.ok) {
+            throw new Error('Failed to fetch price data from one or more sources.');
+        }
+
+        const csfloatData = await csfloatResponse.json();
+        const buffData = await buffResponse.json();
+        const combinedPrices = new Map();
+
+        // Process CSFloat prices - PASSING THE ENTIRE PRICE OBJECT
+        for (const [name, data] of Object.entries(csfloatData)) {
+            combinedPrices.set(name.toLowerCase(), { csfloatPrice: data });
+        }
         
-        // ALSO store without dash for extension matching
-        if (key.includes('Gamma Doppler') || key.includes('Doppler')) {
-            const withoutDash = key.replace(/(Gamma Doppler|Doppler)\s*-\s*(Emerald|Sapphire|Ruby|Black Pearl|Phase [1-4])/gi, '$1 $2');
-            cachedBuffData[withoutDash.toLowerCase()] = originalCache[key];
-        }
-    }
-}
-  for (const itemKey in cache) {
-      const buffItem = cache[itemKey];
-      const itemTimestamp = buffItem.timestamp ? new Date(buffItem.timestamp).getTime() : 0;
-      const isItemStale = (Date.now() - itemTimestamp) > this.buffCacheExpiry;
-
-      const itemAgeDays = (Date.now() - itemTimestamp) / (1000 * 60 * 60 * 24);
-      console.log(`- Checking: '${itemKey}'. Age: ${itemAgeDays.toFixed(2)} days. Stale: ${isItemStale}`);
-
-      if (isItemStale) {
-        console.log(`  🔄 Item is STALE. Requesting update from scraper...`);
-        try {
-          const backendResponse = await fetch(this.buffBackendUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ item: itemKey })
-          });
-
-          if (backendResponse.ok) {
-            const result = await backendResponse.json();
-            if (result.status === "success" && result.data) {
-              console.log(`  ✅ Successfully updated '${itemKey}'.`);
-              cache[itemKey] = {
-                ...cache[itemKey],
-                usd_price: result.data.usd_price,
-                yuan_price: result.data.yuan_price,
-                timestamp: result.data.timestamp
-              };
-              itemsUpdatedCount++;
-            } else {
-              console.warn(`  ⚠️ Update for '${itemKey}' failed: ${result.message}. Keeping old data.`);
+        // Merge Buff163 prices - PASSING THE ENTIRE 'starting_at' OBJECT
+        for (const [name, data] of Object.entries(buffData)) {
+            const lowerName = name.toLowerCase();
+            const existingEntry = combinedPrices.get(lowerName) || {};
+            // The 'starting_at' object contains both the base price and the nested doppler data
+            if (data && data.starting_at) {
+                combinedPrices.set(lowerName, { ...existingEntry, buffPrice: data.starting_at });
             }
-          } else {
-            console.error(`  ❌ Update request for '${itemKey}' failed with status: ${backendResponse.status}.`);
-          }
-        } catch (error) {
-          console.error(`  ❌ Error during update for '${itemKey}':`, error);
         }
-      }
-  }
+        
+        this.priceDataCache = Object.fromEntries(combinedPrices);
+        this.priceCacheTimestamp = Date.now();
+        console.log(`✅ Price cache updated with ${combinedPrices.size} items.`);
+        
+        return this.priceDataCache;
 
-  if (itemsUpdatedCount > 0) {
-    await chrome.storage.local.set({
-      [localBuffCacheKey]: {
-        data: cache,
-        timestamp: Date.now()
-      }
-    });
-    console.log(`✅ Periodic update finished. Updated ${itemsUpdatedCount} items in the cache.`);
-  } else {
-    console.log('✅ Periodic update finished. No stale items required an update.');
-  }
-}
-
-// Sets up the recurring alarm for the automatic update.
-setupPeriodicCacheUpdate() {
-    const alarmName = 'periodicCacheUpdate';
-    chrome.alarms.get(alarmName, (existingAlarm) => {
-        if (!existingAlarm) {
-            chrome.alarms.create(alarmName, {
-              delayInMinutes: 1,
-              periodInMinutes: 60
-            });
-            console.log('⏰ ALARM: Automatic cache update alarm has been set. It will run every hour.');
-        } else {
-            console.log('⏰ ALARM: Automatic cache update alarm already exists.');
-        }
-    });
-}
-
-// fetchTradeItDataWithFallback 
-async fetchTradeItDataWithFallback(itemName = null) {
-  console.log('📡 ON-DEMAND FETCH: Request received from content script.');
-  let tradeitData = null;
-  try {
-    const tradeitResponse = await fetch('https://api.tradeit.gg/items/730');
-    if (tradeitResponse.ok) {
-      tradeitData = await tradeitResponse.json();
+    } catch (error) {
+        console.error('❌ Error fetching prices directly:', error.message);
+        return this.priceDataCache || {}; // Return old cache if fetching fails
     }
-  } catch (error) {
-    console.error('❌ ON-DEMAND FETCH: Error fetching from TradeIt.gg API:', error);
-  }
-  const combinedPrices = new Map();
-  if (tradeitData) {
-    tradeitData.forEach(item => {
-      if (item.item && item.price) {
-        combinedPrices.set(item.item.toLowerCase(), {
-          source: 'tradeit.gg',
-          price: item.price,
-          timestamp: Date.now()
-        });
-      }
-    });
-  }
-  const localBuffCacheKey = 'buffOverridesCache';
-  const localBuffCache = await chrome.storage.local.get(localBuffCacheKey);
-  let originalCache = localBuffCache[localBuffCacheKey]?.data || {};
-  const cachedBuffData = {};
-  for (const key in originalCache) {
-      if (originalCache.hasOwnProperty(key)) {
-          cachedBuffData[key.toLowerCase()] = originalCache[key];
-      }
-  }
-  for (const itemKey in cachedBuffData) {
-    if (!combinedPrices.has(itemKey)) {
-      const buffItem = cachedBuffData[itemKey];
-      combinedPrices.set(itemKey, {
-        source: 'buff.163.com (Backend)',
-        price: buffItem.usd_price,
-        timestamp: buffItem.timestamp ? new Date(buffItem.timestamp).getTime() : Date.now()
-      });
-    }
-  }
-  if (itemName && !combinedPrices.has(itemName.toLowerCase())) {
-      console.log(`🔄 ON-DEMAND FETCH: Item '${itemName}' not in cache. Requesting scrape...`);
-      try {
-          const backendResponse = await fetch(this.buffBackendUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ item: itemName })
-          });
-          if (backendResponse.ok) {
-              const result = await backendResponse.json();
-              if (result.status === "success" && result.data) {
-                  const normalizedItemName = itemName.toLowerCase();
-                  cachedBuffData[normalizedItemName] = {
-                      usd_price: result.data.usd_price,
-                      yuan_price: result.data.yuan_price,
-                      timestamp: result.data.timestamp
-                  };
-                  await chrome.storage.local.set({
-                      [localBuffCacheKey]: {
-                          data: cachedBuffData,
-                          timestamp: Date.now()
-                      }
-                  });
-                  combinedPrices.set(normalizedItemName, {
-                      source: 'buff.163.com (Backend Scrape)',
-                      price: result.data.usd_price,
-                      timestamp: new Date(result.data.timestamp).getTime()
-                  });
-              }
-          }
-      } catch (error) {
-          console.error('❌ ON-DEMAND FETCH: Error communicating with Flask backend:', error);
-      }
-  }
-  const finalDataArray = Array.from(combinedPrices.entries()).map(([key, value]) => ({
-    item: key,
-    price: value.price,
-    source: value.source,
-    timestamp: value.timestamp
-  }));
-  return { success: true, data: finalDataArray };
 }
-  // --- END OF fetchTradeItDataWithFallback METHOD ---
+// New comparison function for price data
 
 
  
@@ -1410,12 +1286,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 
 } else if (message.type === 'FETCH_TRADEIT_DATA') {
-  // Pass the item name if available in the message for targeted scraping
-  (async () => {
-    const response = await extensionManager.fetchTradeItDataWithFallback(message.data?.itemName);
-    sendResponse(response);
-  })();
-  return true; // Keep message channel open for async response
+    (async () => {
+        // This now calls the new, more reliable function.
+        const priceData = await extensionManager.fetchPriceData();
+        sendResponse({ success: true, data: priceData });
+    })();
+    return true; // Keep the message channel open for the async response.
 }
   return true;
 });

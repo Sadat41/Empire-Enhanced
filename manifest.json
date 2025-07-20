@@ -15,7 +15,8 @@
     "http://localhost/*",
     "https://csgoempire.com/*",
     "https://csgoempire.gg/*",
-    "https://api.tradeit.gg/*"
+    "https://api.tradeit.gg/*",
+    "https://prices.csgotrader.app/*" 
   ],
   "content_scripts": [
     {
