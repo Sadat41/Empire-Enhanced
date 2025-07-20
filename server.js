@@ -1011,7 +1011,7 @@ processItems(items) {
     if (item.keychains && item.keychains.length > 0) {
       console.log(`🔑 Keychains: ${item.keychains.map(k => k.name).join(', ')}`);
       
-      // *** NEW: Check if market name exactly matches any keychain name ***
+      //  Check if market name exactly matches any keychain name ***
       const itemName = item.market_name.toLowerCase();
       const allKeychainNames = this.getAllKeychainNames().map(name => name.toLowerCase());
       
@@ -1158,7 +1158,7 @@ checkItemTargetList(item) {
     this.stats.filterReasons[reason]++;
   }
 
-  // Enhanced function to get charm details from CONFIG.charmPricing
+  // get charm details from CONFIG.charmPricing
   getCharmDetails(item) {
     if (!item.keychains || !Array.isArray(item.keychains) || item.keychains.length === 0) {
       return null;
@@ -1211,7 +1211,7 @@ checkItemTargetList(item) {
     }
   }
 
-  // Enhanced function to format charm price display
+  // function to format charm price display
   formatCharmPrice(charmPrice, purchasePriceCents) {
     if (purchasePriceCents === undefined || purchasePriceCents === null) {
       return "N/A (Purchase Price Unknown)";
