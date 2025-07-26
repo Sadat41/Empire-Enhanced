@@ -65,9 +65,19 @@
 ![Market Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Market.png)
 <p align="center"><strong>The market page displays items with Empire, CSFloat, and Buff163 price comparisons.</strong></p>
 
-<div style="display: flex; justify-content: space-around;">
-  <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Listings.png" alt="Description 1" width="48%">
-  <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Notification2.png" alt="Description 2" width="48%">
+<div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap;">
+  <div style="flex: 1; min-width: 300px; max-width: 48%; margin: 10px;">
+    <img src="sadat41/empire-enhanced/Empire-Enhanced-7b9e6d7c91994d1cd171677c675786102250ed12/Demo/Listings.png" alt="Listings" style="width: 100%; height: auto; border-radius: 8px;">
+    <p align="center" style="font-size: 0.9em; color: #6a737d; margin-top: 5px;">
+      Listings Page: Displays various item listings on the platform.
+    </p>
+  </div>
+  <div style="flex: 1; min-width: 300px; max-width: 48%; margin: 10px;">
+    <img src="sadat41/empire-enhanced/Empire-Enhanced-7b9e6d7c91994d1cd171677c675786102250ed12/Demo/Market.png" alt="Market" style="width: 100%; height: auto; border-radius: 8px;">
+    <p align="center" style="font-size: 0.9em; color: #6a737d; margin-top: 5px;">
+      Market page displaying items with Empire, CSFloat, and Buff163 price comparisons.
+    </p>
+  </div>
 </div>
 
 ## ❓How It Works
