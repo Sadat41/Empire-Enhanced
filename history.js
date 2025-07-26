@@ -643,10 +643,10 @@ if (document.readyState === 'loading') {
     }
 }
 
-// Test function to verify JavaScript is working
+
 console.log('📝 History.js with enhanced charm pricing display loaded successfully');
 
-// Add a global test function to debug CSP issues
+
 window.testButtonClick = function() {
     console.log('🧪 Test function called - JavaScript is working');
     alert('JavaScript is working correctly!');

@@ -1,4 +1,4 @@
-// popup.js for native extension with toggleable API key section
+// popup.js 
 
 class PopupManager {
     constructor() {
@@ -24,13 +24,13 @@ class PopupManager {
         // Setup event listeners
         this.setupEventListeners();
         
-        // Load initial data
+        // initial data
         await this.loadStats();
         await this.loadKeychainFilterSettings();
         await this.loadCurrentFilterSettings();
         await this.loadItemTargetList();
         
-        // Setup auto-refresh
+        // auto-refresh
         setInterval(() => this.loadStats(), 3000);
     }
 
@@ -428,7 +428,7 @@ class PopupManager {
     });
 }
 
-        // Prevent clicks within the content area from bubbling up
+        // Prevent clicks within the content area 
         if (apiKeyContent) {
         apiKeyContent.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -890,7 +890,7 @@ class PopupManager {
         const csgoBtn = document.getElementById('openCSGOEmpire');
         if (csgoBtn) {
             csgoBtn.addEventListener('click', () => {
-                chrome.tabs.create({url: 'https://csgoempire.com/trade'});
+                chrome.tabs.create({url: 'https://csgoempire.com/withdraw/steam/market'});
             });
         }
 

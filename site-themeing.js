@@ -94,7 +94,7 @@ class Starfield {
             const initialDelay = i * (Math.random() * 5 + 2); // Initial delay before the first animation
             const intervalId = setTimeout(() => {
                 this._animateShootingStar(shootingStar);
-                // Set up the repeating interval after the first run
+                
                 const repeatInterval = setInterval(() => this._animateShootingStar(shootingStar), 15000 + Math.random() * 10000);
                 this.shootingStarIntervals.push(repeatInterval);
             }, initialDelay * 1000);
@@ -160,7 +160,7 @@ class Starfield {
 // --- End of Starfield Class ---
 
 
-// --- Start of Theme Injector (formerly site-themeing.js) ---
+// --- Start of Theme Injector 
 (function() {
   'use strict';
 
@@ -479,7 +479,7 @@ class Starfield {
       if (this.siteThemingEnabled && this.currentTheme === 'shooting-star') {
         // If the starfield is needed, create an instance if it doesn't exist.
         if (!this.starfieldInstance) {
-          // The Starfield class is now defined in this file, so this will work.
+         
           this.starfieldInstance = new Starfield('empire-starfield-container');
         }
         this.starfieldInstance.start();
@@ -487,7 +487,7 @@ class Starfield {
         // If starfield is not needed, stop and remove it.
         if (this.starfieldInstance) {
           this.starfieldInstance.stop();
-          this.starfieldInstance = null; // Allow for garbage collection
+          this.starfieldInstance = null; 
         }
       }
     }
