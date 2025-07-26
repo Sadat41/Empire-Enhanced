@@ -75,7 +75,7 @@
 **Empire Enhanced** operates as a standalone browser extension that injects JavaScript into CSGOEmpire and directly listens to WebSocket data for real-time item monitoring.
 
 To use it, simply:
-* Provide your CSGOEmpire [API key](https://csgoempire.com/trading/apikey)
+* Paste your your CSGOEmpire [API key](https://csgoempire.com/trading/apikey) in the ``API CONFIGURATION`` tab and click "Save & Connect"
 
 The extension's interface allows you to configure:
 * Target items + optional float range
