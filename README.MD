@@ -63,7 +63,12 @@
 <p align="center"><strong>Home Page: The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.</strong></p>
 
 ![Market Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Market.png)
-<p align="center"><strong>Home Page: The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.</strong></p>
+<p align="center"><strong>The market page displays items with Empire, CSFloat, and Buff163 price comparisons.</strong></p>
+
+<div style="display: flex; justify-content: space-around;">
+  <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Listings.png" alt="Description 1" width="48%">
+  <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Notification2.png" alt="Description 2" width="48%">
+</div>
 
 ## ❓How It Works
 **Empire Enhanced** injects JavaScript into CSGOEmpire and listens to WebSocket data for real-time item monitoring.
