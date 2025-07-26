@@ -354,13 +354,10 @@ npm run package          # Create distribution zip
 npm run lint             # Check code style
 npm run test             # Run tests (if available)
 
-# Server Development
-npm start                # Start backend server
-npm run dev              # Start server with auto-reload
-
-# Utility Scripts
+# Extension-specific commands
+npm run reload           # Reload extension in browser
 npm run validate         # Validate manifest.json
-npm run docs             # Generate documentation
+npm run zip              # Create distribution zip
 ```
 
 ### 11. Debugging Common Issues
