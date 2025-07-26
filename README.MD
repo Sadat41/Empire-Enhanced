@@ -69,7 +69,7 @@
   <div style="flex: 1; min-width: 300px; max-width: 48%; margin: 10px;">
     <img src="https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-twotoone-6tb0M98UmJyw9uHV.png" alt="Listings" style="width: 100%; height: auto; border-radius: 8px;">
     <p align="center" style="font-size: 0.9em; color: #6a737d; margin-top: 5px;">
-      Listings Page: Displays various item listings on the platform.
+      Market page displaying items with Empire, CSFloat, and Buff163 price comparisons.
     </p>
   </div>
 
