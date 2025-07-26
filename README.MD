@@ -90,10 +90,11 @@ Ready to command your Browse experience? Install Empire-Enhanced now and start b
 
 ### Step 1: Get the Extension
 
-#### Option 1. Download the Extension
-You can get the extension by downloading the project's ZIP file directly from GitHub:
-[Download Empire-Enhanced ZIP](https://github.com/Sadat41/Empire-Enhanced/archive/refs/heads/main.zip)
-
+#### Option 1. Clone the Project
+To get started, clone the repository to your local machine:
+```bash
+git clone [https://github.com/Sadat41/Empire-Enhanced.git](https://github.com/Sadat41/Empire-Enhanced.git)
+```
 #### Option 2. Download & extract the Files
 Extract the downloaded ZIP file to a location on your computer. You should find a folder named `Empire-Enhanced-main` (or similar). This folder contains the `extension` directory needed for the next steps.
 
