@@ -126,9 +126,9 @@ The extension will automatically connect to CSGOEmpire and start monitoring item
 
 ---
 
-# 💻 Development
+# Development
 
-## 🛠️ The Tech Stack
+## The Tech Stack
 
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?style=for-the-badge&logo=socketdotio&logoColor=white)
@@ -206,19 +206,30 @@ npm run dev
 
 ```
 Empire Enhanced Extension
-├── extension/
-│   ├── background.js          # Main extension logic & WebSocket connections
-│   ├── content-script.js      # CSGOEmpire page integration & notifications
-│   ├── popup.js              # Extension UI management
-│   ├── site-themeing.js      # Site theming with starfield effects
-│   ├── tradeit-price-compare.js # Price comparison feature
-│   ├── offscreen.js          # Audio notification handling
-│   ├── socket.io.min.js      # Socket.IO client library
-│   └── manifest.json         # Extension manifest v3
-├── server/
-│   ├── keychain-monitor-server.js # Backend monitoring server
-│   └── server-settings.json  # Auto-sync configuration
-└── package.json              # Dependencies and scripts
+├── core/
+│   ├── base-module.js         # Base module system
+│   ├── event-bus.js          # Event communication system
+│   └── module-loader.js      # Dynamic module loading
+├── Demo/                     # Demo images and screenshots
+├── features/
+│   └── tradeit-price-compare.js # Price comparison feature
+├── icons(16/48/128)          # Extension icons in 16x16, 48x48, 128x128 formats
+├── background.js             # Main extension logic & WebSocket connections
+├── content-script.js         # CSGOEmpire page integration & notifications
+├── popup.js                  # Extension UI management
+├── popup.html                # Extension popup interface
+├── site-themeing.js          # Site theming with starfield effects
+├── starfield.js              # Starfield animation system
+├── socket.io.min.js          # Socket.IO client library
+├── offscreen.js              # Audio notification handling
+├── offscreen.html            # Offscreen document for audio
+├── history.js                # Notification history management
+├── history.html              # Notification history page
+├── manifest.json             # Extension manifest v3
+├── server-settings.json      # Auto-sync configuration
+├── package.json              # Dependencies and scripts
+├── LICENSE                   # Project license
+└── README.MD                 # Project documentation
 ```
 
 ### 6. Key Technologies & Dependencies
