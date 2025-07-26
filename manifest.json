@@ -43,7 +43,7 @@
   
   "web_accessible_resources": [
     {
-      "resources": ["history.html", "offscreen.html", "features/*", "core/*"],
+      "resources": ["history.html", "offscreen.html", "features/*", "core/*", "server-settings.json", "icon/*"],
       "matches": ["<all_urls>"]
     }
   ],

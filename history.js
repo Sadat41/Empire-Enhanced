@@ -3,7 +3,7 @@
 class NotificationHistory {
     constructor() {
         this.notifications = [];
-        this.serverUrl = 'http://localhost:3001';
+        
         this.autoRefreshInterval = null;
         this.currentFilter = 'All Items'; // Track current filter state
         this.currentTheme = 'nebula'; // Default theme
@@ -32,6 +32,7 @@ class NotificationHistory {
         // Load theme first, then setup everything else
         await this.loadTheme();
         this.setupEventListeners();
+        this.setupStorageListener(); // Listen for local storage changes
         await this.loadHistory();
         this.startAutoRefresh();
     }
@@ -466,52 +467,34 @@ class NotificationHistory {
         document.head.appendChild(styles);
     }
 
-    async loadHistory() {
-        try {
-            console.log('📊 Loading notification history...');
-            this.showLoading(true);
-            this.hideMessages();
+async loadHistory() {
+    try {
+        console.log('📊 Loading notification history from local storage...');
+        this.showLoading(true);
+        this.hideMessages();
 
-            const url = `${this.serverUrl}/history`;
-            console.log(`🔗 Fetching from: ${url}`);
-            
-            const response = await fetch(url);
-            console.log(`📡 Response status: ${response.status} ${response.statusText}`);
-            
-            if (!response.ok) {
-                throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            console.log('📦 Server response:', data);
-            
-            // Make sure we get the items array
-            this.notifications = Array.isArray(data.items) ? data.items : [];
-            console.log(`✅ Processed ${this.notifications.length} notifications`);
-            
-            if (this.notifications.length > 0) {
-                console.log('🎯 Notifications found, rendering cards...');
-                this.showSuccess(`Loaded ${this.notifications.length} notifications from last 30 minutes`);
-                
-                // Log each notification for debugging
-                this.notifications.forEach((notif, index) => {
-                    const charmInfo = notif.charm_name ? `${notif.charm_name} ($${notif.charm_price.toFixed(2)})` : (notif.keychains?.join(', ') || 'None');
-                    console.log(`  ${index + 1}. ${notif.market_name} | Keychains: ${charmInfo} | $${((notif.market_value || 0) / 100).toFixed(2)}`);
-                });
-            } else {
-                console.log('⚠️ No notifications found');
-            }
-            
-            this.renderHistory();
-            this.updateStats();
-            this.showLoading(false);
-            
-        } catch (error) {
-            console.error('❌ Error loading history:', error);
-            this.showError(`Failed to load notification history: ${error.message}\n\nMake sure the server is running on port 3001`);
-            this.showLoading(false);
+        const result = await chrome.storage.local.get(['notificationHistory']);
+        this.notifications = result.notificationHistory || [];
+        
+        console.log(`✅ Loaded ${this.notifications.length} notifications from storage`);
+        
+        if (this.notifications.length > 0) {
+            console.log('🎯 Notifications found, rendering cards...');
+            this.showSuccess(`Loaded ${this.notifications.length} notifications from last 24 hours`);
+        } else {
+            console.log('⚠️ No notifications found in storage');
         }
+        
+        this.renderHistory();
+        this.updateStats();
+        this.showLoading(false);
+        
+    } catch (error) {
+        console.error('❌ Error loading history from storage:', error);
+        this.showError(`Failed to load notification history: ${error.message}`);
+        this.showLoading(false);
     }
+}
 
     renderHistory() {
         console.log(`🎨 Rendering ${this.notifications.length} notifications as cards...`);
@@ -593,7 +576,7 @@ class NotificationHistory {
             
             setTimeout(() => {
                 errorDiv.style.display = 'none';
-            }, 15000);
+            }, 30000);
         }
     }
 
@@ -629,6 +612,16 @@ class NotificationHistory {
             this.autoRefreshInterval = null;
         }
     }
+    // Setup storage listener to refresh history when local storage changes
+    setupStorageListener() {
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+        if (namespace === 'local' && changes.notificationHistory) {
+            console.log('📝 Notification history updated, refreshing display...');
+            this.loadHistory();
+        }
+    });
+}
+
 }
 
 // Initialize when DOM is ready

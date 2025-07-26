@@ -1,4 +1,4 @@
-// popup.js 
+// popup.js for native extension with toggleable API key section
 
 class PopupManager {
     constructor() {
@@ -12,104 +12,26 @@ class PopupManager {
         };
         // Item Target List management
         this.itemTargetList = []; // Array of {keyword, minFloat, maxFloat, id}
-        this.isServerSynced = false; // Track if we've synced with server
         this.init();
     }
 
     async init() {
-        console.log('🚀 Popup initialized');
+        console.log('🚀 Popup initialized for native extension');
         
         // Load theme and site theming state first
         await this.loadTheme();
         
-        // Sync with server before loading local data
-        await this.syncWithServer();
-        
         // Setup event listeners
         this.setupEventListeners();
         
-        // Load initial data (this will now have server-synced data)
+        // Load initial data
         await this.loadStats();
-        
-        // Load keychain filter settings with retry
-        await this.loadKeychainFilterSettingsWithRetry();
-
-        
+        await this.loadKeychainFilterSettings();
         await this.loadCurrentFilterSettings();
+        await this.loadItemTargetList();
         
         // Setup auto-refresh
-        setInterval(() => this.loadStats(), 5000);
-    }
-
-    // Sync with server on popup load
-    async syncWithServer() {
-        console.log('🔄 Syncing popup with server...');
-        
-        try {
-            // Check if server is available
-            const healthResponse = await this.fetchWithTimeout('http://localhost:3001/health', 3000);
-            if (!healthResponse.ok) {
-                throw new Error('Server health check failed');
-            }
-            
-            console.log('✅ Server is available, syncing data...');
-            
-            // Force background script to sync with server
-            const syncResponse = await chrome.runtime.sendMessage({
-                type: 'FORCE_SYNC'
-            });
-            
-            if (syncResponse && syncResponse.success) {
-                console.log('✅ Background sync completed');
-                
-                // Now load the synced data
-                await this.loadItemTargetList();
-                
-                this.isServerSynced = true;
-                console.log('✅ Popup fully synced with server');
-            } else {
-                throw new Error(syncResponse?.error || 'Background sync failed');
-            }
-            
-        } catch (error) {
-            console.error('❌ Server sync failed:', error);
-            console.log('⚠️ Loading from local storage as fallback');
-            
-            // Load from local storage as fallback
-            await this.loadItemTargetList();
-            
-            // Show sync status to user
-            this.showSyncStatus(false, error.message);
-        }
-    }
-
-    // Helper method for fetch with timeout
-    async fetchWithTimeout(url, timeout = 5000) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-        
-        try {
-            const response = await fetch(url, {
-                signal: controller.signal,
-                method: 'GET'
-            });
-            clearTimeout(timeoutId);
-            return response;
-        } catch (error) {
-            clearTimeout(timeoutId);
-            throw error;
-        }
-    }
-
-    // Show sync status to user
-    showSyncStatus(isSuccess, message) {
-        console.log(`🔄 Sync status: ${isSuccess ? 'success' : 'failed'} - ${message}`);
-        
-        // Could add UI indicator here if needed
-        if (!isSuccess) {
-            // Show a temporary message that we're working with local data
-            this.showMessage('Using local data - server sync will retry automatically', 'warning');
-        }
+        setInterval(() => this.loadStats(), 3000);
     }
 
     async loadTheme() {
@@ -131,14 +53,13 @@ class PopupManager {
         }
     }
 
-    // Load item target list with server priority
+    // Load item target list 
     async loadItemTargetList() {
         try {
-            // If we're synced with server, local storage should have the correct data
             const result = await chrome.storage.local.get(['itemTargetList']);
             this.itemTargetList = result.itemTargetList || [];
             
-            console.log(`📋 Loaded ${this.itemTargetList.length} item targets${this.isServerSynced ? ' (server-synced)' : ' (local only)'}`);
+            console.log(`📋 Loaded ${this.itemTargetList.length} item targets`);
             
             this.updateItemListUI();
             
@@ -149,24 +70,23 @@ class PopupManager {
         }
     }
 
-    
     async saveItemTargetList() {
         try {
-            // Save to local storage first
+            // Save to local storage
             await chrome.storage.local.set({ itemTargetList: this.itemTargetList });
             console.log(`💾 Saved ${this.itemTargetList.length} item targets to local storage`);
             
-            // Immediately sync with server
+            // Update extension background
             const response = await chrome.runtime.sendMessage({
                 type: 'UPDATE_ITEM_TARGET_LIST',
                 data: { itemTargetList: this.itemTargetList }
             });
             
             if (response && response.success) {
-                console.log('✅ Item Target List synced to server successfully');
+                console.log('✅ Item Target List synced to extension successfully');
             } else {
-                console.error('❌ Failed to sync to server:', response?.error);
-                this.showMessage('Saved locally, but server sync failed', 'warning');
+                console.error('❌ Failed to sync to extension:', response?.error);
+                this.showMessage('Saved locally, but extension sync failed', 'warning');
             }
             
         } catch (error) {
@@ -175,7 +95,6 @@ class PopupManager {
         }
     }
 
-    
     async addItemTarget() {
         const keywordInput = document.getElementById('itemKeyword');
         const minFloatInput = document.getElementById('minFloat');
@@ -212,14 +131,19 @@ class PopupManager {
             return;
         }
 
-        // Create new item
+        // Create new item with proper structure for extension
         const newItem = {
             id: Date.now().toString(),
             keyword: keyword,
-            name: keyword, // Include both for server compatibility
+            name: keyword, // Include both for compatibility
             minFloat: minFloat,
             maxFloat: maxFloat,
-            addedAt: Date.now()
+            addedAt: Date.now(),
+            floatFilter: {
+                enabled: minFloat !== 0.00 || maxFloat !== 1.00,
+                min: minFloat,
+                max: maxFloat
+            }
         };
 
         // Add to list
@@ -238,7 +162,7 @@ class PopupManager {
         console.log(`➕ Added item target: ${keyword} (${minFloat}-${maxFloat})`);
     }
 
-    // Remove item with immediate sync
+    // Remove item 
     async removeItemTarget(itemId) {
         const itemIndex = this.itemTargetList.findIndex(item => item.id === itemId);
         if (itemIndex === -1) {
@@ -267,9 +191,8 @@ class PopupManager {
             return;
         }
 
-        // Update count with sync status
-        const syncStatus = this.isServerSynced ? '(synced)' : '(local only)';
-        itemsCount.textContent = `${this.itemTargetList.length} items being monitored ${syncStatus}`;
+        // Update count
+        itemsCount.textContent = `${this.itemTargetList.length} items being monitored`;
 
         // Clear existing content
         itemsList.innerHTML = '';
@@ -278,7 +201,6 @@ class PopupManager {
             itemsList.innerHTML = `
                 <div class="empty-state">
                     No items added yet. Add keywords above to start monitoring specific items.
-                    ${!this.isServerSynced ? '<br><small style="color: #f59e0b;">⚠️ Server sync pending</small>' : ''}
                 </div>
             `;
             return;
@@ -387,6 +309,9 @@ class PopupManager {
     }
 
     setupEventListeners() {
+        // API Key toggle functionality
+        this.setupAPIKeyToggle();
+
         // Monitoring toggle
         const monitoringToggle = document.getElementById('monitoringToggle');
         if (monitoringToggle) {
@@ -412,8 +337,6 @@ class PopupManager {
                 const isActive = siteThemingToggle.classList.contains('active');
                 this.setSiteThemingState(!isActive);
             });
-        } else {
-            console.warn('🚨 Site theming toggle not found in popup HTML');
         }
 
         // Item Target List event listeners
@@ -444,7 +367,7 @@ class PopupManager {
         // Keychain filter controls
         this.setupKeychainFilterControls();
 
-        // Listen for storage changes (theme updates from other parts)
+        // Listen for storage changes
         chrome.storage.onChanged.addListener((changes, namespace) => {
             if (namespace === 'sync') {
                 if (changes.selectedTheme) {
@@ -471,6 +394,146 @@ class PopupManager {
                 console.log('📋 Item target list updated from storage');
             }
         });
+    }
+
+    setupAPIKeyToggle() {
+        console.log('🔧 Setting up API key toggle...');
+
+        const apiKeyToggle = document.getElementById('apiKeyToggle');
+        const apiKeyContent = document.getElementById('apiKeyContent');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const domainSelect = document.getElementById('domainSelect');
+        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+
+        // Load current API key info on startup
+        this.loadCurrentAPIKeyInfo();
+
+        // Get the specific header element instead of the entire toggle
+        const apiKeyHeader = document.querySelector('.api-key-header');
+
+        if (apiKeyHeader) {
+            apiKeyHeader.addEventListener('click', () => {
+            const isExpanded = apiKeyToggle.classList.contains('expanded');
+        
+        if (isExpanded) {
+            // Collapse
+            apiKeyToggle.classList.remove('expanded');
+            apiKeyContent.classList.remove('expanded');
+        } else {
+            // Expand and load current values
+            apiKeyToggle.classList.add('expanded');
+            apiKeyContent.classList.add('expanded');
+            this.loadCurrentAPIKeyInfo();
+        }
+    });
+}
+
+        // Prevent clicks within the content area from bubbling up
+        if (apiKeyContent) {
+        apiKeyContent.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+}
+
+        // API key form submission
+        if (saveApiKeyBtn) {
+            saveApiKeyBtn.addEventListener('click', async () => {
+                const apiKey = apiKeyInput.value.trim();
+                const domain = domainSelect.value;
+
+                if (!apiKey) {
+                    this.showMessage('Please enter your API key', 'error');
+                    return;
+                }
+
+                if (apiKey.length < 10) {
+                    this.showMessage('API key seems too short - please check it', 'error');
+                    return;
+                }
+
+                try {
+                    saveApiKeyBtn.textContent = 'Saving...';
+                    saveApiKeyBtn.disabled = true;
+
+                    const response = await chrome.runtime.sendMessage({
+                        type: 'SET_API_KEY',
+                        data: { apiKey, domain }
+                    });
+
+                    if (response && response.success) {
+                        this.showMessage('API key saved and connection started!', 'success');
+                        this.updateAPIKeyStatus(true, 'Configured');
+                        // Refresh stats to show new connection
+                        setTimeout(() => this.loadStats(), 1000);
+                    } else {
+                        this.showMessage(response?.error || 'Failed to save API key', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error saving API key:', error);
+                    this.showMessage('Failed to save API key', 'error');
+                } finally {
+                    saveApiKeyBtn.innerHTML = `
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17,21 17,13 7,13 7,21"/>
+                            <polyline points="7,3 7,8 15,8"/>
+                        </svg>
+                        Save & Connect
+                    `;
+                    saveApiKeyBtn.disabled = false;
+                }
+            });
+        }
+
+        // Enter key in API key input
+        if (apiKeyInput) {
+            apiKeyInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveApiKeyBtn.click();
+                }
+            });
+        }
+
+        console.log('✅ API key toggle setup complete');
+    }
+
+    async loadCurrentAPIKeyInfo() {
+        try {
+            const result = await chrome.storage.local.get(['csgoempire_api_key', 'csgoempire_domain']);
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            const domainSelect = document.getElementById('domainSelect');
+            
+            if (apiKeyInput && result.csgoempire_api_key) {
+                // Show masked API key
+                const maskedKey = result.csgoempire_api_key.substring(0, 8) + '...' + result.csgoempire_api_key.slice(-4);
+                apiKeyInput.placeholder = `Current: ${maskedKey}`;
+                apiKeyInput.value = ''; // Keep input empty so user can enter new key if needed
+            }
+            
+            if (domainSelect && result.csgoempire_domain) {
+                domainSelect.value = result.csgoempire_domain;
+            }
+            
+        } catch (error) {
+            console.error('Error loading current API key info:', error);
+        }
+    }
+
+    updateAPIKeyStatus(configured, statusText) {
+        const apiStatusIndicator = document.getElementById('apiStatusIndicator');
+        const apiStatusText = document.getElementById('apiStatusText');
+        
+        if (apiStatusIndicator) {
+            if (configured) {
+                apiStatusIndicator.classList.add('configured');
+            } else {
+                apiStatusIndicator.classList.remove('configured');
+            }
+        }
+        
+        if (apiStatusText) {
+            apiStatusText.textContent = statusText;
+        }
     }
 
     // Setup Item Target List event listeners
@@ -512,7 +575,7 @@ class PopupManager {
         console.log('✅ Item Target List controls setup complete');
     }
 
-    // Setup keychain filter controls with better debugging
+    // Setup keychain filter controls
     setupKeychainFilterControls() {
         console.log('🔧 Setting up keychain filter controls...');
 
@@ -524,11 +587,7 @@ class PopupManager {
             percentageSlider.addEventListener('input', (e) => {
                 const value = e.target.value;
                 percentageValue.textContent = `${value}% of market value`;
-                console.log(`🎚️ Percentage slider changed to: ${value}%`);
             });
-            console.log('✅ Percentage slider setup complete');
-        } else {
-            console.error('❌ Percentage slider elements not found');
         }
 
         // Keychain list toggle
@@ -541,16 +600,11 @@ class PopupManager {
                 if (isExpanded) {
                     keychainList.classList.remove('expanded');
                     listToggle.classList.remove('expanded');
-                    console.log('📝 Keychain list collapsed');
                 } else {
                     keychainList.classList.add('expanded');
                     listToggle.classList.add('expanded');
-                    console.log('📝 Keychain list expanded');
                 }
             });
-            console.log('✅ Keychain list toggle setup complete');
-        } else {
-            console.error('❌ Keychain list toggle elements not found');
         }
 
         // Select all/none buttons
@@ -559,14 +613,12 @@ class PopupManager {
         
         if (selectAllBtn) {
             selectAllBtn.addEventListener('click', () => {
-                console.log('🔧 Select all keychains clicked');
                 this.selectAllKeychains(true);
             });
         }
         
         if (selectNoneBtn) {
             selectNoneBtn.addEventListener('click', () => {
-                console.log('🔧 Select none keychains clicked');
                 this.selectAllKeychains(false);
             });
         }
@@ -575,7 +627,6 @@ class PopupManager {
         const saveKeychainBtn = document.getElementById('saveKeychainFilter');
         if (saveKeychainBtn) {
             saveKeychainBtn.addEventListener('click', () => {
-                console.log('💾 Save keychain filter clicked');
                 this.saveKeychainFilterSettings();
             });
         }
@@ -583,64 +634,27 @@ class PopupManager {
         console.log('✅ Keychain filter controls setup complete');
     }
 
-    // Load keychain filter settings with retry mechanism
-    async loadKeychainFilterSettingsWithRetry() {
-        const maxRetries = 3;
-        let attempt = 0;
-
-        while (attempt < maxRetries) {
-            try {
-                console.log(`🔧 Loading keychain filter settings (attempt ${attempt + 1}/${maxRetries})...`);
-                await this.loadKeychainFilterSettings();
-                console.log('✅ Keychain filter settings loaded successfully');
-                return;
-            } catch (error) {
-                attempt++;
-                console.error(`❌ Attempt ${attempt} failed:`, error);
-                
-                if (attempt < maxRetries) {
-                    console.log(`⏳ Retrying in 1 second...`);
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                } else {
-                    console.error('❌ All attempts failed, using fallback settings');
-                    this.showMessage('Failed to load keychain filter settings. Using defaults.', 'error');
-                    this.useDefaultKeychainSettings();
-                }
+    async loadKeychainFilterSettings() {
+        try {
+            console.log('🔧 Loading keychain filter settings...');
+            
+            const response = await chrome.runtime.sendMessage({
+                type: 'GET_KEYCHAIN_FILTER_SETTINGS'
+            });
+            
+            if (response && response.success) {
+                this.keychainFilterSettings = response.data;
+                this.updateKeychainFilterUI();
+                console.log('✅ Keychain filter settings loaded:', this.keychainFilterSettings);
+            } else {
+                throw new Error(response?.error || 'Failed to load keychain filter settings');
             }
+        } catch (error) {
+            console.error('❌ Error loading keychain filter settings:', error);
+            this.useDefaultKeychainSettings();
         }
     }
 
-    // Load keychain filter settings from server with timeout
-    async loadKeychainFilterSettings() {
-        return new Promise((resolve, reject) => {
-            // Set a timeout for the request
-            const timeout = setTimeout(() => {
-                reject(new Error('Request timeout'));
-            }, 10000); // 10 second timeout
-
-            chrome.runtime.sendMessage({
-                type: 'GET_KEYCHAIN_FILTER_SETTINGS'
-            }, (response) => {
-                clearTimeout(timeout);
-                
-                if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
-                    return;
-                }
-                
-                if (response && response.success) {
-                    this.keychainFilterSettings = response.data;
-                    this.updateKeychainFilterUI();
-                    console.log('✅ Keychain filter settings loaded:', this.keychainFilterSettings);
-                    resolve();
-                } else {
-                    reject(new Error(response?.error || 'Unknown error loading keychain filter settings'));
-                }
-            });
-        });
-    }
-
-    // Use default settings if server is unavailable
     useDefaultKeychainSettings() {
         this.keychainFilterSettings = {
             percentageThreshold: 50,
@@ -667,7 +681,6 @@ class PopupManager {
         console.log('🔧 Using default keychain settings');
     }
 
-    // Update UI with keychain filter settings and better error handling
     updateKeychainFilterUI() {
         console.log('🎨 Updating keychain filter UI...');
         
@@ -679,9 +692,6 @@ class PopupManager {
             if (percentageSlider && percentageValue) {
                 percentageSlider.value = this.keychainFilterSettings.percentageThreshold || 50;
                 percentageValue.textContent = `${this.keychainFilterSettings.percentageThreshold || 50}% of market value`;
-                console.log(`✅ Updated percentage slider to ${this.keychainFilterSettings.percentageThreshold}%`);
-            } else {
-                console.error('❌ Percentage slider elements not found');
             }
 
             // Update enabled count
@@ -690,9 +700,6 @@ class PopupManager {
                 const count = this.keychainFilterSettings.enabledKeychains?.length || 0;
                 const total = this.keychainFilterSettings.totalKeychains || this.keychainFilterSettings.allKeychains?.length || 0;
                 enabledCount.textContent = `${count}/${total}`;
-                console.log(`✅ Updated enabled count to ${count}/${total}`);
-            } else {
-                console.error('❌ Enabled count element not found');
             }
 
             // Populate keychain list
@@ -704,7 +711,6 @@ class PopupManager {
         }
     }
 
-    // Populate keychain list with better error handling
     populateKeychainList() {
         console.log('🔧 Populating keychain list...');
         
@@ -732,7 +738,7 @@ class PopupManager {
                 <div class="keychain-checkbox ${isEnabled ? 'checked' : ''}" data-keychain="${keychain.name}"></div>
                 <div class="keychain-info">
                     <div class="keychain-name">${keychain.name || 'Unknown'}</div>
-                    <div class="keychain-price">$${(keychain.price || 0).toFixed(2)}</div>
+                    <div class="keychain-price">${(keychain.price || 0).toFixed(2)}</div>
                 </div>
             `;
             
@@ -747,10 +753,7 @@ class PopupManager {
         console.log(`✅ Populated ${this.keychainFilterSettings.allKeychains.length} keychain items`);
     }
 
-    // Toggle individual keychain selection with better state management
     toggleKeychainSelection(keychainName) {
-        console.log(`🔧 Toggling keychain: ${keychainName}`);
-        
         const checkbox = document.querySelector(`[data-keychain="${keychainName}"]`);
         if (!checkbox) {
             console.error(`❌ Checkbox not found for keychain: ${keychainName}`);
@@ -768,14 +771,12 @@ class PopupManager {
             checkbox.classList.remove('checked');
             // Remove from enabled list
             this.keychainFilterSettings.enabledKeychains = this.keychainFilterSettings.enabledKeychains.filter(name => name !== keychainName);
-            console.log(`❌ Disabled keychain: ${keychainName}`);
         } else {
             checkbox.classList.add('checked');
             // Add to enabled list
             if (!this.keychainFilterSettings.enabledKeychains.includes(keychainName)) {
                 this.keychainFilterSettings.enabledKeychains.push(keychainName);
             }
-            console.log(`✅ Enabled keychain: ${keychainName}`);
         }
 
         // Update enabled count display
@@ -784,14 +785,9 @@ class PopupManager {
             const total = this.keychainFilterSettings.allKeychains?.length || 0;
             enabledCount.textContent = `${this.keychainFilterSettings.enabledKeychains.length}/${total}`;
         }
-
-        console.log(`🔧 Current enabled keychains: ${this.keychainFilterSettings.enabledKeychains.length}`);
     }
 
-    // Select all/none keychains with better error handling
     selectAllKeychains(selectAll) {
-        console.log(`🔧 ${selectAll ? 'Selecting all' : 'Deselecting all'} keychains`);
-        
         // Ensure enabledKeychains is an array
         if (!Array.isArray(this.keychainFilterSettings.enabledKeychains)) {
             this.keychainFilterSettings.enabledKeychains = [];
@@ -817,20 +813,14 @@ class PopupManager {
             const total = this.keychainFilterSettings.allKeychains?.length || 0;
             enabledCount.textContent = `${this.keychainFilterSettings.enabledKeychains.length}/${total}`;
         }
-
-        console.log(`✅ ${selectAll ? 'Selected all' : 'Deselected all'} keychains. Total: ${this.keychainFilterSettings.enabledKeychains.length}`);
     }
 
-    // Save keychain filter settings with better error handling and debugging
     async saveKeychainFilterSettings() {
         try {
             const percentageSlider = document.getElementById('keychainPercentage');
             const percentageThreshold = percentageSlider ? parseInt(percentageSlider.value) : 50;
 
             console.log('💾 Saving keychain filter settings...');
-            console.log('📊 Percentage threshold:', percentageThreshold);
-            console.log('🔑 Enabled keychains:', this.keychainFilterSettings.enabledKeychains.length);
-            console.log('🔑 Keychain list:', this.keychainFilterSettings.enabledKeychains);
 
             // Show loading state
             const saveBtn = document.getElementById('saveKeychainFilter');
@@ -840,28 +830,24 @@ class PopupManager {
             }
 
             // Save percentage threshold
-            console.log('💾 Saving percentage threshold...');
-            const percentageResponse = await this.sendMessageWithTimeout({
+            const percentageResponse = await chrome.runtime.sendMessage({
                 type: 'UPDATE_KEYCHAIN_PERCENTAGE',
                 data: { percentageThreshold }
-            }, 10000);
+            });
 
             if (!percentageResponse || !percentageResponse.success) {
                 throw new Error(percentageResponse?.error || 'Failed to update percentage threshold');
             }
-            console.log('✅ Percentage threshold saved');
 
             // Save enabled keychains
-            console.log('💾 Saving enabled keychains...');
-            const keychainsResponse = await this.sendMessageWithTimeout({
+            const keychainsResponse = await chrome.runtime.sendMessage({
                 type: 'UPDATE_ENABLED_KEYCHAINS', 
                 data: { enabledKeychains: this.keychainFilterSettings.enabledKeychains }
-            }, 10000);
+            });
 
             if (!keychainsResponse || !keychainsResponse.success) {
                 throw new Error(keychainsResponse?.error || 'Failed to update enabled keychains');
             }
-            console.log('✅ Enabled keychains saved');
 
             this.showMessage(`✅ Keychain filter saved! ${this.keychainFilterSettings.enabledKeychains.length} keychains enabled, ${percentageThreshold}% threshold`, 'success');
             
@@ -885,26 +871,6 @@ class PopupManager {
         }
     }
 
-    // Helper method to send messages with timeout
-    async sendMessageWithTimeout(message, timeoutMs = 5000) {
-        return new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                reject(new Error(`Request timeout after ${timeoutMs}ms`));
-            }, timeoutMs);
-
-            chrome.runtime.sendMessage(message, (response) => {
-                clearTimeout(timeout);
-                
-                if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
-                    return;
-                }
-                
-                resolve(response);
-            });
-        });
-    }
-
     setupActionButtons() {
         // Test notification
         const testBtn = document.getElementById('testNotification');
@@ -920,19 +886,27 @@ class PopupManager {
             });
         }
 
-        // Open server stats
-        const serverBtn = document.getElementById('openServer');
-        if (serverBtn) {
-            serverBtn.addEventListener('click', () => {
-                chrome.tabs.create({url: 'http://localhost:3001/health'});
-            });
-        }
-
         // Open CSGOEmpire
         const csgoBtn = document.getElementById('openCSGOEmpire');
         if (csgoBtn) {
             csgoBtn.addEventListener('click', () => {
                 chrome.tabs.create({url: 'https://csgoempire.com/trade'});
+            });
+        }
+
+        // Connect button
+        const connectBtn = document.getElementById('connectBtn');
+        if (connectBtn) {
+            connectBtn.addEventListener('click', () => {
+                this.connect();
+            });
+        }
+
+        // Disconnect button
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        if (disconnectBtn) {
+            disconnectBtn.addEventListener('click', () => {
+                this.disconnect();
             });
         }
     }
@@ -971,41 +945,45 @@ class PopupManager {
         }
     }
 
-
-    
     async loadCurrentFilterSettings() {
         try {
-            console.log('🔄 Loading current filter settings from server...');
-        
-            const response = await fetch('http://localhost:3001/health');
-                if (!response.ok) {
-                    throw new Error('Server not available');
-        }
-        
-            const data = await response.json();
-        
-                if (data.config && data.config.priceRange) {
-                    const minInput = document.getElementById('minPercentage');
-                    const maxInput = document.getElementById('maxPercentage');
-                const rangeDisplay = document.getElementById('rangeDisplay');
+            console.log('🔄 Loading current filter settings...');
             
-            if (minInput && maxInput && rangeDisplay) {
-                // Set the values from server
-                minInput.value = data.config.priceRange.min;
-                maxInput.value = data.config.priceRange.max;
+            const stats = await this.getStatsFromBackground();
+            
+            if (stats && stats.priceFilter) {
+                const minInput = document.getElementById('minPercentage');
+                const maxInput = document.getElementById('maxPercentage');
+                const rangeDisplay = document.getElementById('rangeDisplay');
                 
-                // Update the range display
-                rangeDisplay.textContent = `Range: ${data.config.priceRange.min}% to +${data.config.priceRange.max}% above recommended price`;
-                
-                console.log(`✅ Loaded filter settings: ${data.config.priceRange.min}% to ${data.config.priceRange.max}%`);
+                if (minInput && maxInput && rangeDisplay) {
+                    // Set the values from extension
+                    minInput.value = stats.priceFilter.minAboveRecommended;
+                    maxInput.value = stats.priceFilter.maxAboveRecommended;
+                    
+                    // Update the range display
+                    rangeDisplay.textContent = `Range: ${stats.priceFilter.minAboveRecommended}% to +${stats.priceFilter.maxAboveRecommended}% above recommended price`;
+                    
+                    console.log(`✅ Loaded filter settings: ${stats.priceFilter.minAboveRecommended}% to ${stats.priceFilter.maxAboveRecommended}%`);
+                }
             }
+            
+        } catch (error) {
+            console.error('❌ Error loading current filter settings:', error);
         }
-        
-    } catch (error) {
-        console.error('❌ Error loading current filter settings:', error);
-        // Keep default values if server is not available
     }
-}
+
+    async getStatsFromBackground() {
+        return new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({type: 'GET_STATS'}, (response) => {
+                if (chrome.runtime.lastError) {
+                    reject(new Error(chrome.runtime.lastError.message));
+                } else {
+                    resolve(response);
+                }
+            });
+        });
+    }
 
     async setTheme(themeName) {
         console.log(`🎨 Setting theme to: ${themeName}`);
@@ -1089,6 +1067,44 @@ class PopupManager {
         }
     }
 
+    async connect() {
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'CONNECT'
+            });
+
+            if (response && response.success) {
+                this.showMessage('Connection initiated', 'success');
+                
+                // Update stats immediately
+                setTimeout(() => this.loadStats(), 500);
+            } else {
+                this.showMessage(response?.error || 'Failed to connect', 'error');
+            }
+        } catch (error) {
+            console.error('Error connecting:', error);
+            this.showMessage('Failed to connect', 'error');
+        }
+    }
+
+    async disconnect() {
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'DISCONNECT'
+            });
+
+            if (response && response.success) {
+                this.showMessage('Disconnected from CSGOEmpire', 'success');
+                
+                // Update stats immediately
+                setTimeout(() => this.loadStats(), 500);
+            }
+        } catch (error) {
+            console.error('Error disconnecting:', error);
+            this.showMessage('Failed to disconnect', 'error');
+        }
+    }
+
     updateToggleState(toggleId, isActive) {
         const toggle = document.getElementById(toggleId);
         if (toggle) {
@@ -1126,7 +1142,7 @@ class PopupManager {
             }
         } catch (error) {
             console.error('Error loading stats:', error);
-            this.updateConnectionStatus(false, 'Connection failed');
+            this.updateConnectionStatus(false, false, 'Connection failed');
         }
     }
 
@@ -1135,13 +1151,13 @@ class PopupManager {
         this.updateElement('keychainsFound', data.stats?.keychainsFound || 0);
         
         // Update uptime
-        if (data.stats?.startTime) {
-            const uptime = this.formatUptime(Date.now() - data.stats.startTime);
+        if (data.stats?.uptime) {
+            const uptime = this.formatUptime(data.stats.uptime);
             this.updateElement('uptime', uptime);
         }
 
         // Update connection status
-        this.updateConnectionStatus(data.connected, data.monitoringEnabled);
+        this.updateConnectionStatus(data.connected, data.authenticated, data.monitoringEnabled);
 
         // Update toggles
         this.updateToggleState('monitoringToggle', data.monitoringEnabled);
@@ -1158,21 +1174,57 @@ class PopupManager {
         }
 
         // Update server info
-        this.updateElement('serverStatus', data.connected ? 'Connected' : 'Disconnected');
-        if (data.stats?.lastConnection) {
-            this.updateElement('lastConnection', new Date(data.stats.lastConnection).toLocaleTimeString());
+        this.updateElement('serverStatus', this.getConnectionStatusText(data.connected, data.authenticated));
+        if (data.connectionStartTime) {
+            this.updateElement('lastConnection', new Date(data.connectionStartTime).toLocaleTimeString());
         }
 
+        // Update API key status
+        if (data.apiKeyConfigured !== undefined) {
+            this.updateAPIKeyStatus(data.apiKeyConfigured, data.apiKeyConfigured ? 'Configured' : 'Not Configured');
+        }
+
+        // Update domain info
+        if (data.domain) {
+            this.updateElement('currentDomain', data.domain);
+        }
+
+        // Show/hide connect/disconnect buttons based on connection state
+        this.updateConnectDisconnectButtons(data.connected, data.authenticated, data.apiKeyConfigured);
+    }
+
+    updateConnectDisconnectButtons(connected, authenticated, apiKeyConfigured) {
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
         
-        if (data.syncStatus) {
-            this.isServerSynced = data.syncStatus.isInitialSyncComplete;
-            if (this.isServerSynced) {
-                this.updateItemListUI(); // Refresh UI with sync status
+        if (connectBtn && disconnectBtn) {
+            if (connected && authenticated) {
+                // Show disconnect button
+                connectBtn.style.display = 'none';
+                disconnectBtn.style.display = 'flex';
+            } else if (apiKeyConfigured) {
+                // Show connect button if API key is configured but not connected
+                connectBtn.style.display = 'flex';
+                disconnectBtn.style.display = 'none';
+            } else {
+                // Hide both if no API key
+                connectBtn.style.display = 'none';
+                disconnectBtn.style.display = 'none';
             }
         }
     }
 
-    updateConnectionStatus(connected, monitoringEnabled) {
+    getConnectionStatusText(connected, authenticated) {
+        if (connected && authenticated) {
+            return 'Connected & Authenticated';
+        } else if (connected && !authenticated) {
+            return 'Connected - Authenticating...';
+        } else {
+            return 'Disconnected';
+        }
+    }
+
+    updateConnectionStatus(connected, authenticated, monitoringEnabled) {
         const indicator = document.getElementById('statusIndicator');
         const statusText = document.getElementById('statusText');
         const errorMessage = document.getElementById('errorMessage');
@@ -1180,15 +1232,22 @@ class PopupManager {
         if (!monitoringEnabled) {
             indicator.className = 'status-indicator disabled';
             statusText.textContent = 'Monitoring Disabled';
-            errorMessage.style.display = 'none';
-        } else if (connected) {
+            if (errorMessage) errorMessage.style.display = 'none';
+        } else if (connected && authenticated) {
             indicator.className = 'status-indicator connected';
             statusText.textContent = 'Connected & Monitoring';
-            errorMessage.style.display = 'none';
+            if (errorMessage) errorMessage.style.display = 'none';
+        } else if (connected && !authenticated) {
+            indicator.className = 'status-indicator partial';
+            statusText.textContent = 'Connected - Authenticating...';
+            if (errorMessage) errorMessage.style.display = 'none';
         } else {
             indicator.className = 'status-indicator disconnected';
             statusText.textContent = 'Server Disconnected';
-            errorMessage.style.display = 'block';
+            if (errorMessage) {
+                errorMessage.textContent = 'WebSocket disconnected. Check your API key and internet connection.';
+                errorMessage.style.display = 'block';
+            }
         }
     }
 
@@ -1257,21 +1316,6 @@ class PopupManager {
         }
     }
 
-    async enableNotifications() {
-        try {
-            const response = await chrome.runtime.sendMessage({type: 'REQUEST_NOTIFICATION_PERMISSION'});
-            
-            if (response && response.granted) {
-                this.showMessage('Notifications enabled successfully!', 'success');
-            } else {
-                this.showMessage(response?.error || 'Failed to enable notifications', 'error');
-            }
-        } catch (error) {
-            console.error('Error enabling notifications:', error);
-            this.showMessage('Failed to enable notifications', 'error');
-        }
-    }
-
     showMessage(text, type) {
         console.log(`${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '❌'} ${text}`);
         
@@ -1312,7 +1356,7 @@ class PopupManager {
             }, 5000);
         }
         
-        // For success messages, just log them since we don't need a success div anymore
+        // For success messages, just log them
         if (type === 'success') {
             console.log('✅ Success:', text);
         }
@@ -1324,7 +1368,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new PopupManager();
 });
 
- 
+// Module system initialization
 (async function() {
   try {
     await import('./core/event-bus.js');
