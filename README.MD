@@ -104,12 +104,12 @@ Extract the downloaded ZIP file to a location on your computer. You should find 
 - Go to `chrome://extensions/`
 - Enable Developer Mode (top-right)
 - Click Load unpacked
-- Select the `/extension` folder inside the project
+- Select the root project folder (Empire-Enhanced)
 
 [![FireFox](https://img.shields.io/badge/Firefox_Browser-FF7139?style=for-the-badge&logo=Firefox-Browser&logoColor=white)](https://github.com/Sadat41)
 - Visit `about:debugging#/runtime/this-firefox`
 - Click Load Temporary Add-on
-- Choose the `manifest.json` inside the `/extension` folder
+- Choose the `manifest.json` inside the root project folder (Empire-Enhanced)
 
 ### Step 3: Use the Extension
 Once the extension is loaded in your browser:
@@ -176,15 +176,6 @@ npm run build
 npm run package
 ```
 
-#### For Backend Server Development:
-```bash
-# Start the backend server
-npm start
-
-# Start with auto-reload for development
-npm run dev
-```
-
 ### 4. Load the Extension for Development
 
 #### For Chrome:
@@ -205,7 +196,7 @@ npm run dev
 ### 5. Architecture Overview
 
 ```
-Empire Enhanced Extension
+Empire Enhanced
 ├── core/
 │   ├── base-module.js         # Base module system
 │   ├── event-bus.js          # Event communication system
@@ -238,12 +229,6 @@ Empire Enhanced Extension
 - **Socket.IO Client** - Real-time WebSocket communication with CSGOEmpire
 - **Chrome Extension APIs** - Storage, notifications, tabs, offscreen documents
 - **Vanilla JavaScript** - No frameworks for maximum performance
-
-**Backend Stack (Optional):**
-- **Node.js** - Server runtime
-- **Socket.IO** - WebSocket server implementation
-- **Axios** - HTTP client for API requests
-- **Express** - Web server framework
 
 ### 7. Configuration
 
