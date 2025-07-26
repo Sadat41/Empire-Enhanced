@@ -62,12 +62,9 @@
 ![Home Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Homepage.png)
 <p align="center"><strong>Home Page: The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.</strong></p>
 
-![Market Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Market.png)
-<p align="center"><strong>The market page displays items with Empire, CSFloat, and Buff163 price comparisons.</strong></p>
-
 <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px; max-width: 48%; margin: 10px;">
-    <img src="https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-twotoone-6tb0M98UmJyw9uHV.png" alt="Listings" style="width: 100%; height: auto; border-radius: 8px;">
+    <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Price%20Comparison.png" alt="Listings" style="width: 100%; height: auto; border-radius: 8px;">
     <p align="center" style="font-size: 0.9em; color: #6a737d; margin-top: 5px;">
       Market page displaying items with Empire, CSFloat, and Buff163 price comparisons.
     </p>
@@ -75,52 +72,30 @@
 
 
 ## ❓How It Works
-**Empire Enhanced** injects JavaScript into CSGOEmpire and listens to WebSocket data for real-time item monitoring.
-To use it:
-- Run a local Node.js server that filters and processes data
-- Provide your CSGOEmpire [API key](https://csgoempire.com/trading/apikey)
-- The extension UI connects to the server and lets you configure:
-  -  Target items + optional float range
-  -  Notification sounds
-  -  Site-wide theming
-  -  Price and keychain filters
+**Empire Enhanced** operates as a standalone browser extension that injects JavaScript into CSGOEmpire and directly listens to WebSocket data for real-time item monitoring.
 
-All settings are saved using `chrome.storage` and `server-settings.json`.
+To use it, simply:
+* Provide your CSGOEmpire [API key](https://csgoempire.com/trading/apikey)
+
+The extension's interface allows you to configure:
+* Target items + optional float range
+* Site-wide theming
+* Price and keychain filters
+
+All settings are saved locally using `chrome.storage` and `server-settings.json` is utilized for initial auto-loading and default configurations.
 
 ## Get the Extension
 
 Ready to command your Browse experience? Install Empire-Enhanced now and start building your digital empire!
 
-### Step 1: Set Up the Backend Server
+### Step 1: Get the Extension
 
-#### 1. Clone the Project
-```bash
-git clone https://github.com/Sadat41/Empire-Enhanced.git
-```
-#### 2. Navigate to the server directory:
-``` bash
-cd Empire-Enhanced/server
-```
-#### 3. Install required packages:
-```bash
-npm install
-```
-#### 4. Open server.js and replace the placeholder API key:
-```bash
-const CONFIG = {
-  apiKey: "YOUR_CSGOEMPIRE_API_KEY",
-  ...
-};
-```
-#### 5. Start the server
-```bash
-npm run dev  # For development (auto restarts)
-```
-or
-```bash
-npm start     # For production
-```
-#### 6. Visit `http://localhost:3001/health` to confirm it's running.
+#### Option 1. Download the Extension
+You can get the extension by downloading the project's ZIP file directly from GitHub:
+[Download Empire-Enhanced ZIP](https://github.com/Sadat41/Empire-Enhanced/archive/refs/heads/main.zip)
+
+#### Option 2. Download & extract the Files
+Extract the downloaded ZIP file to a location on your computer. You should find a folder named `Empire-Enhanced-main` (or similar). This folder contains the `extension` directory needed for the next steps.
 
 ### Step 2: Load the Browser Extension
 
@@ -136,15 +111,17 @@ npm start     # For production
 - Choose the `manifest.json` inside the `/extension` folder
 
 ### Step 3: Use the Extension
-Once both the server and extension are running:
-- Click the Empire Enhanced icon in your browser toolbar
-- Use the popup to:
-- Add items to the Item Target List
-- Set float and price filters
-- Choose notification sounds
-- Enable site theming (Nebula or Shooting Star)
+Once the extension is loaded in your browser:
+* Click the Empire Enhanced icon in your browser toolbar.
+* **Configure your API Key:** In the popup, navigate to the API Configuration section to enter your CSGOEmpire API key and save it.
+* Get your CSGOEmpire [API key](https://csgoempire.com/trading/apikey) here
+* Use the popup to:
+    * Add items to the Item Target List
+    * Set float and price filters
+    * Choose notification sounds
+    * Enable site theming (Nebula or Shooting Star)
 
-The extension will automatically connect to `http://localhost:3001` and start monitoring items based on your configuration.
+The extension will automatically connect to CSGOEmpire and start monitoring items based on your configuration.
 
 ## API Usage
 Checkout CSGOEmpire API documentation:
@@ -153,6 +130,6 @@ Checkout CSGOEmpire API documentation:
 
 ## ⚠️ Note
 Please be aware of the following:
-* **Prohibited Activities:** We explicitly forbid the use of the Empire-Enhanced extension for illegal activities. This includes, but is not limited to, using the extension to gain an unfair advantage over other users, engaging in any form of malicious behavior, or violating platform terms of service. 
+* **Prohibited Activities:** We explicitly forbid the use of the Empire-Enhanced extension for illegal activities. This includes, but is not limited to, using the extension to engage in any form of malicious behavior, or violating platform terms of service. 
 
 [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Sadat41)
