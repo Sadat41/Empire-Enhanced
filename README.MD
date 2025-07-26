@@ -32,19 +32,18 @@
 * **Real-Time Market Monitoring**
     * **Native WebSocket connection** for instant marketplace updates.
     * **Custom item targeting** with keyword matching and float value filtering.
-    * **Intelligent keychain filtering** based on value percentage.
+    * **Keychain filtering** based on value percentage.
     * **Flexible price range filters** (min/max percentage above/below recommended).
     * **Integrated price comparison** (CSFloat, Buff163) with difference calculation.
 * **Enhanced User Experience**
-    * **Instant notifications** with customizable sounds and live previews.
+    * **Instant notifications** with toggle off/on.
     * **Comprehensive notification history** for all past alerts.
     * **Client-side privacy and security:** All data remains local; no external server sharing.
-    * **Dynamic controls** for easy configuration.
     * **Advanced theming system** for the extension and CSGOEmpire website ("Nebula" and "Shooting Star").
-    * **Persistent settings** are automatically saved and restored.
+    * **Settings** are automatically saved and restored.
 * **Core Principles**
-    * **Free and open source**, fostering transparency and community engagement.
     * **Modular architecture** for easy expansion and maintenance.
+    * **Free and open source**
 ---
 ## 📸 Preview
 <p align="center">
@@ -63,6 +62,8 @@
 ![Home Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Homepage.png)
 <p align="center"><strong>Home Page: The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.</strong></p>
 
+![Market Page](https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Market.png)
+<p align="center"><strong>Home Page: The CSGOEmpire site reimagined with Empire Enhanced’s custom themes.</strong></p>
 
 ## ❓How It Works
 **Empire Enhanced** injects JavaScript into CSGOEmpire and listens to WebSocket data for real-time item monitoring.
