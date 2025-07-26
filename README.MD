@@ -67,18 +67,12 @@
 
 <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px; max-width: 48%; margin: 10px;">
-    <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Listings.png" alt="Listings" style="width: 100%; height: auto; border-radius: 8px;">
+    <img src="https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-twotoone-6tb0M98UmJyw9uHV.png" alt="Listings" style="width: 100%; height: auto; border-radius: 8px;">
     <p align="center" style="font-size: 0.9em; color: #6a737d; margin-top: 5px;">
       Listings Page: Displays various item listings on the platform.
     </p>
   </div>
-  <div style="flex: 1; min-width: 300px; max-width: 48%; margin: 10px;">
-    <img src="https://github.com/Sadat41/Empire-Enhanced/blob/main/Demo/Price%20Comparison.png" alt="Market" style="width: 100%; height: auto; border-radius: 8px;">
-    <p align="center" style="font-size: 0.9em; color: #6a737d; margin-top: 5px;">
-      Market page displaying items with Empire, CSFloat, and Buff163 price comparisons.
-    </p>
-  </div>
-</div>
+
 
 ## ❓How It Works
 **Empire Enhanced** injects JavaScript into CSGOEmpire and listens to WebSocket data for real-time item monitoring.
