@@ -1,4 +1,3 @@
-
 // --- Start of Starfield Class (formerly part of starfield.js) ---
 class Starfield {
     constructor(containerId = 'starfield-container') {
@@ -94,7 +93,7 @@ class Starfield {
             const initialDelay = i * (Math.random() * 5 + 2); // Initial delay before the first animation
             const intervalId = setTimeout(() => {
                 this._animateShootingStar(shootingStar);
-                
+                // Set up the repeating interval after the first run
                 const repeatInterval = setInterval(() => this._animateShootingStar(shootingStar), 15000 + Math.random() * 10000);
                 this.shootingStarIntervals.push(repeatInterval);
             }, initialDelay * 1000);
@@ -160,7 +159,7 @@ class Starfield {
 // --- End of Starfield Class ---
 
 
-// --- Start of Theme Injector 
+// --- Start of Theme Injector (formerly site-themeing.js) ---
 (function() {
   'use strict';
 
@@ -393,8 +392,14 @@ class Starfield {
             background: linear-gradient(145deg, rgba(20, 30, 55, 0.85), rgba(30, 20, 50, 0.85)) !important;
             backdrop-filter: blur(5px) !important; border: 1px solid rgba(135, 206, 235, 0.2) !important;
             box-shadow: 0 8px 32px rgba(135, 206, 235, 0.1) !important; border-radius: 24px !important;
-            overflow: hidden !important;
+            /* MINIMAL FIX: Only target overflow on specific trade containers, not all elements */
         }
+        
+        /* TARGETED FIX: Only fix overflow on the specific trade item containers that cut off text */
+        body.empire-theme-shooting-star #scrollable-sidebar-element > div {
+            overflow: visible !important;
+        }
+        
         body.empire-theme-shooting-star .item-card:hover, body.empire-theme-shooting-star .chat__messages button.block:hover {
           transform: translateY(-8px) !important; border-color: rgba(135, 206, 235, 0.6) !important;
           box-shadow: 0 12px 40px rgba(135, 206, 235, 0.2), 0 0 15px rgba(135, 206, 235, 0.15) !important;
@@ -479,7 +484,7 @@ class Starfield {
       if (this.siteThemingEnabled && this.currentTheme === 'shooting-star') {
         // If the starfield is needed, create an instance if it doesn't exist.
         if (!this.starfieldInstance) {
-         
+          // The Starfield class is now defined in this file, so this will work.
           this.starfieldInstance = new Starfield('empire-starfield-container');
         }
         this.starfieldInstance.start();
@@ -487,7 +492,7 @@ class Starfield {
         // If starfield is not needed, stop and remove it.
         if (this.starfieldInstance) {
           this.starfieldInstance.stop();
-          this.starfieldInstance = null; 
+          this.starfieldInstance = null; // Allow for garbage collection
         }
       }
     }

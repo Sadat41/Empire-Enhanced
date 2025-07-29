@@ -754,241 +754,279 @@ class CSGOEmpireNotificationOverlay {
     return icons[category] || '🔑';
   }
 
-  // Show item target notification
-  showItemTargetNotification(itemData) {
-    if (!this.monitoringEnabled) {
-      console.log('🚫 Item target notification ignored - monitoring disabled');
-      return;
-    }
-
-    console.log('🎯 Showing item target notification overlay:', itemData);
-    console.log('🔍 DEBUG: Full item target data received:', JSON.stringify(itemData, null, 2));
-
-    // Check if we already have a notification for this item ID to prevent duplicates
-    const existingNotification = document.getElementById(`notification-${itemData.id}`);
-    if (existingNotification) {
-      console.log('🚫 Duplicate notification prevented for item:', itemData.id);
-      return;
-    }
-
-    // Check if sound is enabled
-    const soundEnabled = itemData.soundEnabled !== undefined ? itemData.soundEnabled : this.soundEnabled;
-
-    // Format the data
-    const marketValue = itemData.market_value ? (itemData.market_value / 100).toFixed(2) : 'Unknown';
-    const purchasePrice = itemData.purchase_price ? (itemData.purchase_price / 100).toFixed(2) : marketValue;
-    
-    // Get Float value from wear field
-    const floatValue = itemData.wear !== undefined && itemData.wear !== null ? 
-      parseFloat(itemData.wear).toFixed(6) : 'Unknown';
-    
-    const aboveRecommended = itemData.above_recommended_price !== undefined && itemData.above_recommended_price !== null && !isNaN(itemData.above_recommended_price) 
-      ? itemData.above_recommended_price.toFixed(2) 
-      : 'Unknown';
-
-    // Create notification element with unique ID based on item ID
-    const notification = document.createElement('div');
-    const notificationId = `notification-${itemData.id}`;
-    notification.id = notificationId;
-    notification.className = 'keychain-notification pulse-glow item-target'; // Add item-target class
-    notification.style.cssText = `
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
-      max-width: 320px;
-      min-width: 300px;
-      color: #e2e8f0;
-      pointer-events: auto;
-      cursor: pointer;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
-      position: relative;
-      overflow: hidden;
-    `;
-
-    // Create target icon SVG
-    const targetGradientId = `targetGradient${itemData.id}`;
-    const targetSVG = `
-      <svg class="crown-float crown-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="${targetGradientId}" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
-            <stop offset="50%" style="stop-color:#059669;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#34d399;stop-opacity:1" />
-          </linearGradient>
-        </defs>
-        <circle cx="12" cy="12" r="10" fill="none" stroke="url(#${targetGradientId})" stroke-width="2"/>
-        <circle cx="12" cy="12" r="6" fill="none" stroke="url(#${targetGradientId})" stroke-width="1.5"/>
-        <circle cx="12" cy="12" r="2" fill="url(#${targetGradientId})"/>
-      </svg>
-    `;
-
-    // Generate target info HTML
-    const targetKeyword = itemData.target_item_matched?.name || itemData.matched_keyword || 'Unknown';
-    const floatRange = itemData.target_item_matched?.floatFilter?.enabled 
-      ? `${itemData.target_item_matched.floatFilter.min.toFixed(3)} - ${itemData.target_item_matched.floatFilter.max.toFixed(3)}`
-      : 'Any float';
-
-    const targetDisplayHTML = `
-      <div class="target-info">
-        <div class="target-icon">🎯</div>
-        <div class="target-details">
-          <div class="target-keyword">
-            "${targetKeyword}"
-          </div>
-          <div class="target-description">
-            <span class="price-badge">Keyword Match</span>
-            <span style="opacity: 0.6;">${floatRange}</span>
-          </div>
-        </div>
-      </div>
-    `;
-
-    notification.innerHTML = `
-      <!-- Compact premium header -->
-      <div style="display: flex; align-items: center; margin-bottom: 12px;">
-        <div style="margin-right: 10px;">
-          ${targetSVG}
-        </div>
-        <div style="flex: 1;">
-          <div style="font-size: 14px; font-weight: 700; margin-bottom: 2px;" class="gradient-text item-target">
-            ITEM TARGET FOUND
-          </div>
-          <div style="font-size: 10px; opacity: 0.6; color: #94a3b8; font-weight: 500;">
-            Target Match!
-          </div>
-        </div>
-        <button onclick="this.closest('.keychain-notification').remove()" style="
-          background: rgba(239, 68, 68, 0.12);
-          border: 1px solid rgba(239, 68, 68, 0.25);
-          color: #f87171;
-          border-radius: 6px;
-          width: 24px;
-          height: 24px;
-          cursor: pointer;
-          font-size: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s ease;
-          font-weight: 600;
-        " onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.12)'">×</button>
-      </div>
-      
-      <!-- Premium item info section -->
-      <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-        <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #f1f5f9; line-height: 1.3; letter-spacing: -0.2px;">
-          ${itemData.market_name || 'Unknown Item'}
-        </div>
-        ${targetDisplayHTML}
-      </div>
-      
-      <!-- Compact price grid -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-        <div style="background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 8px; padding: 10px; text-align: center;">
-          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Market Value</div>
-          <div style="font-size: 14px; font-weight: 800; color: #22c55e;">$${marketValue}</div>
-        </div>
-        <div style="background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 10px; text-align: center;">
-          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Float</div>
-          <div style="font-size: 14px; font-weight: 800; color: #a855f7;">${floatValue}</div>
-        </div>
-      </div>
-      
-      <!-- Compact above recommended percentage -->
-      <div style="display: flex; justify-content: center; margin-bottom: 12px;">
-        <div style="background: rgba(${parseFloat(aboveRecommended) > 0 ? '239, 68, 68' : '34, 197, 94'}, 0.12); border: 1px solid rgba(${parseFloat(aboveRecommended) > 0 ? '239, 68, 68' : '34, 197, 94'}, 0.25); border-radius: 12px; padding: 6px 12px; display: flex; align-items: center; gap: 4px;">
-          <span style="font-size: 10px;">${parseFloat(aboveRecommended) > 0 ? '📈' : '📉'}</span>
-          <span style="font-size: 11px; font-weight: 700; color: ${parseFloat(aboveRecommended) > 0 ? '#f87171' : '#4ade80'};">
-            ${parseFloat(aboveRecommended) > 0 ? '+' : ''}${aboveRecommended}% above rec.
-          </span>
-        </div>
-      </div>
-      
-      <!-- Compact action buttons -->
-      <div style="display: flex; gap: 8px;">
-        <button onclick="window.open('https://csgoempire.com/item/${itemData.id}', '_blank')" 
-                class="premium-button item-target"
-                style="
-          flex: 1;
-          color: white;
-          padding: 10px 12px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 12px;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
-        ">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-            <polyline points="15,3 21,3 21,9"/>
-            <line x1="10" y1="14" x2="21" y2="3"/>
-          </svg>
-          View Item
-        </button>
-        <button onclick="this.closest('.keychain-notification').remove()" 
-                class="secondary-button"
-                style="
-          color: #e2e8f0;
-          padding: 10px 12px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 12px;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
-        ">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-          Close
-        </button>
-      </div>
-      
-      <!-- Compact footer info -->
-      <div style="font-size: 9px; color: #64748b; margin-top: 10px; text-align: center; opacity: 0.7; font-weight: 500;">
-        ID: ${itemData.id || 'Unknown'} • ${new Date().toLocaleTimeString()} • Target Match
-      </div>
-    `;
-
-    // Add click handler to open specific item page
-    notification.addEventListener('click', (e) => {
-      if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
-        window.open(`https://csgoempire.com/item/${itemData.id}`, '_blank');
-      }
-    });
-
-    // Add notification to container
-    this.notificationContainer.appendChild(notification);
-    this.notifications.push(notificationId);
-
-    // Play notification sound only if enabled
-    if (soundEnabled) {
-      this.playItemTargetNotificationSound();
-    }
-
-    // Auto-remove after 30 seconds
-    setTimeout(() => {
-      this.removeNotification(notificationId);
-    }, 30000);
-
-    // Remove oldest notifications if we have too many
-    if (this.notifications.length > this.maxNotifications) {
-      const oldestId = this.notifications.shift();
-      this.removeNotification(oldestId);
-    }
-
-    // Flash the page title
-    this.flashPageTitle('🎯 Item Target Found!');
-
-    console.log('✅ Item target notification displayed successfully');
+showItemTargetNotification(itemData) {
+  if (!this.monitoringEnabled) {
+    console.log('🚫 Item target notification ignored - monitoring disabled');
+    return;
   }
+
+  console.log('🎯 Showing enhanced item target notification overlay:', itemData);
+  console.log('🔍 DEBUG: Full item target data received:', JSON.stringify(itemData, null, 2));
+
+  // Check if we already have a notification for this item ID to prevent duplicates
+  const existingNotification = document.getElementById(`notification-${itemData.id}`);
+  if (existingNotification) {
+    console.log('🚫 Duplicate notification prevented for item:', itemData.id);
+    return;
+  }
+
+  // Check if sound is enabled
+  const soundEnabled = itemData.soundEnabled !== undefined ? itemData.soundEnabled : this.soundEnabled;
+
+  // Format the data
+  const marketValue = itemData.market_value ? (itemData.market_value / 100).toFixed(2) : 'Unknown';
+  const purchasePrice = itemData.purchase_price ? (itemData.purchase_price / 100).toFixed(2) : marketValue;
+  
+  // Get Float value from wear field
+  const floatValue = itemData.wear !== undefined && itemData.wear !== null ? 
+    parseFloat(itemData.wear).toFixed(6) : 'Unknown';
+  
+  const aboveRecommended = itemData.above_recommended_price !== undefined && itemData.above_recommended_price !== null && !isNaN(itemData.above_recommended_price) 
+    ? itemData.above_recommended_price.toFixed(2) 
+    : 'Unknown';
+
+  // Extract price comparison data from itemData
+  const buff163Price = itemData.buff163_price || itemData.buffPrice || null;
+  const csfloatPrice = itemData.csfloat_price || itemData.csfloatPrice || null;
+  const empirePrice = parseFloat(marketValue);
+  
+  // Calculate percentage difference (Buff163 vs Empire)
+  let percentageDifference = null;
+  let differenceText = 'N/A';
+  let differenceClass = '';
+  
+  if (buff163Price && empirePrice > 0) {
+    percentageDifference = (buff163Price / empirePrice) * 100;
+    differenceText = `${percentageDifference.toFixed(1)}%`;
+    differenceClass = percentageDifference < 100 ? 'positive' : 'negative';
+  }
+
+  // Create notification element with unique ID based on item ID
+  const notification = document.createElement('div');
+  const notificationId = `notification-${itemData.id}`;
+  notification.id = notificationId;
+  notification.className = 'keychain-notification pulse-glow item-target';
+  notification.style.cssText = `
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    max-width: 340px;
+    min-width: 320px;
+    color: #e2e8f0;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    position: relative;
+    overflow: hidden;
+  `;
+
+  // Create target icon SVG
+  const targetGradientId = `targetGradient${itemData.id}`;
+  const targetSVG = `
+    <svg class="crown-float crown-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="${targetGradientId}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+          <stop offset="50%" style="stop-color:#059669;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#34d399;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="12" r="10" fill="none" stroke="url(#${targetGradientId})" stroke-width="2"/>
+      <circle cx="12" cy="12" r="6" fill="none" stroke="url(#${targetGradientId})" stroke-width="1.5"/>
+      <circle cx="12" cy="12" r="2" fill="url(#${targetGradientId})"/>
+    </svg>
+  `;
+
+  // Generate target info HTML
+  const targetKeyword = itemData.target_item_matched?.name || itemData.matched_keyword || 'Universal Filter';
+  const floatRange = itemData.target_item_matched?.floatFilter?.enabled 
+    ? `${itemData.target_item_matched.floatFilter.min.toFixed(3)} - ${itemData.target_item_matched.floatFilter.max.toFixed(3)}`
+    : 'Any float';
+
+  const targetDisplayHTML = `
+    <div class="target-info">
+      <div class="target-icon">🎯</div>
+      <div class="target-details">
+        <div class="target-keyword">
+          "${targetKeyword}"
+        </div>
+        <div class="target-description">
+          <span class="price-badge">Target Match</span>
+          <span style="opacity: 0.6;">${floatRange}</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Enhanced compact price comparison section
+  const formatPrice = (price) => {
+    if (!price || price === 'Unknown' || isNaN(price)) return 'N/A';
+    return `$${parseFloat(price).toFixed(2)}`;
+  };
+
+  const priceComparisonHTML = `
+    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px; margin-bottom: 12px;">
+      <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; text-align: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 4px;">
+        PRICE COMPARISON
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+        <div style="text-align: center; padding: 6px; background: rgba(74, 144, 226, 0.12); border: 1px solid rgba(74, 144, 226, 0.25); border-radius: 6px;">
+          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">CSFLOAT</div>
+          <div style="font-size: 11px; font-weight: 700; color: #4a90e2;">${formatPrice(csfloatPrice)}</div>
+        </div>
+        <div style="text-align: center; padding: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 6px;">
+          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">BUFF163</div>
+          <div style="font-size: 11px; font-weight: 700; color: #f59e0b;">${formatPrice(buff163Price)}</div>
+        </div>
+        <div style="text-align: center; padding: 6px; background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 6px;">
+          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">EMPIRE</div>
+          <div style="font-size: 11px; font-weight: 700; color: #22c55e;">${formatPrice(empirePrice)}</div>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+        <div style="text-align: center; padding: 6px; background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 6px;">
+          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">FLOAT</div>
+          <div style="font-size: 11px; font-weight: 700; color: #a855f7;">${floatValue}</div>
+        </div>
+        <div style="text-align: center; padding: 6px; background: rgba(${differenceClass === 'positive' ? '34, 197, 94' : '239, 68, 68'}, 0.12); border: 1px solid rgba(${differenceClass === 'positive' ? '34, 197, 94' : '239, 68, 68'}, 0.25); border-radius: 6px;">
+          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">% DIFFERENCE</div>
+          <div style="font-size: 11px; font-weight: 700; color: ${differenceClass === 'positive' ? '#4ade80' : '#f87171'};">
+            ${differenceText}
+          </div>
+        </div>
+        <div style="text-align: center; padding: 6px; background: rgba(${parseFloat(aboveRecommended) > 0 ? '239, 68, 68' : '34, 197, 94'}, 0.12); border: 1px solid rgba(${parseFloat(aboveRecommended) > 0 ? '239, 68, 68' : '34, 197, 94'}, 0.25); border-radius: 6px;">
+          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">ABOVE REC</div>
+          <div style="font-size: 11px; font-weight: 700; color: ${parseFloat(aboveRecommended) > 0 ? '#f87171' : '#4ade80'};">
+            ${parseFloat(aboveRecommended) > 0 ? '+' : ''}${aboveRecommended}%
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  notification.innerHTML = `
+    <div style="display: flex; align-items: center; margin-bottom: 12px;">
+      <div style="margin-right: 10px;">
+        ${targetSVG}
+      </div>
+      <div style="flex: 1;">
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 2px;" class="gradient-text item-target">
+          ITEM TARGET FOUND
+        </div>
+        <div style="font-size: 10px; opacity: 0.6; color: #94a3b8; font-weight: 500;">
+          Target Match!
+        </div>
+      </div>
+      <button onclick="this.closest('.keychain-notification').remove()" style="
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.25);
+        color: #f87171;
+        border-radius: 6px;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        font-weight: 600;
+      " onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.12)'">×</button>
+    </div>
+    
+    <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+      <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #f1f5f9; line-height: 1.3; letter-spacing: -0.2px;">
+        ${itemData.market_name || 'Unknown Item'}
+      </div>
+      ${targetDisplayHTML}
+    </div>
+    
+    ${priceComparisonHTML}
+    
+    <div style="display: flex; gap: 8px;">
+      <button onclick="window.open('https://csgoempire.com/item/${itemData.id}', '_blank')" 
+              class="premium-button item-target"
+              style="
+        flex: 1;
+        color: white;
+        padding: 10px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+      ">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15,3 21,3 21,9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        View Item
+      </button>
+      <button onclick="this.closest('.keychain-notification').remove()" 
+              class="secondary-button"
+              style="
+        color: #e2e8f0;
+        padding: 10px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+      ">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        Close
+      </button>
+    </div>
+    
+    <div style="font-size: 9px; color: #64748b; margin-top: 10px; text-align: center; opacity: 0.7; font-weight: 500;">
+      ID: ${itemData.id || 'Unknown'} • ${new Date().toLocaleTimeString()} • Target Match
+      ${percentageDifference !== null ? ` • Diff: ${differenceText}` : ''}
+    </div>
+  `;
+
+  // Add click handler to open specific item page
+  notification.addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+      window.open(`https://csgoempire.com/item/${itemData.id}`, '_blank');
+    }
+  });
+
+  // Add notification to container
+  this.notificationContainer.appendChild(notification);
+  this.notifications.push(notificationId);
+
+  // Play notification sound only if enabled
+  if (soundEnabled) {
+    this.playItemTargetNotificationSound();
+  }
+
+  // Auto-remove after 30 seconds
+  setTimeout(() => {
+    this.removeNotification(notificationId);
+  }, 30000);
+
+  // Remove oldest notifications if we have too many
+  if (this.notifications.length > this.maxNotifications) {
+    const oldestId = this.notifications.shift();
+    this.removeNotification(oldestId);
+  }
+
+  // Flash the page title
+  this.flashPageTitle('🎯 Item Target Found!');
+
+  console.log('✅ Enhanced item target notification with price data displayed successfully');
+}
 
   showKeychainNotification(itemData) {
     if (!this.monitoringEnabled) {

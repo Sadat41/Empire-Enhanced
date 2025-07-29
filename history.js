@@ -1,19 +1,17 @@
-// history.js 
+// history.js - FIXED RENDERING ISSUE
 
 class NotificationHistory {
     constructor() {
         this.notifications = [];
-        
         this.autoRefreshInterval = null;
-        this.currentFilter = 'All Items'; // Track current filter state
-        this.currentTheme = 'nebula'; // Default theme
+        this.currentFilter = 'All Items';
+        this.currentTheme = 'nebula';
         
-        // Charm category color mapping
         this.charmColors = {
-            'Red': '#ef4444',      // Red
-            'Pink': '#ec4899',     // Pink
-            'Purple': '#a855f7',   // Purple
-            'Blue': '#3b82f6'      // Blue
+            'Red': '#ef4444',
+            'Pink': '#ec4899',
+            'Purple': '#a855f7',
+            'Blue': '#3b82f6'
         };
         
         this.init();
@@ -22,17 +20,15 @@ class NotificationHistory {
     async init() {
         console.log('🚀 Initializing notification history...');
         
-        // Wait for DOM to be fully loaded
         if (document.readyState === 'loading') {
             await new Promise(resolve => {
                 document.addEventListener('DOMContentLoaded', resolve);
             });
         }
         
-        // Load theme first, then setup everything else
         await this.loadTheme();
         this.setupEventListeners();
-        this.setupStorageListener(); // Listen for local storage changes
+        this.setupStorageListener();
         await this.loadHistory();
         this.startAutoRefresh();
     }
@@ -49,20 +45,14 @@ class NotificationHistory {
             console.log(`🎨 History page loaded theme: ${this.currentTheme}`);
         } catch (error) {
             console.error('Error loading theme:', error);
-            // Fall back to default theme
             this.applyTheme('nebula');
         }
     }
 
     applyTheme(themeName) {
         console.log(`🎨 Applying theme: ${themeName}`);
-        
-        // Update body class
         document.body.className = `theme-${themeName}`;
-        
-        // Update crown SVG colors based on theme
         this.updateCrownColors(themeName);
-        
         this.currentTheme = themeName;
     }
 
@@ -73,7 +63,6 @@ class NotificationHistory {
         const crownRight = document.querySelector('.crown-right');
         
         if (themeName === 'shooting-star') {
-            // Update to shooting star theme colors
             if (crownPath) {
                 crownPath.setAttribute('fill', 'url(#crownGradientStar)');
                 crownPath.setAttribute('stroke', '#4a90e2');
@@ -82,7 +71,6 @@ class NotificationHistory {
             if (crownLeft) crownLeft.setAttribute('fill', '#4a90e2');
             if (crownRight) crownRight.setAttribute('fill', '#4a90e2');
         } else {
-            // Default nebula theme colors
             if (crownPath) {
                 crownPath.setAttribute('fill', 'url(#crownGradient)');
                 crownPath.setAttribute('stroke', '#667eea');
@@ -97,11 +85,10 @@ class NotificationHistory {
         const refreshBtn = document.getElementById('refreshBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
-                console.log(' Manual refresh triggered');
+                console.log('📱 Manual refresh triggered');
                 
-                // Add loading state using CSS classes
                 refreshBtn.classList.add('loading');
-                refreshBtn.innerHTML = '<span class="refresh-icon spinning"></span> Refreshing...';
+                refreshBtn.innerHTML = '<span class="refresh-icon spinning">🔄</span> Refreshing...';
                 refreshBtn.disabled = true;
                 
                 this.loadHistory().finally(() => {
@@ -112,7 +99,6 @@ class NotificationHistory {
             });
         }
 
-        // Setup filter buttons
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -124,7 +110,6 @@ class NotificationHistory {
             });
         });
 
-        // Listen for storage changes (theme updates from popup)
         chrome.storage.onChanged.addListener((changes, namespace) => {
             if (namespace === 'sync') {
                 if (changes.selectedTheme) {
@@ -134,7 +119,6 @@ class NotificationHistory {
                         this.applyTheme(newTheme);
                     }
                 }
-                // Note: Site theming changes are handled by site-themeing.js, not history.js
             }
         });
     }
@@ -142,11 +126,9 @@ class NotificationHistory {
     applyCurrentFilter() {
         console.log(`🎯 Applying filter: ${this.currentFilter}`);
         
-        // Sort notifications based on current filter
         let sortedNotifications = [...this.notifications];
         
         if (this.currentFilter === 'Good Deals') {
-            // Sort by above_recommended_price (ascending: lowest/best deals first)
             sortedNotifications.sort((a, b) => {
                 const aPercent = a.above_recommended_price || 0;
                 const bPercent = b.above_recommended_price || 0;
@@ -154,7 +136,6 @@ class NotificationHistory {
             });
             console.log(`📊 Sorted ${sortedNotifications.length} items by best deals first`);
         } else if (this.currentFilter === 'Recent') {
-            // Sort by published_at (descending: most recent first)
             sortedNotifications.sort((a, b) => {
                 const aTime = new Date(a.published_at || a.timestamp).getTime();
                 const bTime = new Date(b.published_at || b.timestamp).getTime();
@@ -162,22 +143,17 @@ class NotificationHistory {
             });
             console.log(`⏰ Sorted ${sortedNotifications.length} items by most recent first`);
         }
-        // 'All Items' keeps original order (already sorted by timestamp from server)
         
-        // Re-render with sorted data
         this.renderFilteredHistory(sortedNotifications);
     }
 
-    // Enhanced method to format charm information with pricing and colors
     formatCharmInfo(item) {
-        // Check if we have charm data from the server
         if (item.charm_name && item.charm_category && item.charm_price !== undefined) {
             const charmName = item.charm_name;
             const charmCategory = item.charm_category;
             const charmPrice = item.charm_price;
             const marketValue = item.market_value ? (item.market_value / 100) : 0;
             
-            // Calculate percentage of charm price relative to market price
             let percentageOfMarket = 0;
             if (marketValue > 0 && charmPrice > 0) {
                 percentageOfMarket = (charmPrice / marketValue) * 100;
@@ -199,7 +175,6 @@ class NotificationHistory {
             };
         }
         
-        // Fallback to keychain names if no charm data
         let keychainDisplay = 'N/A';
         if (item.keychains) {
             if (Array.isArray(item.keychains)) {
@@ -225,15 +200,21 @@ class NotificationHistory {
         return icons[category] || '🔑';
     }
 
+    // FIXED: Simplified rendering logic
     renderFilteredHistory(sortedNotifications) {
         console.log(`🎨 Rendering ${sortedNotifications.length} filtered/sorted notifications...`);
         
         const itemsGrid = document.getElementById('itemsGrid');
         const emptyState = document.getElementById('emptyState');
         
+        // Clear everything first
+        if (itemsGrid) {
+            itemsGrid.innerHTML = '';
+            itemsGrid.classList.remove('loaded');
+        }
+        
         if (!sortedNotifications || sortedNotifications.length === 0) {
             console.log('📝 Showing empty state for filtered results');
-            if (itemsGrid) itemsGrid.innerHTML = '';
             if (itemsGrid) itemsGrid.style.display = 'none';
             if (emptyState) emptyState.style.display = 'block';
             return;
@@ -246,13 +227,10 @@ class NotificationHistory {
         try {
             const cardsHTML = sortedNotifications.map((item, index) => {
                 const marketValue = (item.market_value || 0) / 100;
-                const recommendedValue = (item.suggested_price || 0) / 100;
                 const aboveRec = item.above_recommended_price || 0;
 
-                // Get enhanced charm information
                 const charmInfo = this.formatCharmInfo(item);
 
-                // Format timestamp using published_at primarily
                 const publishedTime = new Date(item.published_at || item.timestamp);
                 const now = new Date();
                 const isToday = publishedTime.toDateString() === now.toDateString();
@@ -260,16 +238,74 @@ class NotificationHistory {
                     `Today at ${publishedTime.toLocaleTimeString()}` : 
                     publishedTime.toLocaleString();
 
-                // Format float value
                 const floatValue = item.wear !== undefined && item.wear !== null ? 
                     parseFloat(item.wear).toFixed(6) : 'Unknown';
 
-                // Determine percentage styling
                 const percentageClass = aboveRec >= 0 ? 'positive' : 'negative';
                 const percentageIcon = aboveRec >= 0 ? '📈' : '📉';
                 const percentageText = aboveRec >= 0 ? `+${aboveRec.toFixed(1)}%` : `${aboveRec.toFixed(1)}%`;
 
-                // Generate charm display HTML for history cards
+                // Price comparison data
+                const buff163Price = item.buff163_price || null;
+                const csfloatPrice = item.csfloat_price || null;
+                const empirePrice = item.empire_price || marketValue;
+                const buff163Percentage = item.buff163_percentage || null;
+
+                const formatPrice = (price) => {
+                    if (!price || price === 'Unknown' || isNaN(price)) return 'N/A';
+                    return `$${parseFloat(price).toFixed(2)}`;
+                };
+
+                let differenceText = 'N/A';
+                let differenceClass = '';
+                if (buff163Percentage !== null) {
+                    differenceText = `${buff163Percentage.toFixed(1)}%`;
+                    differenceClass = buff163Percentage < 100 ? 'positive' : 'negative';
+                }
+
+                let priceComparisonHTML = '';
+                if (buff163Price || csfloatPrice) {
+                    priceComparisonHTML = `
+                        <div class="price-comparison-container">
+                            <div class="price-comparison-header">
+                                PRICE COMPARISON
+                            </div>
+                            <div class="price-comparison-grid">
+                                <div class="price-comparison-cell price-cell-csfloat">
+                                    <div class="price-comparison-label">CSFLOAT</div>
+                                    <div class="price-comparison-value price-value-csfloat">${formatPrice(csfloatPrice)}</div>
+                                </div>
+                                <div class="price-comparison-cell price-cell-buff163">
+                                    <div class="price-comparison-label">BUFF163</div>
+                                    <div class="price-comparison-value price-value-buff163">${formatPrice(buff163Price)}</div>
+                                </div>
+                                <div class="price-comparison-cell price-cell-empire">
+                                    <div class="price-comparison-label">EMPIRE</div>
+                                    <div class="price-comparison-value price-value-empire">${formatPrice(empirePrice)}</div>
+                                </div>
+                            </div>
+                            <div class="price-comparison-grid">
+                                <div class="price-comparison-cell price-cell-float">
+                                    <div class="price-comparison-label">FLOAT</div>
+                                    <div class="price-comparison-value price-value-float">${floatValue}</div>
+                                </div>
+                                <div class="price-comparison-cell price-cell-difference ${differenceClass}">
+                                    <div class="price-comparison-label">% DIFFERENCE</div>
+                                    <div class="price-comparison-value price-value-${differenceClass}">
+                                        ${differenceText}
+                                    </div>
+                                </div>
+                                <div class="price-comparison-cell price-cell-above-rec ${parseFloat(aboveRec) > 0 ? 'negative' : ''}">
+                                    <div class="price-comparison-label">ABOVE REC</div>
+                                    <div class="price-comparison-value price-value-${parseFloat(aboveRec) > 0 ? 'negative' : 'positive'}">
+                                        ${parseFloat(aboveRec) > 0 ? '+' : ''}${aboveRec.toFixed(1)}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 let charmDisplayHTML = '';
                 if (charmInfo.hasCharmData) {
                     charmDisplayHTML = `
@@ -302,21 +338,25 @@ class NotificationHistory {
                             <div class="item-id">#${item.id || 'Unknown'}</div>
                         </div>
                         
+                        ${priceComparisonHTML}
+
+                        ${priceComparisonHTML ? '' : `
                         <div class="price-grid">
                             <div class="price-item">
                                 <div class="price-label">Market Value</div>
-                                <div class="price-value market">$${marketValue.toFixed(2)}</div>
+                                <div class="price-value market">${marketValue.toFixed(2)}</div>
                             </div>
                             <div class="price-item">
                                 <div class="price-label">Float</div>
                                 <div class="price-value recommended">${floatValue}</div>
                             </div>
                         </div>
-
+                        
                         <div class="percentage-badge ${percentageClass}">
                             <span>${percentageIcon}</span>
                             ${percentageText}
                         </div>
+                        `}
 
                         <div class="item-actions">
                             <button class="action-btn primary view-item-btn" data-item-id="${item.id}">
@@ -331,39 +371,28 @@ class NotificationHistory {
 
                         <div class="timestamp">
                             ${timeStr}
+                            ${buff163Percentage !== null ? ` • Diff: ${differenceText}` : ''}
                         </div>
                     </div>
                 `;
             }).join('');
             
+            // CRITICAL: Actually inject the HTML
             if (itemsGrid) {
                 itemsGrid.innerHTML = cardsHTML;
-                console.log(`✅ Filtered cards rendered successfully (${this.currentFilter})`);
+                console.log(`✅ Injected HTML for ${sortedNotifications.length} cards`);
+                
+                // Add loaded class after DOM update
+                setTimeout(() => {
+                    itemsGrid.classList.add('loaded');
+                    console.log('🎬 Added loaded class for animations');
+                }, 50);
                 
                 // Inject enhanced charm styles
                 this.injectEnhancedCharmStyles();
                 
-                // Attach event listeners for CSP-safe action buttons
-                // View Item buttons
-                itemsGrid.querySelectorAll('.view-item-btn').forEach(btn => {
-                    btn.addEventListener('click', (event) => {
-                        // Prevent bubbling to card
-                        event.stopPropagation();
-                        const itemId = btn.getAttribute('data-item-id');
-                        if (itemId) {
-                            window.open(`https://csgoempire.com/item/${itemId}`, '_blank');
-                        }
-                    });
-                });
-
-                // Hide buttons
-                itemsGrid.querySelectorAll('.hide-item-btn').forEach(btn => {
-                    btn.addEventListener('click', (event) => {
-                        event.stopPropagation();
-                        const card = btn.closest('.item-card');
-                        if (card) card.remove();
-                    });
-                });
+                // Attach event listeners
+                this.attachEventListeners(itemsGrid);
             }
             
         } catch (error) {
@@ -372,8 +401,30 @@ class NotificationHistory {
         }
     }
 
+    // FIXED: Separate event listener attachment
+    attachEventListeners(itemsGrid) {
+        // View Item buttons
+        itemsGrid.querySelectorAll('.view-item-btn').forEach(btn => {
+            btn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const itemId = btn.getAttribute('data-item-id');
+                if (itemId) {
+                    window.open(`https://csgoempire.com/item/${itemId}`, '_blank');
+                }
+            });
+        });
+
+        // Hide buttons
+        itemsGrid.querySelectorAll('.hide-item-btn').forEach(btn => {
+            btn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const card = btn.closest('.item-card');
+                if (card) card.remove();
+            });
+        });
+    }
+
     injectEnhancedCharmStyles() {
-        // Remove existing enhanced charm styles
         const existingStyles = document.getElementById('enhanced-charm-styles');
         if (existingStyles) {
             existingStyles.remove();
@@ -383,7 +434,6 @@ class NotificationHistory {
         styles.id = 'enhanced-charm-styles';
         
         styles.textContent = `
-            /* Enhanced charm display styles for history cards */
             .enhanced-charm {
                 display: flex !important;
                 align-items: center !important;
@@ -432,7 +482,6 @@ class NotificationHistory {
                 font-weight: 600 !important;
             }
 
-            /* Fallback styles for regular keychain display */
             .item-keychain {
                 display: flex !important;
                 align-items: center !important;
@@ -467,35 +516,36 @@ class NotificationHistory {
         document.head.appendChild(styles);
     }
 
-async loadHistory() {
-    try {
-        console.log('📊 Loading notification history from local storage...');
-        this.showLoading(true);
-        this.hideMessages();
+    async loadHistory() {
+        try {
+            console.log('📊 Loading notification history from local storage...');
+            this.showLoading(true);
+            this.hideMessages();
 
-        const result = await chrome.storage.local.get(['notificationHistory']);
-        this.notifications = result.notificationHistory || [];
-        
-        console.log(`✅ Loaded ${this.notifications.length} notifications from storage`);
-        
-        if (this.notifications.length > 0) {
-            console.log('🎯 Notifications found, rendering cards...');
-            this.showSuccess(`Loaded ${this.notifications.length} notifications from last 24 hours`);
-        } else {
-            console.log('⚠️ No notifications found in storage');
+            const result = await chrome.storage.local.get(['notificationHistory']);
+            this.notifications = result.notificationHistory || [];
+            
+            console.log(`✅ Loaded ${this.notifications.length} notifications from storage`);
+            
+            if (this.notifications.length > 0) {
+                console.log('🎯 Notifications found, rendering cards...');
+                this.showSuccess(`Loaded ${this.notifications.length} notifications from last 24 hours`);
+            } else {
+                console.log('⚠️ No notifications found in storage');
+            }
+            
+            this.renderHistory();
+            this.updateStats();
+            this.showLoading(false);
+            
+        } catch (error) {
+            console.error('❌ Error loading history from storage:', error);
+            this.showError(`Failed to load notification history: ${error.message}`);
+            this.showLoading(false);
         }
-        
-        this.renderHistory();
-        this.updateStats();
-        this.showLoading(false);
-        
-    } catch (error) {
-        console.error('❌ Error loading history from storage:', error);
-        this.showError(`Failed to load notification history: ${error.message}`);
-        this.showLoading(false);
     }
-}
 
+    // FIXED: Simplified renderHistory method
     renderHistory() {
         console.log(`🎨 Rendering ${this.notifications.length} notifications as cards...`);
         
@@ -504,8 +554,10 @@ async loadHistory() {
         
         if (!this.notifications || this.notifications.length === 0) {
             console.log('📝 Showing empty state');
-            if (itemsGrid) itemsGrid.innerHTML = '';
-            if (itemsGrid) itemsGrid.style.display = 'none';
+            if (itemsGrid) {
+                itemsGrid.innerHTML = '';
+                itemsGrid.style.display = 'none';
+            }
             if (emptyState) emptyState.style.display = 'block';
             return;
         }
@@ -514,15 +566,14 @@ async loadHistory() {
         if (emptyState) emptyState.style.display = 'none';
         if (itemsGrid) itemsGrid.style.display = 'grid';
         
-        // Maintain current filter state after rendering
+        // Maintain current filter state
         this.maintainFilterState();
         
-        // Apply current filter
+        // Apply current filter to render cards
         this.applyCurrentFilter();
     }
 
     maintainFilterState() {
-        // Restore the active filter button state
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.classList.remove('active');
             if (btn.textContent.trim() === this.currentFilter) {
@@ -601,9 +652,9 @@ async loadHistory() {
 
     startAutoRefresh() {
         this.autoRefreshInterval = setInterval(() => {
-            console.log(' Auto-refreshing...');
+            console.log('🔄 Auto-refreshing...');
             this.loadHistory();
-        }, 15000); // Refresh every 15 seconds
+        }, 15000);
     }
 
     stopAutoRefresh() {
@@ -612,16 +663,15 @@ async loadHistory() {
             this.autoRefreshInterval = null;
         }
     }
-    // Setup storage listener to refresh history when local storage changes
-    setupStorageListener() {
-    chrome.storage.onChanged.addListener((changes, namespace) => {
-        if (namespace === 'local' && changes.notificationHistory) {
-            console.log('📝 Notification history updated, refreshing display...');
-            this.loadHistory();
-        }
-    });
-}
 
+    setupStorageListener() {
+        chrome.storage.onChanged.addListener((changes, namespace) => {
+            if (namespace === 'local' && changes.notificationHistory) {
+                console.log('📝 Notification history updated, refreshing display...');
+                this.loadHistory();
+            }
+        });
+    }
 }
 
 // Initialize when DOM is ready
@@ -643,11 +693,4 @@ if (document.readyState === 'loading') {
     }
 }
 
-
-console.log('📝 History.js with enhanced charm pricing display loaded successfully');
-
-
-window.testButtonClick = function() {
-    console.log('🧪 Test function called - JavaScript is working');
-    alert('JavaScript is working correctly!');
-};
+console.log('📝 History.js with FIXED rendering loaded successfully');

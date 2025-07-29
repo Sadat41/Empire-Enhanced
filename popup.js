@@ -14,44 +14,60 @@ class PopupManager {
         this.itemTargetList = []; // Array of {keyword, minFloat, maxFloat, id}
         this.init();
     }
+    
 
     async init() {
-        console.log('🚀 Popup initialized for native extension');
-        
-        // Load theme and site theming state first
-        await this.loadTheme();
-        
-        // Setup event listeners
-        this.setupEventListeners();
-        
-        // initial data
-        await this.loadStats();
-        await this.loadKeychainFilterSettings();
-        await this.loadCurrentFilterSettings();
-        await this.loadItemTargetList();
-        
-        // auto-refresh
-        setInterval(() => this.loadStats(), 3000);
+    console.log('🚀 Popup initialized for native extension');
+    
+    // Force nebula theme first, then load from storage
+    this.applyTheme('nebula');
+    
+    // Load theme and site theming state
+    await this.loadTheme();
+    
+    // Setup event listeners
+    this.setupEventListeners();
+    
+    // Load initial data
+    await this.loadStats();
+    await this.loadKeychainFilterSettings();
+    await this.loadCurrentFilterSettings();
+    await this.loadItemTargetList();
+    
+    // Setup auto-refresh
+    setInterval(() => this.loadStats(), 3000);
     }
 
     async loadTheme() {
-        try {
-            const settings = await chrome.storage.sync.get({
-                selectedTheme: 'nebula',
-                siteThemingEnabled: true
-            });
-            
-            this.currentTheme = settings.selectedTheme;
-            this.siteThemingEnabled = settings.siteThemingEnabled;
-            this.applyTheme(this.currentTheme);
-            
-            console.log(`🎨 Popup loaded theme: ${this.currentTheme}, site theming: ${this.siteThemingEnabled}`);
+    try {
+        const settings = await chrome.storage.sync.get({
+            selectedTheme: 'nebula',
+            siteThemingEnabled: true
+        });
+        
+        this.currentTheme = settings.selectedTheme || 'nebula'; // Ensure fallback
+        this.siteThemingEnabled = settings.siteThemingEnabled;
+        
+        // Force apply theme immediately
+        this.applyTheme(this.currentTheme);
+        
+        // Also save the default theme to storage if it's empty (first run)
+        if (!settings.selectedTheme) {
+            await chrome.storage.sync.set({ selectedTheme: 'nebula' });
+            console.log('🎨 Set default theme to nebula on first run');
+        }
+        
+        console.log(`🎨 Popup loaded theme: ${this.currentTheme}, site theming: ${this.siteThemingEnabled}`);
         } catch (error) {
-            console.error('Error loading theme:', error);
-            // Fall back to default theme
-            this.applyTheme('nebula');
+        console.error('Error loading theme:', error);
+
+        // Force fall back to nebula theme
+        this.currentTheme = 'nebula';
+        this.siteThemingEnabled = true;
+        this.applyTheme('nebula');
         }
     }
+    
 
     // Load item target list 
     async loadItemTargetList() {
@@ -70,41 +86,102 @@ class PopupManager {
         }
     }
 
-    async saveItemTargetList() {
-        try {
-            // Save to local storage
-            await chrome.storage.local.set({ itemTargetList: this.itemTargetList });
-            console.log(`💾 Saved ${this.itemTargetList.length} item targets to local storage`);
-            
-            // Update extension background
-            const response = await chrome.runtime.sendMessage({
-                type: 'UPDATE_ITEM_TARGET_LIST',
-                data: { itemTargetList: this.itemTargetList }
-            });
-            
-            if (response && response.success) {
-                console.log('✅ Item Target List synced to extension successfully');
-            } else {
-                console.error('❌ Failed to sync to extension:', response?.error);
-                this.showMessage('Saved locally, but extension sync failed', 'warning');
-            }
-            
-        } catch (error) {
-            console.error('Error saving item target list:', error);
-            this.showMessage('Failed to save item target list', 'error');
+async saveItemTargetList() {
+  try {
+    console.log(`💾 Saving ${this.itemTargetList.length} item targets...`);
+    
+    // 1. Save to local storage (primary) with retry logic
+    let saveAttempts = 0;
+    const maxAttempts = 3;
+    
+    while (saveAttempts < maxAttempts) {
+      try {
+        await chrome.storage.local.set({ itemTargetList: this.itemTargetList });
+        console.log(`✅ Saved to local storage: ${this.itemTargetList.length} items (attempt ${saveAttempts + 1})`);
+        break;
+      } catch (localError) {
+        saveAttempts++;
+        console.warn(`⚠️ Local storage save attempt ${saveAttempts} failed:`, localError.message);
+        if (saveAttempts >= maxAttempts) {
+          throw localError;
         }
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
+    
+    // 2. Save to sync storage (backup) - with size limit handling
+    try {
+      const dataSize = JSON.stringify(this.itemTargetList).length;
+      if (dataSize < 7000) { // Leave some buffer for 8KB limit
+        await chrome.storage.sync.set({ itemTargetList: this.itemTargetList });
+        console.log(`✅ Backed up to sync storage: ${this.itemTargetList.length} items`);
+      } else {
+        console.warn('⚠️ Item list too large for sync storage, using local only');
+      }
+    } catch (syncError) {
+      console.warn('⚠️ Sync storage failed (quota exceeded):', syncError.message);
+    }
+    
+    // 3. Update extension background immediately with retry logic
+    let updateAttempts = 0;
+    while (updateAttempts < maxAttempts) {
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'UPDATE_ITEM_TARGET_LIST',
+          data: { itemTargetList: this.itemTargetList }
+        });
+        
+        if (response && response.success) {
+          console.log('✅ Item Target List synced to extension');
+          break;
+        } else {
+          throw new Error(response?.error || 'Background script returned failure');
+        }
+      } catch (updateError) {
+        updateAttempts++;
+        console.warn(`⚠️ Background update attempt ${updateAttempts} failed:`, updateError.message);
+        if (updateAttempts >= maxAttempts) {
+          console.error('❌ Failed to sync to extension after multiple attempts:', updateError.message);
+          this.showMessage('Saved locally, but extension sync failed - restart extension if needed', 'warning');
+          return; // Don't throw error, data is still saved locally
+        }
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ Error saving item target list:', error);
+    this.showMessage('Failed to save item target list', 'error');
+    throw error;
+  }
+}
 
     async addItemTarget() {
         const keywordInput = document.getElementById('itemKeyword');
         const minFloatInput = document.getElementById('minFloat');
         const maxFloatInput = document.getElementById('maxFloat');
+        const minPercentDiffInput = document.getElementById('minPercentDiff');
+        const maxPercentDiffInput = document.getElementById('maxPercentDiff');
+        const minPriceInput = document.getElementById('minPrice');
+        const maxPriceInput = document.getElementById('maxPrice');
         
+        // UPDATED CODE:
         const keyword = keywordInput.value.trim();
-        if (!keyword) {
-            this.showMessage('Please enter an item keyword', 'error');
+
+        // Allow empty keywords for universal filters if other filters are enabled
+        const hasPercentDiffFilter = minPercentDiffInput.value || maxPercentDiffInput.value;
+        const hasPriceFilter = minPriceInput.value || maxPriceInput.value;
+
+        if (!keyword && !hasPercentDiffFilter && !hasPriceFilter) {
+            this.showMessage('Please enter an item keyword OR set price/% difference filters', 'error');
             return;
         }
+
+// If no keyword but has filters, create a universal filter
+const isUniversalFilter = !keyword && (hasPercentDiffFilter || hasPriceFilter);
+const displayKeyword = keyword || `Universal Filter (${hasPercentDiffFilter ? '% Diff' : ''}${hasPercentDiffFilter && hasPriceFilter ? ' + ' : ''}${hasPriceFilter ? 'Price' : ''})`;
 
         // Check if item already exists (case-insensitive)
         const existingItem = this.itemTargetList.find(item => 
@@ -119,6 +196,10 @@ class PopupManager {
         // Parse float values (optional)
         let minFloat = minFloatInput.value ? parseFloat(minFloatInput.value) : 0.00;
         let maxFloat = maxFloatInput.value ? parseFloat(maxFloatInput.value) : 1.00;
+        let minPercentDiff = minPercentDiffInput.value ? parseFloat(minPercentDiffInput.value) : null;
+        let maxPercentDiff = maxPercentDiffInput.value ? parseFloat(maxPercentDiffInput.value) : null;
+        let minPrice = minPriceInput.value ? parseFloat(minPriceInput.value) : null;
+        let maxPrice = maxPriceInput.value ? parseFloat(maxPriceInput.value) : null;
 
         // Validate float range
         if (minFloat < 0 || minFloat > 1 || maxFloat < 0 || maxFloat > 1) {
@@ -131,20 +212,48 @@ class PopupManager {
             return;
         }
 
+        // Validate percentage difference range
+        if (minPercentDiff !== null && maxPercentDiff !== null && minPercentDiff > maxPercentDiff) {
+        this.showMessage('Minimum % difference cannot be greater than maximum % difference', 'error');
+         return;
+        }
+
+        // Validate price range
+        if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
+        this.showMessage('Minimum price cannot be greater than maximum price', 'error');
+        return;
+        }
+
+        if (minPrice !== null && minPrice < 0) {
+        this.showMessage('Price values cannot be negative', 'error');
+        return;
+        }
+
         // Create new item with proper structure for extension
-        const newItem = {
-            id: Date.now().toString(),
-            keyword: keyword,
-            name: keyword, // Include both for compatibility
-            minFloat: minFloat,
-            maxFloat: maxFloat,
-            addedAt: Date.now(),
-            floatFilter: {
-                enabled: minFloat !== 0.00 || maxFloat !== 1.00,
-                min: minFloat,
-                max: maxFloat
-            }
-        };
+    const newItem = {
+    id: Date.now().toString(),
+    keyword: displayKeyword,
+    name: displayKeyword,
+    isUniversalFilter: isUniversalFilter,
+    minFloat: minFloat,
+    maxFloat: maxFloat,
+    addedAt: Date.now(),
+    floatFilter: {
+        enabled: minFloat !== 0.00 || maxFloat !== 1.00,
+        min: minFloat,
+        max: maxFloat
+    },
+    percentDiffFilter: {
+        enabled: minPercentDiff !== null || maxPercentDiff !== null,
+        min: minPercentDiff,
+        max: maxPercentDiff
+    },
+    priceFilter: {
+        enabled: minPrice !== null || maxPrice !== null,
+        min: minPrice,
+        max: maxPrice
+    }
+};
 
         // Add to list
         this.itemTargetList.push(newItem);
@@ -157,6 +266,10 @@ class PopupManager {
         keywordInput.value = '';
         minFloatInput.value = '';
         maxFloatInput.value = '';
+        minPercentDiffInput.value = '';
+        maxPercentDiffInput.value = '';
+        minPriceInput.value = '';
+        maxPriceInput.value = '';
 
         this.showMessage(`Added "${keyword}" to target list`, 'success');
         console.log(`➕ Added item target: ${keyword} (${minFloat}-${maxFloat})`);
@@ -219,22 +332,45 @@ class PopupManager {
             const floatDisplay = hasCustomFloat 
                 ? `Float: ${item.minFloat.toFixed(2)} - ${item.maxFloat.toFixed(2)}`
                 : 'Any float (0.00 - 1.00)';
+            // Add percentage difference display
+            const hasPercentDiffFilter = item.percentDiffFilter?.enabled;
+            const percentDiffDisplay = hasPercentDiffFilter
+                ? `% Diff: ${item.percentDiffFilter.min ?? '-∞'}% to ${item.percentDiffFilter.max ?? '+∞'}%`
+                : '';
+
+// Add price filter display  
+const hasPriceFilter = item.priceFilter?.enabled;
+const priceDisplay = hasPriceFilter
+    ? `Price: $${item.priceFilter.min ?? '0'} - $${item.priceFilter.max ?? '∞'}`
+    : '';
             
             // Handle both keyword and name fields for backward compatibility
             const displayName = item.keyword || item.name || 'Unknown Item';
             
-            itemEntry.innerHTML = `
-                <div class="item-info">
-                    <div class="item-keyword">${this.escapeHtml(displayName)}</div>
-                    <div class="item-wear-range">
-                        ${floatDisplay}
-                        ${hasCustomFloat ? '<span class="wear-badge">Custom Range</span>' : ''}
-                    </div>
-                </div>
-                <button class="remove-item-btn" data-item-id="${item.id}" title="Remove item">
-                    ×
-                </button>
-            `;
+itemEntry.innerHTML = `
+    <div class="item-info">
+        <div class="item-keyword">${this.escapeHtml(displayName)}</div>
+        <div class="item-wear-range">
+            ${floatDisplay}
+            ${hasCustomFloat ? '<span class="wear-badge small-badge">Custom Float</span>' : ''}
+        </div>
+        ${hasPercentDiffFilter ? `
+        <div class="item-wear-range">
+            ${percentDiffDisplay}
+            <span class="wear-badge small-badge">Custom % Diff</span>
+        </div>
+        ` : ''}
+        ${hasPriceFilter ? `
+        <div class="item-wear-range">
+            ${priceDisplay}
+            <span class="wear-badge small-badge">Custom Price</span>
+        </div>
+        ` : ''}
+    </div>
+    <button class="remove-item-btn" data-item-id="${item.id}" title="Remove item">
+        ×
+    </button>
+`;
 
             // Add click handler for remove button
             const removeBtn = itemEntry.querySelector('.remove-item-btn');
@@ -428,7 +564,7 @@ class PopupManager {
     });
 }
 
-        // Prevent clicks within the content area 
+        // Prevent clicks within the content area from bubbling up
         if (apiKeyContent) {
         apiKeyContent.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -682,34 +818,36 @@ class PopupManager {
     }
 
     updateKeychainFilterUI() {
-        console.log('🎨 Updating keychain filter UI...');
+    console.log('🎨 Updating keychain filter UI...');
+    
+    try {
+        // Update percentage slider
+        const percentageSlider = document.getElementById('keychainPercentage');
+        const percentageValue = document.getElementById('percentageValue');
         
-        try {
-            // Update percentage slider
-            const percentageSlider = document.getElementById('keychainPercentage');
-            const percentageValue = document.getElementById('percentageValue');
-            
-            if (percentageSlider && percentageValue) {
-                percentageSlider.value = this.keychainFilterSettings.percentageThreshold || 50;
-                percentageValue.textContent = `${this.keychainFilterSettings.percentageThreshold || 50}% of market value`;
-            }
-
-            // Update enabled count
-            const enabledCount = document.getElementById('enabledCount');
-            if (enabledCount) {
-                const count = this.keychainFilterSettings.enabledKeychains?.length || 0;
-                const total = this.keychainFilterSettings.totalKeychains || this.keychainFilterSettings.allKeychains?.length || 0;
-                enabledCount.textContent = `${count}/${total}`;
-            }
-
-            // Populate keychain list
-            this.populateKeychainList();
-            
-        } catch (error) {
-            console.error('❌ Error updating keychain filter UI:', error);
-            this.showMessage('Error updating keychain filter UI', 'error');
+        if (percentageSlider && percentageValue) {
+            // Fix: Use nullish coalescing instead of logical OR to handle 0 properly
+            const threshold = this.keychainFilterSettings.percentageThreshold ?? 50;
+            percentageSlider.value = threshold;
+            percentageValue.textContent = `${threshold}% of market value`;
         }
+
+        // Update enabled count
+        const enabledCount = document.getElementById('enabledCount');
+        if (enabledCount) {
+            const count = this.keychainFilterSettings.enabledKeychains?.length || 0;
+            const total = this.keychainFilterSettings.totalKeychains || this.keychainFilterSettings.allKeychains?.length || 0;
+            enabledCount.textContent = `${count}/${total}`;
+        }
+
+        // Populate keychain list
+        this.populateKeychainList();
+        
+    } catch (error) {
+        console.error('❌ Error updating keychain filter UI:', error);
+        this.showMessage('Error updating keychain filter UI', 'error');
     }
+}
 
     populateKeychainList() {
         console.log('🔧 Populating keychain list...');
@@ -886,13 +1024,13 @@ class PopupManager {
             });
         }
 
-        // Open CSGOEmpire
-        const csgoBtn = document.getElementById('openCSGOEmpire');
-        if (csgoBtn) {
-            csgoBtn.addEventListener('click', () => {
-                chrome.tabs.create({url: 'https://csgoempire.com/withdraw/steam/market'});
-            });
-        }
+    // Open tracker
+    const trackerBtn = document.getElementById('openTracker');
+    if (trackerBtn) {
+        trackerBtn.addEventListener('click', () => {
+            chrome.tabs.create({url: chrome.runtime.getURL('Tracker/tracker.html')});
+        });
+    }
 
         // Connect button
         const connectBtn = document.getElementById('connectBtn');

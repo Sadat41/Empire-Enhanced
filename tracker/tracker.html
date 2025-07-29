@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empire Enhanced - Advanced Investment Tracker</title>
+    <script src="chart.min.js"></script>
+    <script src="xlsx.full.min.js"></script>
+    <link href="tailwind.min.css" rel="stylesheet">
+    <link href="tracker.css" rel="stylesheet">
+</head>
+<body class="text-white p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <!-- Enhanced Header -->
+<div class="glass-card rounded-2xl p-6 mb-6 relative overflow-hidden">
+    <!-- Background decoration -->
+    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-50"></div>
+    <div class="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-full blur-xl"></div>
+    
+    <div class="flex items-center justify-between flex-wrap gap-4 relative z-10">
+        <div class="flex items-center space-x-4">
+            <!-- Enhanced crown icon -->
+            <div class="relative">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 p-0.5">
+                    <div class="w-full h-full rounded-xl bg-gray-900 flex items-center justify-center">
+                        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="crownGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#36d1dc;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M3 18h18l-2-8-4 3-3-6-3 6-4-3z" fill="url(#crownGradient)"/>
+                            <path d="M5 18h14v1.5c0 0.5-0.5 1-1 1H6c-0.5 0-1-0.5-1-1V18z" fill="#764ba2"/>
+                            <circle cx="12" cy="12" r="1.5" fill="#36d1dc"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                    Advanced Investment Tracker
+                </h1>
+                <div class="flex items-center space-x-2 mt-1">
+                    <span class="text-gray-400 text-sm">Portfolio Analytics</span>
+                    <div class="w-1 h-1 bg-gray-500 rounded-full"></div>
+                    <span class="text-xs text-green-400 flex items-center">
+                        <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                        Live
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-right">
+            <div class="text-3xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent" id="portfolioValue">$0.00</div>
+            <div class="text-sm text-gray-400">Portfolio Value</div>
+        </div>
+    </div>
+</div>
+
+       
+
+        <!-- Add New Investment Form -->
+        <div class="glass-card rounded-2xl p-6 mb-6">
+            <h2 class="text-xl font-bold gradient-text mb-4">Add New Investment</h2>
+            <!-- Investment Type Selection -->
+<div class="mb-4">
+    <label class="block text-sm font-medium text-gray-300 mb-2">Investment Type</label>
+    <div class="flex space-x-4">
+        <label class="flex items-center">
+            <input type="radio" name="investmentType" value="portfolio" id="portfolioType" class="mr-2 text-blue-500" checked>
+            <span class="text-gray-300">Investment Portfolio</span>
+        </label>
+        <label class="flex items-center">
+            <input type="radio" name="investmentType" value="longterm" id="longtermType" class="mr-2 text-blue-500">
+            <span class="text-gray-300">Long Term Investments</span>
+        </label>
+    </div>
+</div>
+            <form id="investmentForm" class="grid grid-cols-1 md:grid-cols-7 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Item Name</label>
+                    <input type="text" id="itemName" placeholder="e.g., AK-47 | Redline (Field-Tested)" 
+                           class="input-field w-full px-3 py-2 rounded-lg text-white placeholder-gray-500 outline-none" required>
+                </div>
+                <div id="quantityField" class="hidden">
+    <label class="block text-sm font-medium text-gray-300 mb-2">Quantity</label>
+    <input type="number" id="quantity" placeholder="100" min="1" step="1"
+           class="input-field w-full px-3 py-2 rounded-lg text-white placeholder-gray-500 outline-none">
+</div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Buy Price ($)</label>
+                    <input type="number" id="buyPrice" placeholder="0.00" step="0.01" min="0"
+                           class="input-field w-full px-3 py-2 rounded-lg text-white placeholder-gray-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Buy Date</label>
+                    <input type="date" id="buyDate" 
+                           class="input-field w-full px-3 py-2 rounded-lg text-white placeholder-gray-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Sell Price ($)</label>
+                    <input type="number" id="sellPrice" placeholder="0.00" step="0.01" min="0"
+                           class="input-field w-full px-3 py-2 rounded-lg text-white placeholder-gray-500 outline-none">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="btn-primary w-full text-white font-semibold py-2 px-4 rounded-lg">
+                        Add Investment
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Investment Portfolio Section -->
+        <div class="glass-card rounded-2xl p-6 mb-6">
+            <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
+                <div class="flex items-center gap-3">
+                    <button id="toggleInvestmentPortfolio" class="text-2xl transition-transform duration-300">
+                        ▼
+                    </button>
+                    <h2 class="text-xl font-bold gradient-text">Investment Portfolio</h2>
+                </div>
+                <div class="flex space-x-2 flex-wrap gap-2">
+                    <button id="exportCsvBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Export CSV
+                    </button>
+                    <button id="exportExcelBtn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Export Excel
+                    </button>
+                    <input type="file" id="importCsvFile" accept=".csv" class="hidden">
+                    <button id="importCsvBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Import CSV
+                    </button>
+                    <button id="clearAllBtn" class="btn-danger text-white font-semibold py-2 px-4 rounded-lg">
+                        Clear All
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Collapsible Content -->
+            <div id="investmentPortfolioContent" class="transition-all duration-300">
+                <!-- Performance Metrics -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+                    <!-- Total Items -->
+                    <div class="glass-card rounded-xl p-4 metric-card group hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent"></div>
+                        <div class="relative z-10">
+                            <div class="metric-value gradient-text" id="portfolioTotalItems">0</div>
+                            <div class="metric-label">Total Items</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Invested -->
+                    <div class="glass-card rounded-xl p-4 metric-card group hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent"></div>
+                        <div class="relative z-10">
+                            <div class="metric-value text-blue-400" id="portfolioTotalInvested">$0.00</div>
+                            <div class="metric-label">Invested</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Realized -->
+                    <div class="glass-card rounded-xl p-4 metric-card group hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent"></div>
+                        <div class="relative z-10">
+                            <div class="metric-value text-green-400" id="portfolioTotalRealized">$0.00</div>
+                            <div class="metric-label">Realized</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Total P&L -->
+                    <div class="glass-card rounded-xl p-4 metric-card group hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent"></div>
+                        <div class="relative z-10">
+                            <div class="metric-value" id="portfolioTotalPnL">$0.00</div>
+                            <div class="metric-label">Total P&L</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Win Rate -->
+                    <div class="glass-card rounded-xl p-4 metric-card group hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent"></div>
+                        <div class="relative z-10">
+                            <div class="metric-value" id="portfolioWinRate">0%</div>
+                            <div class="metric-label">Win Rate</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Average Return -->
+                    <div class="glass-card rounded-xl p-4 metric-card group hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent"></div>
+                        <div class="relative z-10">
+                            <div class="metric-value" id="portfolioAvgReturn">0%</div>
+                            <div class="metric-label">Avg Return</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- Portfolio Performance Chart -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold gradient-text">Portfolio Performance</h2>
+                            <div class="time-filter">
+                                <button class="time-filter-btn active" data-period="7d">7D</button>
+                                <button class="time-filter-btn" data-period="30d">30D</button>
+                                <button class="time-filter-btn" data-period="90d">90D</button>
+                                <button class="time-filter-btn" data-period="1y">1Y</button>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- P&L Distribution Chart -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <h2 class="text-xl font-bold gradient-text mb-4">P&L Distribution</h2>
+                        <div class="chart-container">
+                            <canvas id="pnlChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Investments Table -->
+                <div class="longterm-table-container">
+                    <table class="longterm-table">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="py-3 px-4 font-semibold text-gray-300">Item</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Buy Price</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Buy Date</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Sell Price</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Sell Date</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">P&L</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Return %</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Status</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="investmentsTable">
+                            <!-- Investments will be populated here -->
+                        </tbody>
+                    </table>
+                    
+                    <!-- Empty state -->
+                    <div id="emptyState" class="text-center py-12 hidden">
+                        <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium text-gray-400 mb-2">No investments yet</h3>
+                        <p class="text-gray-500">Start tracking your CSGOEmpire investments by adding your first item above.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+<!-- Long Term Investments Section -->
+        <div class="glass-card rounded-2xl p-6 mb-6">
+            <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
+                <div class="flex items-center gap-3">
+                    <button id="toggleLongTermInvestments" class="text-2xl transition-transform duration-300">
+                        ▼
+                    </button>
+                    <h2 class="text-xl font-bold gradient-text">Long Term Investments</h2>
+                </div>
+                <div class="flex space-x-2 flex-wrap gap-2">
+                    <button id="exportLongTermCsvBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Export CSV
+                    </button>
+                    <button id="exportLongTermExcelBtn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Export Excel
+                    </button>
+                    <input type="file" id="importLongTermCsvFile" accept=".csv" class="hidden">
+                    <button id="importLongTermCsvBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Import CSV
+                    </button>
+                    <button id="clearAllLongTermBtn" class="btn-danger text-white font-semibold py-2 px-4 rounded-lg">
+                        Clear All
+                    </button>
+                </div>
+            </div>
+            
+            <div id="longTermInvestmentsContent" class="transition-all duration-300">
+                <!-- Long Term Performance Metrics -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <!-- Total Items -->
+                    <div class="glass-card rounded-xl p-4 metric-card group hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent"></div>
+                        <div class="relative z-10">
+                            <div class="metric-value gradient-text" id="longTermTotalItems">0</div>
+                            <div class="metric-label">Total Items</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Holding Value -->
+                    <div class="glass-card rounded-xl p-4 metric-card group hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent"></div>
+                        <div class="relative z-10">
+                            <div class="metric-value text-green-400" id="longTermHoldingValue">$0.00</div>
+                            <div class="metric-label">Holding Value</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Quantity -->
+                    <div class="glass-card rounded-xl p-4 metric-card group hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent"></div>
+                        <div class="relative z-10">
+                            <div class="metric-value text-purple-400" id="longTermTotalQuantity">0</div>
+                            <div class="metric-label">Total Quantity</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Long Term Chart Section -->
+                <div class="glass-card rounded-2xl p-6 mb-6">
+                    <h3 class="text-xl font-bold gradient-text mb-4">Holdings Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="longTermQuantityChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left longterm-table">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="py-3 px-4 font-semibold text-gray-300">Item</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Quantity</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Unit Buy Price</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Total Buy Price</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Buy Date</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Unit Sell Price</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Total Sell Price</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Sell Date</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">P&L</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Return %</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Status</th>
+                                <th class="py-3 px-4 font-semibold text-gray-300">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="longTermInvestmentsTable">
+                            <!-- Long term investments will be populated here -->
+                        </tbody>
+                    </table>
+                    
+                    <!-- Empty state -->
+                    <div id="longTermEmptyState" class="text-center py-12 hidden">
+                        <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium text-gray-400 mb-2">No long term investments yet</h3>
+                        <p class="text-gray-500">Start tracking your bulk investments by adding items with quantities above.</p>
+                    </div>
+                </div>
+            </div>
+        </div>       
+
+    <!-- Weekly Case Drop Stats Section -->
+        <div class="glass-card rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
+                <div class="flex items-center gap-3">
+                    <button id="toggleCaseDropStats" class="text-2xl transition-transform duration-300">
+                        ▼
+                    </button>
+                    <h2 class="text-xl font-bold gradient-text">Weekly Case Drop Stats</h2>
+                </div>
+            <div class="flex space-x-2 flex-wrap gap-2">
+                <button id="addNewYearBtn" class="btn-success text-white font-semibold py-2 px-4 rounded-lg">
+                    Add New Year
+                </button>
+                <button id="exportCaseDropsCsvBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                    Export CSV
+                </button>
+                <button id="exportCaseDropsExcelBtn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                    Export Excel
+                </button>
+                <input type="file" id="importCaseDropsCsvFile" accept=".csv" class="hidden">
+                <button id="importCaseDropsCsvBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                    Import CSV
+                </button>
+            </div>
+        </div>
+
+        <!-- Year Selector -->
+        <div class="mb-4" id="yearSelectorContainer">
+            <!-- Collapsible Content -->
+            <div id="caseDropStatsContent" class="transition-all duration-300">
+                <!-- Year Selector -->
+                <div class="mb-4" id="yearSelectorContainer">
+            <div class="flex items-center space-x-3 mb-3">
+                <span class="text-gray-300 font-medium">Year:</span>
+                <div class="flex space-x-2 overflow-x-auto" id="yearTabs">
+                    <!-- Year tabs will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Month Selector -->
+        <div class="mb-4" id="monthSelectorContainer" style="display: none;">
+            <div class="flex items-center space-x-3 mb-3">
+                <span class="text-gray-300 font-medium">Month:</span>
+                <div class="custom-dropdown" id="monthDropdownContainer">
+                    <button class="dropdown-trigger" id="monthDropdownTrigger">
+                        <span id="selectedMonthText">January</span>
+                        <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                            <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="dropdown-menu hidden" id="monthDropdownMenu">
+                        <!-- Month options will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Week Tabs -->
+        <div class="mb-6" id="weekSelectorContainer" style="display: none;">
+            <div class="flex items-center space-x-3 mb-3">
+                <span class="text-gray-300 font-medium">Week:</span>
+                <div class="flex space-x-2 overflow-x-auto" id="weekTabs">
+                    <!-- Week tabs will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Case Drop Form -->
+        <div class="mb-6" id="caseDropFormContainer" style="display: none;">
+            <h3 class="text-lg font-semibold text-gray-300 mb-4">Add Case Drop</h3>
+            <form id="caseDropForm" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Case Name</label>
+                    <input type="text" id="caseName" placeholder="e.g., Recoil Case" 
+                           class="input-field w-full px-3 py-2 rounded-lg text-white placeholder-gray-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Drop Date</label>
+                    <input type="date" id="dropDate" 
+                           class="input-field w-full px-3 py-2 rounded-lg text-white placeholder-gray-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Price ($)</label>
+                    <input type="number" id="casePrice" placeholder="0.00" step="0.01" min="0"
+                           class="input-field w-full px-3 py-2 rounded-lg text-white placeholder-gray-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Account</label>
+                    <input type="text" id="caseAccount" placeholder="e.g., Main" 
+                           class="input-field w-full px-3 py-2 rounded-lg text-white placeholder-gray-500 outline-none" required>
+                </div>
+            </form>
+            <div class="mt-4">
+                <button type="submit" form="caseDropForm" class="btn-primary text-white font-semibold py-2 px-6 rounded-lg">
+                    Add Case Drop
+                </button>
+            </div>
+        </div>
+
+        <!-- Week Content -->
+        <div id="weekContent">
+            <!-- Week stats and table will be populated here -->
+        </div>
+
+        <!-- Empty state for case drops -->
+        <div id="caseDropsEmptyState" class="text-center py-12 hidden">
+            <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-400 mb-2">No case drops yet</h3>
+            <p class="text-gray-500">Start by selecting a year, month, and week above.</p>
+        </div>
+    </div>
+</div>
+
+
+<!-- Edit Modal -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="glass-card rounded-2xl p-6 modal-content">
+            <h3 class="text-xl font-bold gradient-text mb-4">Edit Investment</h3>
+            <form id="editForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Item Name</label>
+                        <input type="text" id="editItemName" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Buy Price ($)</label>
+                            <input type="number" id="editBuyPrice" step="0.01" min="0" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Buy Date</label>
+                            <input type="date" id="editBuyDate" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Sell Price ($)</label>
+                            <input type="number" id="editSellPrice" step="0.01" min="0" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Sell Date</label>
+                            <input type="date" id="editSellDate" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex space-x-4 mt-6">
+                    <button type="submit" class="btn-success flex-1 text-white font-semibold py-2 px-4 rounded-lg">
+                        Save Changes
+                    </button>
+                    <button type="button" id="cancelEdit" class="bg-gray-600 hover:bg-gray-700 flex-1 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>     
+    </div>
+
+<!-- Edit Long Term Investment Modal -->
+<div id="editLongTermModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="glass-card rounded-2xl p-6 max-w-md w-full mx-4">
+        <h3 class="text-xl font-bold gradient-text mb-4">Edit Long Term Investment</h3>
+        <form id="editLongTermForm">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Item Name</label>
+                    <input type="text" id="editLongTermItemName" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Quantity</label>
+                        <input type="number" id="editLongTermQuantity" min="1" step="1" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Unit Buy Price ($)</label>
+                        <input type="number" id="editLongTermBuyPrice" step="0.01" min="0" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Buy Date</label>
+                    <input type="date" id="editLongTermBuyDate" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Unit Sell Price ($)</label>
+                        <input type="number" id="editLongTermSellPrice" step="0.01" min="0" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Sell Date</label>
+                        <input type="date" id="editLongTermSellDate" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none">
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-4 mt-6">
+                <button type="submit" class="btn-success flex-1 text-white font-semibold py-2 px-4 rounded-lg">
+                    Save Changes
+                </button>
+                <button type="button" id="cancelLongTermEdit" class="bg-gray-600 hover:bg-gray-700 flex-1 text-white font-semibold py-2 px-4 rounded-lg transition">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>     
+</div>    
+
+<!-- Edit Case Drop Modal -->
+    <div id="editCaseDropModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="glass-card rounded-2xl p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold gradient-text mb-4">Edit Case Drop</h3>
+            <form id="editCaseDropForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Case Name</label>
+                        <input type="text" id="editCaseName" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Drop Date</label>
+                            <input type="date" id="editDropDate" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Price ($)</label>
+                            <input type="number" id="editCasePrice" step="0.01" min="0" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Account</label>
+                        <input type="text" id="editCaseAccount" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                    </div>
+                </div>
+                <div class="flex space-x-4 mt-6">
+                    <button type="submit" class="btn-success flex-1 text-white font-semibold py-2 px-4 rounded-lg">
+                        Save Changes
+                    </button>
+                    <button type="button" id="cancelCaseDropEdit" class="bg-gray-600 hover:bg-gray-700 flex-1 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<!-- Add New Week Modal -->
+    <div id="addWeekModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="glass-card rounded-2xl p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold gradient-text mb-4">Add New Week</h3>
+            <form id="addWeekForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Week Name</label>
+                        <input type="text" id="newWeekName" placeholder="e.g., Week 4" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Start Date (Wednesday)</label>
+                            <input type="date" id="newWeekStartDate" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">End Date (Tuesday)</label>
+                            <input type="date" id="newWeekEndDate" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-400">
+                        <p>💡 Tip: Typically Wednesday to Tuesday (7 days)</p>
+                    </div>
+                </div>
+                <div class="flex space-x-4 mt-6">
+                    <button type="submit" class="btn-success flex-1 text-white font-semibold py-2 px-4 rounded-lg">
+                        Create Week
+                    </button>
+                    <button type="button" id="cancelAddWeek" class="bg-gray-600 hover:bg-gray-700 flex-1 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add New Year Modal -->
+    <div id="addYearModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="glass-card rounded-2xl p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold gradient-text mb-4">Add New Year</h3>
+            <form id="addYearForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Year</label>
+                        <input type="number" id="newYear" placeholder="2025" min="2020" max="2030" class="input-field w-full px-3 py-2 rounded-lg text-white outline-none" required>
+                    </div>
+                    <div class="text-sm text-gray-400">
+                        <p>💡 This will auto-generate all 12 months and ~52 weeks</p>
+                        <p>📅 Weeks run Wednesday to Tuesday</p>
+                    </div>
+                </div>
+                <div class="flex space-x-4 mt-6">
+                    <button type="submit" class="btn-success flex-1 text-white font-semibold py-2 px-4 rounded-lg">
+                        Create Year
+                    </button>
+                    <button type="button" id="cancelAddYear" class="bg-gray-600 hover:bg-gray-700 flex-1 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="tracker-complete.js"></script>
+
+</body>
+
+</html>

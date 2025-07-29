@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EMPIRE ENHANCED</title>
     <style>
+        /**
+         * ============================================================================
+         * EMPIRE ENHANCED CHROME EXTENSION - POPUP INTERFACE STYLES
+         * ============================================================================
+         * 
+         * Comprehensive styling for the Empire Enhanced extension popup.
+         * Features multiple themes, animations, and responsive design.
+         * 
+         * @version 2.0.0
+         * @author Empire Enhanced Team
+         */
+
+        /* ============================================================================
+           GLOBAL RESET AND BASE STYLES
+           ============================================================================ */
+        
         * {
             margin: 0;
             padding: 0;
@@ -23,7 +39,11 @@
             transition: all 0.3s ease;
         }
 
-        /* ===== THEME 1: NEBULA (Default) ===== */
+        /* ============================================================================
+           THEME SYSTEM - BACKGROUND GRADIENTS AND ANIMATIONS
+           ============================================================================ */
+        
+        /* === THEME 1: NEBULA (Default) === */
         body.theme-nebula {
             background: linear-gradient(135deg, #0a0f1c 0%, #1a1f2e 25%, #2a2f3e 50%, #1a1f2e 75%, #0a0f1c 100%);
         }
@@ -49,7 +69,7 @@
             50% { opacity: 0.8; }
         }
 
-        /* ===== THEME 2: SHOOTING STAR ===== */
+        /* === THEME 2: SHOOTING STAR === */
         body.theme-shooting-star {
             background: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 35%, #0f0f1e 100%);
             overflow: hidden;
@@ -81,7 +101,7 @@
             to { transform: translateY(-200px); }
         }
 
-        /* Shooting star elements */
+        /* === SHOOTING STAR ANIMATION ELEMENTS === */
         .shooting-star {
             position: fixed;
             width: 0px;
@@ -117,13 +137,25 @@
             left: 6%;
         }
 
+        /* Hide shooting star elements when Nebula theme is active */
+        body.theme-nebula .shooting-star {
+            display: none !important;
+        }
+
+        /* ============================================================================
+           LAYOUT CONTAINERS
+           ============================================================================ */
+        
         .container {
             padding: 24px;
             position: relative;
             z-index: 1;
         }
 
-        /* Premium header */
+        /* ============================================================================
+           HEADER COMPONENT
+           ============================================================================ */
+        
         .header {
             text-align: center;
             margin-bottom: 28px;
@@ -167,8 +199,64 @@
             text-transform: uppercase;
         }
 
-        /* API Key Section - Now Toggleable */
+        /* ============================================================================
+           GLASS MORPHISM COMPONENT BASE STYLES
+           ============================================================================ */
+        
+        /* Base glass morphism card styling used across multiple components */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 22px;
+            margin-bottom: 22px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Top border highlight effect */
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.4), transparent);
+        }
+
+        /* Hover effects for interactive glass cards */
+        .glass-card:hover {
+            border-color: rgba(102, 126, 234, 0.25);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* Glass card header styling */
+        .glass-card h3 {
+            margin: 0 0 22px 0;
+            font-size: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
+        /* ============================================================================
+           API KEY CONFIGURATION SECTION
+           ============================================================================ */
+        
         .api-key-toggle {
+            cursor: pointer;
+            /* Remove the glass-card inheritance to maintain original styling */
             background: rgba(255, 255, 255, 0.06);
             backdrop-filter: blur(28px);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -178,7 +266,6 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             position: relative;
             overflow: hidden;
-            cursor: pointer;
         }
 
         .api-key-toggle::before {
@@ -242,6 +329,7 @@
             transform: rotate(180deg);
         }
 
+        /* Collapsible content */
         .api-key-content {
             max-height: 0;
             overflow: hidden;
@@ -254,11 +342,27 @@
             padding: 0 22px 22px 22px;
         }
 
-        .api-form-group {
+        /* ============================================================================
+           FORM COMPONENTS
+           ============================================================================ */
+        
+        /* Form group containers */
+        .api-form-group,
+        .form-group {
             margin-bottom: 16px;
         }
 
-        .api-form-label {
+        .form-group {
+            flex: 1;
+        }
+
+        .form-group.narrow {
+            flex: 0 0 75px;
+        }
+
+        /* Form labels */
+        .api-form-label,
+        .form-label {
             display: block;
             font-size: 12px;
             color: #94a3b8;
@@ -266,9 +370,13 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            white-space: nowrap;
+            line-height: 1.2;
         }
 
-        .api-form-input {
+        /* Form inputs */
+        .api-form-input,
+        .form-input {
             width: 100%;
             background: rgba(30, 32, 41, 0.9);
             border: 1px solid rgba(255, 255, 255, 0.12);
@@ -280,18 +388,21 @@
             transition: all 0.3s ease;
         }
 
-        .api-form-input:focus {
+        .api-form-input:focus,
+        .form-input:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
             background: rgba(30, 32, 41, 1);
         }
 
-        .api-form-input::placeholder {
+        .api-form-input::placeholder,
+        .form-input::placeholder {
             color: #64748b;
             font-style: italic;
         }
 
+        /* Select inputs */
         .api-form-select {
             width: 100%;
             background: rgba(30, 32, 41, 0.9);
@@ -311,8 +422,28 @@
             background: rgba(30, 32, 41, 1);
         }
 
-        /* Control panels */
-        .control-panel, .settings-section, .theme-selector, .keychain-filter, .item-target-list, .server-info, .status {
+        /* Form rows for layout */
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: end;
+        }
+
+        /* ============================================================================
+           CONTROL PANEL COMPONENTS
+           ============================================================================ */
+        
+        /* Apply glass card styles to all panel types */
+        .control-panel,
+        .settings-section,
+        .theme-selector,
+        .keychain-filter,
+        .item-target-list,
+        .server-info,
+        .status,
+        .support-section {
+            /* Inherit from glass-card */
             background: rgba(255, 255, 255, 0.06);
             backdrop-filter: blur(28px);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -325,7 +456,15 @@
             overflow: hidden;
         }
 
-        .control-panel::before, .settings-section::before, .theme-selector::before, .keychain-filter::before, .item-target-list::before, .server-info::before, .status::before {
+        /* Top border highlight for all panels */
+        .control-panel::before,
+        .settings-section::before,
+        .theme-selector::before,
+        .keychain-filter::before,
+        .item-target-list::before,
+        .server-info::before,
+        .status::before,
+        .support-section::before {
             content: '';
             position: absolute;
             top: 0;
@@ -335,13 +474,27 @@
             background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.4), transparent);
         }
 
-        .control-panel:hover, .settings-section:hover, .theme-selector:hover, .keychain-filter:hover, .item-target-list:hover, .server-info:hover {
+        /* Hover effects for all panels */
+        .control-panel:hover,
+        .settings-section:hover,
+        .theme-selector:hover,
+        .keychain-filter:hover,
+        .item-target-list:hover,
+        .server-info:hover,
+        .support-section:hover {
             border-color: rgba(102, 126, 234, 0.25);
             box-shadow: 0 12px 40px rgba(102, 126, 234, 0.15);
             transform: translateY(-2px);
         }
 
-        .control-panel h3, .settings-section h3, .theme-selector h3, .keychain-filter h3, .item-target-list h3, .server-info h3 {
+        /* Panel headers */
+        .control-panel h3,
+        .settings-section h3,
+        .theme-selector h3,
+        .keychain-filter h3,
+        .item-target-list h3,
+        .server-info h3,
+        .support-section h3 {
             margin: 0 0 22px 0;
             font-size: 15px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -355,6 +508,7 @@
             text-transform: uppercase;
         }
 
+        /* Control rows for settings */
         .control-row {
             display: flex;
             justify-content: space-between;
@@ -382,7 +536,10 @@
             opacity: 0.8;
         }
 
-        /* Toggle switches */
+        /* ============================================================================
+           TOGGLE SWITCH COMPONENT
+           ============================================================================ */
+        
         .toggle-switch {
             position: relative;
             width: 56px;
@@ -419,7 +576,10 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 2px 5px rgba(0, 0, 0, 0.15);
         }
 
-        /* Tab system */
+        /* ============================================================================
+           TAB SYSTEM COMPONENT
+           ============================================================================ */
+        
         .tabs {
             display: flex;
             margin-bottom: 22px;
@@ -455,6 +615,18 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ============================================================================
+           STATUS AND STATISTICS COMPONENTS
+           ============================================================================ */
+        
         /* Status section */
         .status {
             text-align: center;
@@ -496,7 +668,7 @@
             box-shadow: 0 0 10px rgba(100, 116, 139, 0.5);
         }
 
-        /* Stats grid */
+        /* Statistics grid */
         .stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -557,7 +729,10 @@
             letter-spacing: 1px;
         }
 
-        /* Theme options */
+        /* ============================================================================
+           THEME SELECTION COMPONENT
+           ============================================================================ */
+        
         .theme-options {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -620,66 +795,14 @@
             line-height: 1.3;
         }
 
-        /* Form styles */
-        .add-item-form {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 14px;
-            padding: 18px;
-            margin-bottom: 18px;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 14px;
-            align-items: end;
-        }
-
-        .form-group {
-            flex: 1;
-        }
-
-        .form-group.narrow {
-            flex: 0 0 80px;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 12px;
-            color: #94a3b8;
-            margin-bottom: 6px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .form-input {
-            width: 100%;
-            background: rgba(30, 32, 41, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 10px;
-            color: white;
-            padding: 12px 14px;
-            font-size: 13px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
-            background: rgba(30, 32, 41, 1);
-        }
-
-        .form-input::placeholder {
-            color: #64748b;
-            font-style: italic;
-        }
-
-        /* Button styles */
-        .add-item-btn, .premium-test-btn, .button {
+        /* ============================================================================
+           BUTTON COMPONENTS
+           ============================================================================ */
+        
+        /* Primary buttons */
+        .add-item-btn,
+        .premium-test-btn,
+        .button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             border-radius: 10px;
@@ -695,11 +818,14 @@
             white-space: nowrap;
         }
 
-        .add-item-btn:hover, .premium-test-btn:hover, .button:hover {
+        .add-item-btn:hover,
+        .premium-test-btn:hover,
+        .button:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
         }
 
+        /* Premium test button styling */
         .premium-test-btn {
             width: 100%;
             padding: 16px 20px;
@@ -715,6 +841,7 @@
             box-shadow: 0 8px 30px rgba(102, 126, 234, 0.5);
         }
 
+        /* Secondary buttons */
         .button.secondary {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -728,31 +855,7 @@
             box-shadow: 0 8px 30px rgba(255, 255, 255, 0.08);
         }
 
-        .disconnect-btn {
-            background: rgba(239, 68, 68, 0.12);
-            border: 1px solid rgba(239, 68, 68, 0.25);
-            color: #f87171;
-            border-radius: 12px;
-            padding: 12px 20px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 100%;
-            margin-bottom: 12px;
-        }
-
-        .disconnect-btn:hover {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: rgba(239, 68, 68, 0.4);
-            transform: translateY(-2px);
-        }
-
-        /* Connect button styling */
+        /* Connect button */
         .connect-btn {
             background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
             border: none;
@@ -778,6 +881,32 @@
             box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
         }
 
+        /* Disconnect button */
+        .disconnect-btn {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: #f87171;
+            border-radius: 12px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .disconnect-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Premium action buttons (for features grid) */
         .premium-action-btn {
             background: rgba(255, 255, 255, 0.06);
             backdrop-filter: blur(20px);
@@ -805,7 +934,33 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
-        /* Item list styles */
+        /* ============================================================================
+           ITEM TARGET LIST COMPONENT
+           ============================================================================ */
+        
+        /* Compact styling for item target list */
+        .item-target-list {
+            padding: 18px !important;
+            margin-bottom: 18px !important;
+        }
+
+        .add-item-form {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+
+        .items-count {
+            font-size: 12px;
+            color: #94a3b8;
+            text-align: center;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        /* Items list container */
         .items-list {
             max-height: 300px;
             overflow-y: auto;
@@ -836,30 +991,44 @@
         }
 
         .item-keyword {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #e2e8f0;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             word-break: break-word;
         }
 
         .item-wear-range {
-            font-size: 12px;
+            font-size: 11px;
             color: #94a3b8;
             font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
         }
 
-        .wear-badge {
+        .item-wear-range:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Badge styling for item filters */
+        .wear-badge,
+        .small-badge {
             background: rgba(102, 126, 234, 0.2);
             border: 1px solid rgba(102, 126, 234, 0.3);
             color: #667eea;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
-            margin-left: 8px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 8px;
+            font-weight: 500;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 65px;
+            text-align: center;
         }
 
+        /* Remove item button */
         .remove-item-btn {
             background: rgba(239, 68, 68, 0.12);
             border: 1px solid rgba(239, 68, 68, 0.25);
@@ -883,6 +1052,7 @@
             transform: scale(1.05);
         }
 
+        /* Empty state */
         .empty-state {
             text-align: center;
             padding: 30px 20px;
@@ -891,15 +1061,10 @@
             font-style: italic;
         }
 
-        .items-count {
-            font-size: 12px;
-            color: #94a3b8;
-            text-align: center;
-            margin-bottom: 16px;
-            font-weight: 500;
-        }
-
-        /* Range input styles */
+        /* ============================================================================
+           RANGE INPUT COMPONENTS
+           ============================================================================ */
+        
         .range-input {
             display: flex;
             align-items: center;
@@ -946,7 +1111,11 @@
             font-weight: 500;
         }
 
-        /* Keychain filter styles */
+        /* ============================================================================
+           KEYCHAIN FILTER COMPONENTS
+           ============================================================================ */
+        
+        /* Percentage slider */
         .percentage-slider {
             margin-bottom: 18px;
         }
@@ -989,6 +1158,7 @@
             margin-top: 8px;
         }
 
+        /* Keychain list toggle */
         .keychain-list-toggle {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -1019,6 +1189,7 @@
             transform: rotate(180deg);
         }
 
+        /* Keychain list container */
         .keychain-list {
             max-height: 0;
             overflow: hidden;
@@ -1071,6 +1242,7 @@
             border-color: rgba(102, 126, 234, 0.5);
         }
 
+        /* Keychain items */
         .keychain-items {
             padding: 15px 18px;
             display: grid;
@@ -1094,21 +1266,11 @@
             border-color: rgba(255, 255, 255, 0.15);
         }
 
-        .keychain-item.red {
-            border-left: 3px solid #ef4444;
-        }
-
-        .keychain-item.pink {
-            border-left: 3px solid #ec4899;
-        }
-
-        .keychain-item.purple {
-            border-left: 3px solid #a855f7;
-        }
-
-        .keychain-item.blue {
-            border-left: 3px solid #3b82f6;
-        }
+        /* Color coding for keychain rarity */
+        .keychain-item.red { border-left: 3px solid #ef4444; }
+        .keychain-item.pink { border-left: 3px solid #ec4899; }
+        .keychain-item.purple { border-left: 3px solid #a855f7; }
+        .keychain-item.blue { border-left: 3px solid #3b82f6; }
 
         .keychain-checkbox {
             margin-right: 12px;
@@ -1156,23 +1318,87 @@
             opacity: 0.8;
         }
 
-        .keychain-item.red .keychain-price {
-            color: #ef4444;
+        /* Color-coded prices by rarity */
+        .keychain-item.red .keychain-price { color: #ef4444; }
+        .keychain-item.pink .keychain-price { color: #ec4899; }
+        .keychain-item.purple .keychain-price { color: #a855f7; }
+        .keychain-item.blue .keychain-price { color: #3b82f6; }
+
+        /* ============================================================================
+           SUPPORT SECTION COMPONENT
+           ============================================================================ */
+        
+        .support-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
         }
 
-        .keychain-item.pink .keychain-price {
-            color: #ec4899;
+        .support-btn {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            color: #e2e8f0;
+            padding: 16px 12px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
 
-        .keychain-item.purple .keychain-price {
-            color: #a855f7;
+        .support-btn:hover {
+            transform: translateY(-3px);
+            border-color: rgba(102, 126, 234, 0.3);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            color: #e2e8f0;
         }
 
-        .keychain-item.blue .keychain-price {
-            color: #3b82f6;
+        .support-icon {
+            width: 24px;
+            height: 24px;
+            opacity: 0.9;
+            transition: all 0.3s ease;
         }
 
-        /* Error/success messages */
+        .support-btn:hover .support-icon {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        /* GitHub button specific styling */
+        .github-btn:hover {
+            border-color: rgba(88, 166, 255, 0.4);
+            box-shadow: 0 8px 30px rgba(88, 166, 255, 0.3);
+        }
+
+        .github-btn .support-icon {
+            filter: brightness(1.2);
+        }
+
+        /* Coffee button specific styling */
+        .coffee-btn:hover {
+            border-color: rgba(255, 221, 51, 0.4);
+            box-shadow: 0 8px 30px rgba(255, 221, 51, 0.3);
+        }
+
+        .coffee-btn .support-icon {
+            filter: sepia(1) saturate(2) hue-rotate(35deg) brightness(1.1);
+        }
+
+        /* ============================================================================
+           MESSAGE AND FEEDBACK COMPONENTS
+           ============================================================================ */
+        
         .error {
             background: rgba(239, 68, 68, 0.12);
             border: 1px solid rgba(239, 68, 68, 0.25);
@@ -1195,14 +1421,10 @@
             font-weight: 500;
         }
 
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
+        /* ============================================================================
+           ICON COMPONENTS
+           ============================================================================ */
+        
         .icon {
             width: 18px;
             height: 18px;
@@ -1222,7 +1444,17 @@
             opacity: 0.8;
         }
 
-        /* Footer */
+        .premium-crown-small {
+            width: 16px;
+            height: 16px;
+            filter: drop-shadow(0 1px 4px rgba(102, 126, 234, 0.4));
+            animation: float 4s ease-in-out infinite;
+        }
+
+        /* ============================================================================
+           FOOTER COMPONENT
+           ============================================================================ */
+        
         .footer {
             text-align: center;
             font-size: 11px;
@@ -1234,14 +1466,10 @@
             letter-spacing: 0.4px;
         }
 
-        .premium-crown-small {
-            width: 16px;
-            height: 16px;
-            filter: drop-shadow(0 1px 4px rgba(102, 126, 234, 0.4));
-            animation: float 4s ease-in-out infinite;
-        }
-
-        /* Custom scrollbar */
+        /* ============================================================================
+           SCROLLBAR CUSTOMIZATION
+           ============================================================================ */
+        
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -1259,7 +1487,11 @@
             background: rgba(102, 126, 234, 0.6);
         }
 
-        /* Shooting star theme overrides */
+        /* ============================================================================
+           SHOOTING STAR THEME OVERRIDES
+           ============================================================================ */
+        
+        /* Apply shooting star theme colors to all components */
         body.theme-shooting-star .control-panel,
         body.theme-shooting-star .settings-section,
         body.theme-shooting-star .server-info,
@@ -1268,7 +1500,8 @@
         body.theme-shooting-star .theme-selector,
         body.theme-shooting-star .item-target-list,
         body.theme-shooting-star .keychain-filter,
-        body.theme-shooting-star .api-key-toggle {
+        body.theme-shooting-star .api-key-toggle,
+        body.theme-shooting-star .support-section {
             background: rgba(20, 20, 40, 0.85);
             border: 1px solid rgba(135, 206, 235, 0.3);
             box-shadow: 0 8px 32px rgba(135, 206, 235, 0.15);
@@ -1282,11 +1515,13 @@
         body.theme-shooting-star .theme-selector:hover,
         body.theme-shooting-star .item-target-list:hover,
         body.theme-shooting-star .keychain-filter:hover,
-        body.theme-shooting-star .api-key-toggle:hover {
+        body.theme-shooting-star .api-key-toggle:hover,
+        body.theme-shooting-star .support-section:hover {
             border-color: rgba(135, 206, 235, 0.5);
             box-shadow: 0 12px 40px rgba(135, 206, 235, 0.25);
         }
 
+        /* Shooting star theme gradient overrides */
         body.theme-shooting-star .tab.active {
             background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
             box-shadow: 0 4px 15px rgba(135, 206, 235, 0.4);
@@ -1305,35 +1540,26 @@
             box-shadow: 0 8px 30px rgba(135, 206, 235, 0.6);
         }
 
-        body.theme-shooting-star .header h1 {
-            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        body.theme-shooting-star .stat-value {
-            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        body.theme-shooting-star .toggle-switch.active {
-            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
-            box-shadow: 0 0 24px rgba(135, 206, 235, 0.5);
-        }
-
+        /* Text gradient overrides for shooting star theme */
+        body.theme-shooting-star .header h1,
+        body.theme-shooting-star .stat-value,
         body.theme-shooting-star .control-panel h3,
         body.theme-shooting-star .settings-section h3,
         body.theme-shooting-star .theme-selector h3,
         body.theme-shooting-star .item-target-list h3,
         body.theme-shooting-star .keychain-filter h3,
-        body.theme-shooting-star .api-key-header h3 {
+        body.theme-shooting-star .api-key-header h3,
+        body.theme-shooting-star .support-section h3 {
             background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+
+        /* Component-specific shooting star overrides */
+        body.theme-shooting-star .toggle-switch.active {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            box-shadow: 0 0 24px rgba(135, 206, 235, 0.5);
         }
 
         body.theme-shooting-star .wear-badge {
@@ -1361,160 +1587,34 @@
             background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
             border-color: #87ceeb;
         }
-
-        /* Hide shooting star elements when Nebula theme is active */
-        body.theme-nebula .shooting-star {
-            display: none !important;
-        }
-        
-/* Support Section Styling */
-.support-section {
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(28px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 18px;
-    padding: 22px;
-    margin-bottom: 22px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    position: relative;
-    overflow: hidden;
-}
-
-.support-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.4), transparent);
-}
-
-.support-section:hover {
-    border-color: rgba(102, 126, 234, 0.25);
-    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.15);
-    transform: translateY(-2px);
-}
-
-.support-section h3 {
-    margin: 0 0 22px 0;
-    font-size: 15px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    display: flex;
-    align-items: center;
-    font-weight: 700;
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-}
-
-.support-buttons {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-}
-
-.support-btn {
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 12px;
-    color: #e2e8f0;
-    padding: 16px 12px;
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 600;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
-
-.support-btn:hover {
-    transform: translateY(-3px);
-    border-color: rgba(102, 126, 234, 0.3);
-    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.2);
-    background: rgba(255, 255, 255, 0.1);
-    text-decoration: none;
-    color: #e2e8f0;
-}
-
-.support-icon {
-    width: 24px;
-    height: 24px;
-    opacity: 0.9;
-    transition: all 0.3s ease;
-}
-
-.support-btn:hover .support-icon {
-    opacity: 1;
-    transform: scale(1.1);
-}
-
-/* GitHub button specific styling */
-.github-btn:hover {
-    border-color: rgba(88, 166, 255, 0.4);
-    box-shadow: 0 8px 30px rgba(88, 166, 255, 0.3);
-}
-
-.github-btn .support-icon {
-    filter: brightness(1.2);
-}
-
-/* Coffee button specific styling */
-.coffee-btn:hover {
-    border-color: rgba(255, 221, 51, 0.4);
-    box-shadow: 0 8px 30px rgba(255, 221, 51, 0.3);
-}
-
-.coffee-btn .support-icon {
-    filter: sepia(1) saturate(2) hue-rotate(35deg) brightness(1.1);
-}
-
-/* Shooting star theme overrides */
-body.theme-shooting-star .support-section {
-    background: rgba(20, 20, 40, 0.85);
-    border: 1px solid rgba(135, 206, 235, 0.3);
-    box-shadow: 0 8px 32px rgba(135, 206, 235, 0.15);
-}
-
-body.theme-shooting-star .support-section:hover {
-    border-color: rgba(135, 206, 235, 0.5);
-    box-shadow: 0 12px 40px rgba(135, 206, 235, 0.25);
-}
-
-body.theme-shooting-star .support-section h3 {
-    background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-
     </style>
-    <!--End of style seciton-->
 </head>
+
 <body class="theme-nebula">
-    <!-- Shooting stars -->
+    <!-- ============================================================================
+         SHOOTING STAR ANIMATION ELEMENTS
+         ============================================================================ -->
     <div class="shooting-star"></div>
     
+    <!-- ============================================================================
+         MAIN CONTAINER
+         ============================================================================ -->
     <div class="container">
+        <!-- ============================================================================
+             HEADER SECTION
+             ============================================================================ -->
         <div class="header">
             <h1>
+                <!-- Premium Crown SVG with Theme-Aware Gradients -->
                 <svg class="premium-crown" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <defs>
+                        <!-- Gradient for Nebula Theme -->
                         <linearGradient id="crownGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
                             <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
                             <stop offset="100%" style="stop-color:#36d1dc;stop-opacity:1" />
                         </linearGradient>
+                        <!-- Gradient for Shooting Star Theme -->
                         <linearGradient id="crownGradientStar" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" style="stop-color:#4a90e2;stop-opacity:1" />
                             <stop offset="50%" style="stop-color:#87ceeb;stop-opacity:1" />
@@ -1532,7 +1632,9 @@ body.theme-shooting-star .support-section h3 {
             <div class="subtitle">Native WebSocket Edition</div>
         </div>
 
-        <!-- Toggleable API Key Configuration Section -->
+        <!-- ============================================================================
+             API KEY CONFIGURATION SECTION (Toggleable)
+             ============================================================================ -->
         <div class="api-key-toggle" id="apiKeyToggle">
             <div class="api-key-header">
                 <h3>
@@ -1550,6 +1652,7 @@ body.theme-shooting-star .support-section h3 {
                 </div>
             </div>
             
+            <!-- Collapsible API Configuration Form -->
             <div class="api-key-content" id="apiKeyContent">
                 <div class="api-form-group">
                     <label class="api-form-label">API Key</label>
@@ -1573,13 +1676,16 @@ body.theme-shooting-star .support-section h3 {
                     Save & Connect
                 </button>
                 
+                <!-- API Key Help Text -->
                 <div style="font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.4;">
                     <strong>Get your API key:</strong> Go to <a href="https://csgoempire.com/trading/apikey" target="_blank" style="color: #667eea;">csgoempire.com/trading/apikey</a> and create a new API key.
                 </div>
             </div>
         </div>
 
-        <!-- Premium Controls -->
+        <!-- ============================================================================
+             MAIN CONTROLS PANEL
+             ============================================================================ -->
         <div class="control-panel">
             <h3>
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1587,6 +1693,8 @@ body.theme-shooting-star .support-section h3 {
                 </svg>
                 Controls
             </h3>
+            
+            <!-- Monitoring Toggle -->
             <div class="control-row">
                 <div class="control-label">
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1597,6 +1705,8 @@ body.theme-shooting-star .support-section h3 {
                 </div>
                 <div class="toggle-switch active" id="monitoringToggle"></div>
             </div>
+            
+            <!-- Sound Toggle -->
             <div class="control-row">
                 <div class="control-label">
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1607,6 +1717,8 @@ body.theme-shooting-star .support-section h3 {
                 </div>
                 <div class="toggle-switch active" id="soundToggle"></div>
             </div>
+            
+            <!-- Site Theming Toggle -->
             <div class="control-row">
                 <div class="control-label">
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1619,17 +1731,25 @@ body.theme-shooting-star .support-section h3 {
             </div>
         </div>
 
+        <!-- ============================================================================
+             TAB NAVIGATION SYSTEM
+             ============================================================================ -->
         <div class="tabs">
             <button class="tab active" data-tab="status">Status</button>
             <button class="tab" data-tab="settings">Settings</button>
         </div>
 
+        <!-- ============================================================================
+             STATUS TAB CONTENT
+             ============================================================================ -->
         <div id="statusTab" class="tab-content active">
+            <!-- Connection Status Display -->
             <div class="status">
                 <span class="status-indicator" id="statusIndicator"></span>
                 <span id="statusText">Checking connection...</span>
             </div>
 
+            <!-- Statistics Grid -->
             <div class="stats">
                 <div class="stat-card">
                     <div class="stat-value" id="keychainsFound">0</div>
@@ -1641,7 +1761,7 @@ body.theme-shooting-star .support-section h3 {
                 </div>
             </div>
 
-            <!-- Theme selector -->
+            <!-- Theme Selection Component -->
             <div class="theme-selector">
                 <h3>
                     <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1665,11 +1785,14 @@ body.theme-shooting-star .support-section h3 {
                 </div>
             </div>
 
+            <!-- Error Message Display -->
             <div id="errorMessage" class="error" style="display: none;">
                 WebSocket disconnected! Please check your API key and connection.
             </div>
 
+            <!-- Action Buttons Section -->
             <div id="actionButtons">
+                <!-- Test Notification Button -->
                 <div style="margin-bottom: 20px;">
                     <button class="premium-test-btn" id="testNotification">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1679,6 +1802,7 @@ body.theme-shooting-star .support-section h3 {
                         Test Notification
                     </button>
                     
+                    <!-- Feature Buttons Grid -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                         <button class="premium-action-btn" id="viewHistory">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.9;">
@@ -1690,17 +1814,16 @@ body.theme-shooting-star .support-section h3 {
                             <span style="font-size: 12px; text-align: center; line-height: 1.3;">View History</span>
                         </button>
                         
-                        <button class="premium-action-btn" id="openCSGOEmpire">
+                        <button class="premium-action-btn" id="openTracker">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.9;">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                                <polyline points="15,3 21,3 21,9"/>
-                                <line x1="10" y1="14" x2="21" y2="3"/>
+                                <line x1="12" y1="1" x2="12" y2="23"/>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                             </svg>
-                            <span style="font-size: 12px; text-align: center; line-height: 1.3;">Open Empire</span>
+                            <span style="font-size: 12px; text-align: center; line-height: 1.3;">Portfolio Tracker</span>
                         </button>
                     </div>
                     
-                    <!-- Dynamic Connect/Disconnect buttons -->
+                    <!-- Dynamic Connect/Disconnect Buttons -->
                     <button class="connect-btn" id="connectBtn" style="display: none;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M9 12l2 2 4-4"/>
@@ -1722,42 +1845,42 @@ body.theme-shooting-star .support-section h3 {
                 </div>
             </div>
 
+            <!-- WebSocket Information Panel -->
             <div class="server-info">
                 <h3>WebSocket Information</h3>
                 <p><strong>Status:</strong> <span id="serverStatus">Unknown</span></p>
                 <p><strong>Domain:</strong> <span id="currentDomain">csgoempire.com</span></p>
                 <p><strong>Last Connection:</strong> <span id="lastConnection">Never</span></p>
             </div>
-        
 
-<!-- Support Section -->
-<div class="support-section">
-    <h3>
-        <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-        LINKS :)
-    </h3>
-    
-    <div class="support-buttons">
-        <a href="https://github.com/Sadat41/Empire-Enhanced" target="_blank" class="support-btn github-btn">
-            <!-- Option 1: Using your downloaded GitHub icon -->
-            <img src="icons/github-icon.png" alt="GitHub" class="support-icon" />        
-            <span>View on GitHub</span>
-        </a>
-        
-        <a href="https://coff.ee/sadat_41" target="_blank" class="support-btn coffee-btn">
-            <!-- Option 1: Using your downloaded Coffee icon -->
-            <img src="icons/coffee-icon.png" alt="Buy Me A Coffee" class="support-icon" />      
-            <span>Buy Me A Coffee</span>
-        </a>
-    </div>
-</div>
+            <!-- Support Links Section -->
+            <div class="support-section">
+                <h3>
+                    <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    LINKS :)
+                </h3>
+                
+                <div class="support-buttons">
+                    <a href="https://github.com/Sadat41/Empire-Enhanced" target="_blank" class="support-btn github-btn">
+                        <img src="icons/github-icon.png" alt="GitHub" class="support-icon" />
+                        <span>View on GitHub</span>
+                    </a>
+                    
+                    <a href="https://coff.ee/sadat_41" target="_blank" class="support-btn coffee-btn">
+                        <img src="icons/coffee-icon.png" alt="Buy Me A Coffee" class="support-icon" />
+                        <span>Buy Me A Coffee</span>
+                    </a>
+                </div>
+            </div>
+        </div>
 
-</div> 
-        <!-- Settings Tab -->      
+        <!-- ============================================================================
+             SETTINGS TAB CONTENT
+             ============================================================================ -->
         <div id="settingsTab" class="tab-content">
-            <!-- Item Target List Section -->
+            <!-- Item Target List Management -->
             <div class="item-target-list">
                 <h3>
                     <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1768,7 +1891,9 @@ body.theme-shooting-star .support-section h3 {
                     Item Target List
                 </h3>
                 
+                <!-- Add Item Form -->
                 <div class="add-item-form">
+                    <!-- Item Name Input -->
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Item Keyword</label>
@@ -1781,6 +1906,8 @@ body.theme-shooting-star .support-section h3 {
                             Add
                         </button>
                     </div>
+                    
+                    <!-- Float Range Inputs -->
                     <div class="form-row">
                         <div class="form-group narrow">
                             <label class="form-label">Min Float</label>
@@ -1796,12 +1923,48 @@ body.theme-shooting-star .support-section h3 {
                             </span>
                         </div>
                     </div>
+
+                    <!-- Percentage Difference Inputs -->
+                    <div class="form-row">
+                        <div class="form-group narrow">
+                            <label class="form-label">Min % Diff</label>
+                            <input type="number" class="form-input" id="minPercentDiff" placeholder="-50" step="1" />
+                        </div>
+                        <div class="form-group narrow">
+                            <label class="form-label">Max % Diff</label>
+                            <input type="number" class="form-input" id="maxPercentDiff" placeholder="5" step="1" />
+                        </div>
+                        <div class="form-group">
+                            <span style="font-size: 12px; color: #64748b; font-style: italic; display: block; margin-top: 20px;">
+                                Leave % diff fields empty to match any percentage
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Price Range Inputs -->
+                    <div class="form-row">
+                        <div class="form-group narrow">
+                            <label class="form-label">Min Price</label>
+                            <input type="number" class="form-input" id="minPrice" placeholder="0" step="0.01" min="0" />
+                        </div>
+                        <div class="form-group narrow">
+                            <label class="form-label">Max Price</label>
+                            <input type="number" class="form-input" id="maxPrice" placeholder="1000" step="0.01" min="0" />
+                        </div>
+                        <div class="form-group">
+                            <span style="font-size: 12px; color: #64748b; font-style: italic; display: block; margin-top: 20px;">
+                                Leave price fields empty to match any market value
+                            </span>
+                        </div>
+                    </div>
                 </div>
                 
+                <!-- Items Counter -->
                 <div class="items-count" id="itemsCount">
                     0 items being monitored
                 </div>
                 
+                <!-- Items List Display -->
                 <div class="items-list" id="itemsList">
                     <div class="empty-state">
                         No items added yet. Add keywords above to start monitoring specific items.
@@ -1809,7 +1972,7 @@ body.theme-shooting-star .support-section h3 {
                 </div>
             </div>
 
-            <!-- Price Filter Settings -->
+            <!-- Price Filter Range Settings -->
             <div class="settings-section">
                 <h3>
                     <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1845,7 +2008,7 @@ body.theme-shooting-star .support-section h3 {
                 </button>
             </div>
 
-            <!-- Keychain Filter Section -->
+            <!-- Keychain Filter Configuration -->
             <div class="keychain-filter">
                 <h3>
                     <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1854,17 +2017,20 @@ body.theme-shooting-star .support-section h3 {
                     Keychain Filter
                 </h3>
                 
+                <!-- Percentage Slider -->
                 <div class="percentage-slider">
                     <label>Minimum Charm Value (% of Item Value)</label>
                     <input type="range" id="keychainPercentage" min="0" max="100" value="50" step="5">
                     <div class="percentage-value" id="percentageValue">50% of item value</div>
                 </div>
                 
+                <!-- Keychain List Toggle -->
                 <button class="keychain-list-toggle" id="keychainListToggle">
                     <span>Target Keychains (<span id="enabledCount"></span>)</span>
                     <span class="toggle-icon">▼</span>
                 </button>
                 
+                <!-- Expandable Keychain List -->
                 <div class="keychain-list" id="keychainList">
                     <div class="keychain-list-header">
                         <div class="keychain-count">Select which keychains to monitor</div>
@@ -1887,9 +2053,12 @@ body.theme-shooting-star .support-section h3 {
                     Save Keychain Settings
                 </button>
             </div>
-    </div>
+        </div>
 
-            <div class="footer">
+        <!-- ============================================================================
+             FOOTER
+             ============================================================================ -->
+        <div class="footer">
             <svg class="premium-crown-small" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; margin-right: 8px;">
                 <defs>
                     <linearGradient id="crownGradientSmall" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1904,7 +2073,9 @@ body.theme-shooting-star .support-section h3 {
             </svg>
             Empire Enhanced v6.4.0 - Native Edition
         </div>
+    </div>
 
+    <!-- Load JavaScript functionality -->
     <script src="popup.js"></script>
 </body>
 </html>

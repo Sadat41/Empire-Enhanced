@@ -1,0 +1,766 @@
+/* tracker.css - Complete styling for the investment tracker */
+
+/* Body and base styles */
+body {
+    background: linear-gradient(135deg, #0a0f1c 0%, #1a1f2e 25%, #2a2f3e 50%, #1a1f2e 75%, #0a0f1c 100%);
+    min-height: 100vh;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(102, 126, 234, 0.4);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(102, 126, 234, 0.6);
+}
+
+/* Glass card styling */
+.glass-card {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
+}
+
+.glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.4), transparent);
+}
+
+.glass-card:hover {
+    border-color: rgba(102, 126, 234, 0.3);
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Gradient text */
+.gradient-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Button styles */
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+}
+
+.btn-danger:active {
+    transform: translateY(0);
+}
+
+/* Button shine effect */
+.btn-primary::before, .btn-success::before, .btn-danger::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-primary:hover::before, .btn-success:hover::before, .btn-danger:hover::before {
+    left: 100%;
+}
+
+/* Input field styles */
+.input-field {
+    background: rgba(30, 32, 41, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: all 0.3s ease;
+}
+
+.input-field:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+    background: rgba(30, 32, 41, 1);
+    outline: 2px solid rgba(102, 126, 234, 0.5);
+    outline-offset: 2px;
+}
+
+/* Focus states for accessibility */
+button:focus {
+    outline: 2px solid rgba(102, 126, 234, 0.5);
+    outline-offset: 2px;
+}
+
+/* Color classes */
+.profit { color: #22c55e; }
+.loss { color: #ef4444; }
+.neutral { color: #94a3b8; }
+
+/* Profit/Loss styling enhancement */
+.profit::before {
+    content: '↗';
+    margin-right: 4px;
+    font-size: 0.8em;
+}
+
+.loss::before {
+    content: '↘';
+    margin-right: 4px;
+    font-size: 0.8em;
+}
+
+/* Editable cell styles */
+.editable-cell {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 4px 8px;
+    transition: all 0.2s ease;
+}
+
+.editable-cell:hover {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.edit-input {
+    background: rgba(30, 32, 41, 0.95);
+    border: 1px solid #667eea;
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: white;
+    width: 100%;
+    font-size: 14px;
+}
+
+/* Performance badges */
+.performance-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.performance-positive {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.performance-negative {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+/* Chart container */
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+/* Metric cards */
+.metric-card {
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.8), transparent);
+    transition: left 0.5s ease;
+}
+
+.metric-card:hover::before {
+    left: 100%;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.metric-label {
+    font-size: 0.875rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* Time filter */
+.time-filter {
+    display: flex;
+    background: rgba(30, 32, 41, 0.7);
+    border-radius: 8px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.time-filter-btn {
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.time-filter-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+/* Year and Month tabs */
+.year-tab, .month-tab {
+    padding: 8px 16px;
+    background: rgba(30, 32, 41, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.year-tab:hover, .month-tab:hover {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.year-tab.active, .month-tab.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+}
+
+/* Week tabs */
+.week-tab {
+    padding: 8px 16px;
+    background: rgba(30, 32, 41, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.week-tab:hover {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.week-tab.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+}
+
+.week-tab-container {
+    position: relative;
+    display: inline-block;
+}
+
+.week-delete-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.week-delete-btn:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+.week-tab-container:hover .week-delete-btn {
+    display: flex;
+}
+
+.week-tab-container:has(.week-tab.active) .week-delete-btn {
+    background: #f59e0b;
+}
+
+.week-tab-container:has(.week-tab.active) .week-delete-btn:hover {
+    background: #d97706;
+}
+
+/* Week summary */
+.week-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(30, 32, 41, 0.5);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.week-summary-item {
+    text-align: center;
+}
+
+.week-summary-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.week-summary-label {
+    font-size: 0.875rem;
+    color: #94a3b8;
+}
+
+/* Month dropdown */
+.month-dropdown {
+    background: rgba(30, 32, 41, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    min-width: 120px;
+    transition: all 0.3s ease;
+}
+
+.month-dropdown:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+    background: rgba(30, 32, 41, 1);
+}
+
+.month-dropdown option {
+    background: rgba(30, 32, 41, 0.95);
+    color: #ffffff;
+    padding: 8px;
+}
+
+/* Custom dropdown */
+.custom-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: rgba(30, 32, 41, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 120px;
+    gap: 8px;
+}
+
+.dropdown-trigger:hover {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.dropdown-trigger.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+}
+
+.dropdown-arrow {
+    transition: transform 0.2s ease;
+}
+
+.dropdown-trigger.active .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    margin-top: 4px;
+    background: rgba(30, 32, 41, 0.95);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.dropdown-option {
+    padding: 10px 16px;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.dropdown-option:hover {
+    background: rgba(102, 126, 234, 0.2);
+    color: white;
+}
+
+.dropdown-option.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.dropdown-option:first-child {
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+.dropdown-option:last-child {
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.selector-container {
+    background: rgba(30, 32, 41, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Table hover effects */
+table tbody tr:hover {
+    background: rgba(102, 126, 234, 0.05);
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+/* Loading states */
+.loading {
+    position: relative;
+    color: transparent;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid rgba(102, 126, 234, 0.3);
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: inherit;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(102, 126, 234, 0.3);
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Animations */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-slideUp {
+    animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(102, 126, 234, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.6); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .glass-card {
+        margin: 0 1rem;
+        padding: 1rem;
+    }
+    
+    table {
+        font-size: 0.9rem;
+    }
+    
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/*Long Term Investment section*/
+/* Long Term Investments Table Optimizations - Smooth Scrolling */
+.longterm-table-container {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+.longterm-table {
+    min-width: 1200px;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.longterm-table th,
+.longterm-table td {
+    padding: 12px 8px;
+    vertical-align: middle;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Fixed column widths for smooth scrolling */
+.longterm-table th:nth-child(1), .longterm-table td:nth-child(1) { width: 160px; } /* Item */
+.longterm-table th:nth-child(2), .longterm-table td:nth-child(2) { width: 80px; text-align: center; } /* Quantity */
+.longterm-table th:nth-child(3), .longterm-table td:nth-child(3) { width: 110px; } /* Unit Buy */
+.longterm-table th:nth-child(4), .longterm-table td:nth-child(4) { width: 120px; } /* Total Buy */
+.longterm-table th:nth-child(5), .longterm-table td:nth-child(5) { width: 100px; } /* Buy Date */
+.longterm-table th:nth-child(6), .longterm-table td:nth-child(6) { width: 110px; } /* Unit Sell */
+.longterm-table th:nth-child(7), .longterm-table td:nth-child(7) { width: 120px; } /* Total Sell */
+.longterm-table th:nth-child(8), .longterm-table td:nth-child(8) { width: 100px; } /* Sell Date */
+.longterm-table th:nth-child(9), .longterm-table td:nth-child(9) { width: 90px; } /* P&L */
+.longterm-table th:nth-child(10), .longterm-table td:nth-child(10) { width: 90px; text-align: center; } /* Return % */
+.longterm-table th:nth-child(11), .longterm-table td:nth-child(11) { width: 80px; text-align: center; } /* Status */
+.longterm-table th:nth-child(12), .longterm-table td:nth-child(12) { width: 120px; } /* Actions */
+
+/* Enhanced styling components */
+.longterm-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 60px;
+}
+
+.longterm-status-sold {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.longterm-status-holding {
+    background: rgba(251, 146, 60, 0.2);
+    color: #fb923c;
+    border: 1px solid rgba(251, 146, 60, 0.3);
+}
+
+.longterm-quantity {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    min-width: 35px;
+}
+
+.longterm-price-unit {
+    color: #60a5fa;
+    font-weight: 600;
+}
+
+.longterm-price-total {
+    color: #a78bfa;
+    font-weight: 600;
+}
+
+.longterm-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.longterm-actions button {
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.longterm-profit {
+    font-weight: 600;
+}
+
+.longterm-return {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 55px;
+}
+
+.longterm-return-positive {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.longterm-return-negative {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.longterm-item-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.longterm-item-id {
+    font-size: 10px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.longterm-date {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+/* Modal centering fix */
+#editModal, #editLongTermModal, #editCaseDropModal, #addYearModal, #addWeekModal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 9999 !important;
+    margin: 0 !important;
+}
+

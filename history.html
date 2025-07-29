@@ -19,7 +19,7 @@
             color: #e2e8f0;
             min-height: 100vh;
             position: relative;
-            overflow-x: hidden; /* Prevent horizontal scroll */
+            overflow-x: hidden;
             transition: all 0.3s ease;
         }
 
@@ -49,14 +49,13 @@
             overflow-x: hidden;
         }
 
-
         /* Shooting Star Trail Effect */
         .shooting-star {
             position: fixed;
-            width: 0px; /* Head is invisible */
+            width: 0px;
             height: 0px;
             opacity: 0;
-            z-index: -1; /* Ensure it's behind content */
+            z-index: -1;
         }
 
         .shooting-star::after {
@@ -64,16 +63,14 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 80px; /* Length of the trail */
-            height: 2px; /* Thickness of the trail */
+            width: 80px;
+            height: 2px;
             background: linear-gradient(to left, rgba(135, 206, 235, 0.9), rgba(74, 144, 226, 0.6), transparent);
             border-radius: 1px;
             opacity: 1;
-            transform: rotate(45deg); /* Angle of the trail */
+            transform: rotate(45deg);
         }
 
-        /* Randomized, organic shooting star animations */
-        /* These animations define the path and timing for each shooting star */
         @keyframes shootingStar1 {
             0% { transform: translateX(-140px) translateY(-90px); opacity: 0; }
             12% { opacity: 1; }
@@ -123,7 +120,6 @@
             100% { transform: translateX(610px) translateY(540px); opacity: 0; }
         }
 
-        /* Positioning and animation application for each shooting star */
         .shooting-star:nth-child(1) {
             animation: shootingStar1 5.2s linear infinite;
             animation-delay: 0.7s;
@@ -230,7 +226,7 @@
             margin: 0 auto;
             padding: 30px 20px;
             position: relative;
-            z-index: 1; /* Ensure content is above stars */
+            z-index: 1;
         }
 
         /* Header Styling */
@@ -408,14 +404,18 @@
             transform: none !important;
         }
 
-        /* Items Grid */
+        /* FIXED: Items Grid - Enhanced for proper spacing */
         .items-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 30px; /* Increased gap to prevent overlapping */
             margin-bottom: 30px;
+            /* Clear any floats or positioning issues */
+            clear: both;
+            isolation: isolate; /* Create new stacking context */
         }
 
+        /* FIXED: Item Card - Enhanced positioning and sizing */
         .item-card {
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(20px);
@@ -423,9 +423,22 @@
             border-radius: 16px;
             padding: 20px;
             position: relative;
-            overflow: hidden;
+            overflow: visible; /* Changed from hidden to visible for better content display */
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            
+            /* CRITICAL: Ensure proper sizing and positioning */
+            width: 100%;
+            min-height: fit-content; /* Allow natural content height */
+            height: auto; /* Auto height based on content */
+            contain: layout; /* Optimize rendering */
+            
+            /* Reset any transform issues */
+            transform-origin: center center;
+            will-change: transform, opacity;
+            
+            /* Ensure proper stacking */
+            z-index: 1;
         }
 
         .item-card::before {
@@ -438,6 +451,7 @@
             background: linear-gradient(90deg, #667eea, #764ba2, #36d1dc);
             opacity: 0;
             transition: opacity 0.3s ease;
+            z-index: 2;
         }
 
         body.theme-shooting-star .item-card::before {
@@ -448,6 +462,7 @@
             transform: translateY(-8px);
             border-color: rgba(102, 126, 234, 0.4);
             box-shadow: 0 20px 40px rgba(102, 126, 234, 0.15);
+            z-index: 10; /* Ensure hovered cards are on top */
         }
 
         .item-card:hover::before {
@@ -459,6 +474,8 @@
             justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 16px;
+            position: relative;
+            z-index: 3;
         }
 
         .item-name {
@@ -468,6 +485,7 @@
             margin-bottom: 6px;
             line-height: 1.3;
             max-width: 220px;
+            word-wrap: break-word;
         }
 
         .item-keychain {
@@ -493,6 +511,7 @@
             justify-content: center;
             color: white;
             font-size: 9px;
+            flex-shrink: 0;
         }
 
         body.theme-shooting-star .keychain-icon {
@@ -506,9 +525,162 @@
             padding: 4px 8px;
             border-radius: 6px;
             font-family: 'Courier New', monospace;
+            flex-shrink: 0;
         }
 
-        /* Price Display */
+        /* FIXED: Price Comparison Styles - Enhanced layout */
+        .price-comparison-container {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 3;
+            /* Ensure contained layout */
+            contain: layout style;
+        }
+
+        .price-comparison-header {
+            font-size: 10px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 6px;
+        }
+
+        .price-comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+            /* Ensure grid doesn't overflow */
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .price-comparison-grid:last-child {
+            margin-bottom: 0;
+        }
+
+        .price-comparison-cell {
+            text-align: center;
+            padding: 8px 6px;
+            border-radius: 6px;
+            border: 1px solid;
+            /* Prevent text overflow */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        .price-cell-csfloat {
+            background: rgba(74, 144, 226, 0.12);
+            border-color: rgba(74, 144, 226, 0.25);
+        }
+
+        .price-cell-buff163 {
+            background: rgba(245, 158, 11, 0.12);
+            border-color: rgba(245, 158, 11, 0.25);
+        }
+
+        .price-cell-empire {
+            background: rgba(34, 197, 94, 0.12);
+            border-color: rgba(34, 197, 94, 0.25);
+        }
+
+        .price-cell-float {
+            background: rgba(168, 85, 247, 0.12);
+            border-color: rgba(168, 85, 247, 0.25);
+        }
+
+        .price-cell-difference {
+            background: rgba(34, 197, 94, 0.12);
+            border-color: rgba(34, 197, 94, 0.25);
+        }
+
+        .price-cell-difference.negative {
+            background: rgba(239, 68, 68, 0.12);
+            border-color: rgba(239, 68, 68, 0.25);
+        }
+
+        .price-cell-above-rec {
+            background: rgba(34, 197, 94, 0.12);
+            border-color: rgba(34, 197, 94, 0.25);
+        }
+
+        .price-cell-above-rec.negative {
+            background: rgba(239, 68, 68, 0.12);
+            border-color: rgba(239, 68, 68, 0.25);
+        }
+
+        .price-comparison-label {
+            font-size: 9px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        .price-comparison-value {
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.2;
+            /* Prevent text overflow */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .price-value-csfloat {
+            color: #4a90e2;
+        }
+
+        .price-value-buff163 {
+            color: #f59e0b;
+        }
+
+        .price-value-empire {
+            color: #22c55e;
+        }
+
+        .price-value-float {
+            color: #a855f7;
+        }
+
+        .price-value-positive {
+            color: #4ade80;
+        }
+
+        .price-value-negative {
+            color: #f87171;
+        }
+
+        /* Shooting star theme overrides for price comparison */
+        body.theme-shooting-star .price-comparison-container {
+            background: rgba(20, 20, 40, 0.7);
+            border-color: rgba(135, 206, 235, 0.2);
+        }
+
+        body.theme-shooting-star .price-comparison-header {
+            color: #87ceeb;
+        }
+
+        body.theme-shooting-star .price-cell-csfloat {
+            background: rgba(135, 206, 235, 0.12);
+            border-color: rgba(135, 206, 235, 0.25);
+        }
+
+        body.theme-shooting-star .price-value-csfloat {
+            color: #87ceeb;
+        }
+
+        /* Legacy Price Display (when price comparison is not available) */
         .price-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -578,6 +750,9 @@
         .item-actions {
             display: flex;
             gap: 8px;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 3;
         }
 
         .action-btn {
@@ -618,6 +793,17 @@
         .action-btn.secondary:hover {
             background: rgba(255, 255, 255, 0.2);
             color: #ffffff;
+        }
+
+        /* Timestamp */
+        .timestamp {
+            font-size: 11px;
+            color: #64748b;
+            text-align: center;
+            font-weight: 500;
+            position: relative;
+            z-index: 3;
+            margin-top: 8px;
         }
 
         /* Empty State */
@@ -729,19 +915,11 @@
             color: #4ade80;
         }
 
-        /* Timestamp */
-        .timestamp {
-            font-size: 11px;
-            color: #64748b;
-            margin-top: 12px;
-            text-align: center;
-            font-weight: 500;
-        }
-
         /* Responsive Adjustments */
         @media (max-width: 768px) {
             .items-grid {
                 grid-template-columns: 1fr;
+                gap: 20px;
             }
 
             .stats-grid {
@@ -756,21 +934,35 @@
             .filters {
                 justify-content: center;
             }
+
+            .price-comparison-grid {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+
+            .price-comparison-cell {
+                padding: 10px;
+            }
         }
 
-        /* Smooth reveal animation for item cards */
+        /* FIXED: Smooth reveal animation for item cards - Enhanced */
         .item-card {
+            /* Initial state for animation */
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(20px);
+        }
+
+        /* Apply animation only after cards are rendered */
+        .items-grid.loaded .item-card {
             animation: slideIn 0.6s ease forwards;
         }
 
-        .item-card:nth-child(1) { animation-delay: 0.1s; }
-        .item-card:nth-child(2) { animation-delay: 0.2s; }
-        .item-card:nth-child(3) { animation-delay: 0.3s; }
-        .item-card:nth-child(4) { animation-delay: 0.4s; }
-        .item-card:nth-child(5) { animation-delay: 0.5s; }
-        .item-card:nth-child(6) { animation-delay: 0.6s; }
+        .items-grid.loaded .item-card:nth-child(1) { animation-delay: 0.05s; }
+        .items-grid.loaded .item-card:nth-child(2) { animation-delay: 0.10s; }
+        .items-grid.loaded .item-card:nth-child(3) { animation-delay: 0.15s; }
+        .items-grid.loaded .item-card:nth-child(4) { animation-delay: 0.20s; }
+        .items-grid.loaded .item-card:nth-child(5) { animation-delay: 0.25s; }
+        .items-grid.loaded .item-card:nth-child(6) { animation-delay: 0.30s; }
 
         @keyframes slideIn {
             to {
@@ -779,7 +971,7 @@
             }
         }
 
-        
+        /* Hide shooting stars in nebula theme */
         body.theme-nebula .shooting-star {
             display: none !important;
         }
@@ -792,16 +984,16 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: -2; /* Ensure it's behind everything */
-            overflow: hidden; /* Prevent stars from creating scrollbars */
+            z-index: -2;
+            overflow: hidden;
         }
 
         .star {
             position: absolute;
-            background-color: white; /* Default star color */
-            border-radius: 50%; /* Make them circular */
-            opacity: 0; /* Start invisible for animation */
-            animation: twinkle 4s infinite ease-in-out alternate; /* Twinkling animation */
+            background-color: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle 4s infinite ease-in-out alternate;
         }
 
         @keyframes twinkle {
@@ -809,20 +1001,21 @@
             50% { opacity: 1; transform: scale(1); }
             100% { opacity: 0.2; transform: scale(0.8); }
         }
-
     </style>
-</head>
-<body class="theme-nebula">
-    <!-- Shooting stars (trails) - these are fine and remain as is -->
-    <div class="shooting-star"></div>
-    <div class="shooting-star"></div>
-    <div class="shooting-star"></div>
-    <div class="shooting-star"></div>
-    <div class="shooting-star"></div>
-    <div class="shooting-star"></div>
-    <div class="shooting-star"></div>
 
-    <!-- The starfield container will be created and populated by starfield.js -->
+
+</head>
+
+<!--Theme 2-->
+<body class="theme-nebula">
+    <!-- Shooting stars (trails) -->
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
 
     <div class="container">
         <div class="header">
@@ -873,7 +1066,7 @@
                 <button class="filter-btn">Recent</button>
             </div>
             <button class="refresh-btn" id="refreshBtn">
-                <span class="refresh-icon"></span>
+                <span class="refresh-icon">🔄</span>
                 Refresh
             </button>
         </div>
@@ -888,7 +1081,7 @@
         </div>
 
         <div id="loadingMessage" class="loading" style="display: none;">
-            <div class="loading-spinner"></div>
+            <div class="loading-spinner">🔄</div>
             <span>Loading notification history...</span>
         </div>
 
