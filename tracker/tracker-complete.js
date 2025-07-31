@@ -18,6 +18,8 @@ class InvestmentTracker {
         this.longTermInvestments = [];      // Long-term bulk investments
         this.caseDrops = [];               // Case drop tracking
         this.years = [];                   // Hierarchical year/month/week structure
+        this.categories = [];              // User-defined categories for long-term investments
+        this.selectedCategoryId = null;  // Currently selected category for filtering
         
         // Current State Tracking
         this.currentYear = null;           // Currently selected year
@@ -32,6 +34,8 @@ class InvestmentTracker {
         
         // Chart Management
         this.charts = {};                  // Stores Chart.js instances
+        this.priceDataCache = null;        // Price data
+        this.priceCacheTimestamp = 0;      // Price data    timestamp
         this.chartColors = {               // Consistent color scheme
             primary: '#667eea',
             secondary: '#764ba2',
@@ -40,6 +44,26 @@ class InvestmentTracker {
             warning: '#f59e0b',
             info: '#3b82f6'
         };
+        
+        // Enhanced Trading Dashboard Data
+        this.tradeHistory = [];           // Complete trading records
+        this.accountBalance = 0;          // Current cash
+        this.deposits = [];               // Money added to account
+        this.withdrawals = [];            // Money taken out
+        this.tradingStats = {             // Cached analytics
+            totalTrades: 0,
+            winRate: 0,
+            avgProfit: 0,
+            bestTrade: null,
+            worstTrade: null,
+            monthlyPerformance: []
+        };
+        
+        // Current Trading Tab State
+        this.currentTradingTab = 'holdings'; // holdings, performance, account
+        
+        // Notification System
+        this.notyf = null;
         
         console.log('🚀 Investment Tracker initializing...');
         this.init();
@@ -61,8 +85,16 @@ class InvestmentTracker {
             // Initial UI Rendering
             this.renderInvestments();
             this.renderLongTermInvestments();
+            this.renderCategoryTabs();
+            this.ensureInvestmentsHaveCategories(); 
             this.updateMetrics();
             this.initializeCharts();
+            
+            // Initialize Enhanced Trading Dashboard
+            this.initializeNotifications();
+            this.initializeTradingTabs();
+            this.initializeLucideIcons();
+            this.updateTradingDashboard();
             
             // Initialize Case Drop UI if data exists
             this.renderYearTabs();
@@ -177,22 +209,32 @@ class InvestmentTracker {
      * Initializes with default data if none exists
      */
     async loadData() {
-        try {
-            // Load regular investments
-            this.loadInvestments();
-            
-            // Load long-term investments
-            this.loadLongTermInvestments();
-            
-            // Load hierarchical case drops data
-            this.loadCaseDropsData();
-            
-            console.log(`📊 Loaded ${this.investments.length} investments, ${this.longTermInvestments.length} long term investments, and ${this.caseDrops.length} case drops from storage`);
+    try {
+        // Load regular investments
+        this.loadInvestments();
+        
+        // Load long-term investments
+        this.loadLongTermInvestments();
+        
+        // Load hierarchical case drops data
+        this.loadCaseDropsData();
+        
+        // Load categories
+        this.loadCategories();
+
+        // Load enhanced trading data
+        this.loadTradingData();
+
+        this.ensureInvestmentsHaveCategories();
+        
+            console.log(`📊 Loaded ${this.investments.length} investments, ${this.longTermInvestments.length} long term investments, ${this.caseDrops.length} case drops, and ${this.categories.length} categories from storage`);
         } catch (error) {
             console.error('❌ Error loading data:', error);
             this.initializeEmptyData();
         }
     }
+
+    
 
     /**
      * Loads regular investments from localStorage
@@ -216,8 +258,8 @@ class InvestmentTracker {
     }
 
     /**
-     * Loads long-term investments from localStorage
-     */
+    * Loads long-term investments from localStorage
+    */
     loadLongTermInvestments() {
         const longTermStored = localStorage.getItem('longTermInvestmentTracker');
         const longTermRawData = longTermStored ? JSON.parse(longTermStored) : [];
@@ -235,6 +277,7 @@ class InvestmentTracker {
             status: inv.status || (inv.unitSellPrice ? 'sold' : 'holding'),
             profit: parseFloat(inv.profit) || 0,
             returnPercentage: parseFloat(inv.returnPercentage) || 0,
+            categoryId: inv.categoryId || null, // ADD THIS LINE - preserve categoryId
             dateAdded: inv.dateAdded || inv.buyDate || new Date().toISOString()
         }));
     }
@@ -255,6 +298,54 @@ class InvestmentTracker {
         } else {
             this.setCurrentPeriod();
         }
+    }
+
+
+    /**
+        * Loads categories from localStorage
+        */
+    loadCategories() {
+        const categoriesStored = localStorage.getItem('longTermCategories');
+        this.categories = categoriesStored ? JSON.parse(categoriesStored) : [];
+    
+        // Add default "Uncategorized" category if no categories exist
+        if (this.categories.length === 0) {
+            this.categories.push({
+                id: 'uncategorized',
+                name: 'Uncategorized',
+                isDefault: true,
+                dateCreated: new Date().toISOString()
+        });
+        }
+    }
+
+    /**
+     * Loads enhanced trading data from localStorage
+     */
+    loadTradingData() {
+        // Load trading history
+        const tradingHistoryStored = localStorage.getItem('tradingHistory');
+        this.tradeHistory = tradingHistoryStored ? JSON.parse(tradingHistoryStored) : [];
+
+        // Load account balance
+        const accountBalanceStored = localStorage.getItem('accountBalance');
+        this.accountBalance = accountBalanceStored ? parseFloat(accountBalanceStored) : 0;
+
+        // Load deposits
+        const depositsStored = localStorage.getItem('deposits');
+        this.deposits = depositsStored ? JSON.parse(depositsStored) : [];
+
+        // Load withdrawals
+        const withdrawalsStored = localStorage.getItem('withdrawals');
+        this.withdrawals = withdrawalsStored ? JSON.parse(withdrawalsStored) : [];
+
+        // Load trading stats cache
+        const tradingStatsStored = localStorage.getItem('tradingStats');
+        if (tradingStatsStored) {
+            this.tradingStats = { ...this.tradingStats, ...JSON.parse(tradingStatsStored) };
+        }
+
+        console.log(`💼 Loaded trading data: ${this.deposits.length} deposits, ${this.withdrawals.length} withdrawals, balance: $${this.accountBalance}`);
     }
 
     /**
@@ -298,18 +389,26 @@ class InvestmentTracker {
      * Saves all data to localStorage
      */
     async saveData() {
-        try {
-            // Save all data types to their respective localStorage keys
-            localStorage.setItem('investmentTracker', JSON.stringify(this.investments));
-            localStorage.setItem('longTermInvestmentTracker', JSON.stringify(this.longTermInvestments));
-            localStorage.setItem('caseDropsHierarchical', JSON.stringify({
-                years: this.years,
-                caseDrops: this.caseDrops
-            }));
-            
-            console.log(`💾 Saved ${this.investments.length} investments, ${this.longTermInvestments.length} long-term investments, and ${this.caseDrops.length} case drops to storage`);
-        } catch (error) {
-            console.error('❌ Error saving data:', error);
+    try {
+        // Save all data types to their respective localStorage keys
+        localStorage.setItem('investmentTracker', JSON.stringify(this.investments));
+        localStorage.setItem('longTermInvestmentTracker', JSON.stringify(this.longTermInvestments));
+        localStorage.setItem('caseDropsHierarchical', JSON.stringify({
+            years: this.years,
+            caseDrops: this.caseDrops
+        }));
+        localStorage.setItem('longTermCategories', JSON.stringify(this.categories));
+        
+        // Save enhanced trading data
+        localStorage.setItem('tradingHistory', JSON.stringify(this.tradeHistory));
+        localStorage.setItem('accountBalance', this.accountBalance.toString());
+        localStorage.setItem('deposits', JSON.stringify(this.deposits));
+        localStorage.setItem('withdrawals', JSON.stringify(this.withdrawals));
+        localStorage.setItem('tradingStats', JSON.stringify(this.tradingStats));
+        
+        console.log(`💾 Saved ${this.investments.length} investments, ${this.longTermInvestments.length} long-term investments, ${this.caseDrops.length} case drops, ${this.categories.length} categories, and trading data to storage`);
+        }   catch (error) {
+        console.error('❌ Error saving data:', error);
         }
     }
 
@@ -340,45 +439,52 @@ class InvestmentTracker {
     }
 
     /**
-     * Calculates overall portfolio metrics
-     * @returns {Object} Portfolio metrics object
-     */
-    calculateMetrics() {
-        const totalItems = this.investments.length;
-        const totalInvested = this.investments.reduce((sum, inv) => sum + inv.buyPrice, 0);
-        
-        const soldInvestments = this.investments.filter(inv => inv.sellPrice);
-        const totalRealized = soldInvestments.reduce((sum, inv) => sum + inv.sellPrice, 0);
-        const totalPnL = soldInvestments.reduce((sum, inv) => sum + (inv.profit || 0), 0);
-        
-        // Calculate portfolio value: only include items currently being held (not sold)
-        let portfolioValue = 0;
-        
-        // Add regular investments that are still being held
-        const holdingInvestments = this.investments.filter(inv => !inv.sellPrice);
-        portfolioValue += holdingInvestments.reduce((sum, inv) => sum + inv.buyPrice, 0);
-        
-        // Add long-term investments that are still being held
-        const holdingLongTermInvestments = this.longTermInvestments.filter(inv => !inv.unitSellPrice);
-        portfolioValue += holdingLongTermInvestments.reduce((sum, inv) => sum + inv.totalBuyPrice, 0);
+ * Calculates overall portfolio metrics
+ * @returns {Object} Portfolio metrics object
+ */
+calculateMetrics() {
+    const totalItems = this.investments.length;
+    const totalInvested = this.investments.reduce((sum, inv) => sum + inv.buyPrice, 0);
+    
+    const soldInvestments = this.investments.filter(inv => inv.sellPrice);
+    const totalRealized = soldInvestments.reduce((sum, inv) => sum + inv.sellPrice, 0);
+    const totalPnL = soldInvestments.reduce((sum, inv) => sum + (inv.profit || 0), 0);
+    
+    // DEBUG: Calculate portfolio value with logging
+    console.log('\n💰 === PORTFOLIO VALUE CALCULATION DEBUG ===');
+    
+    // Regular investments holding value
+    const holdingInvestments = this.investments.filter(inv => !inv.sellPrice);
+    const holdingInvestmentValue = holdingInvestments.reduce((sum, inv) => sum + inv.buyPrice, 0);
+    console.log(`📊 Regular investments holding: ${holdingInvestments.length} items = $${holdingInvestmentValue.toFixed(2)}`);
+    
+    // Long-term investments holding value
+    const holdingLongTermInvestments = this.longTermInvestments.filter(inv => !inv.unitSellPrice);
+    const longTermHoldingValue = holdingLongTermInvestments.reduce((sum, inv) => sum + inv.totalBuyPrice, 0);
+    console.log(`📊 Long-term investments holding: ${holdingLongTermInvestments.length} items = $${longTermHoldingValue.toFixed(2)}`);
+    
+    // Total portfolio value
+    const portfolioValue = holdingInvestmentValue + longTermHoldingValue;
+    console.log(`📊 TOTAL PORTFOLIO VALUE: $${holdingInvestmentValue.toFixed(2)} + $${longTermHoldingValue.toFixed(2)} = $${portfolioValue.toFixed(2)}`);
+    console.log('💰 === END DEBUG ===\n');
 
-        const winningTrades = soldInvestments.filter(inv => inv.profit > 0).length;
-        const winRate = soldInvestments.length > 0 ? (winningTrades / soldInvestments.length) * 100 : 0;
-        
-        const avgReturn = soldInvestments.length > 0 
-            ? soldInvestments.reduce((sum, inv) => sum + (inv.returnPercentage || 0), 0) / soldInvestments.length
-            : 0;
+    const winningTrades = soldInvestments.filter(inv => inv.profit > 0).length;
+    const winRate = soldInvestments.length > 0 ? (winningTrades / soldInvestments.length) * 100 : 0;
+    
+    const avgReturn = soldInvestments.length > 0 
+        ? soldInvestments.reduce((sum, inv) => sum + (inv.returnPercentage || 0), 0) / soldInvestments.length
+        : 0;
 
-        return {
-            totalItems,
-            totalInvested,
-            totalRealized,
-            totalPnL,
-            portfolioValue,
-            winRate,
-            avgReturn
-        };
-    }
+    return {
+        totalItems,
+        totalInvested,
+        totalRealized,
+        totalPnL,
+        portfolioValue,
+        winRate,
+        avgReturn
+    };
+}
 
     /**
      * Calculates metrics for long-term investments
@@ -427,6 +533,16 @@ class InvestmentTracker {
         
         // Chart time period filters
         this.setupChartFilterListeners();
+
+        // Category management
+        this.setupCategoryListeners();
+
+        // Category tab listeners
+        this.setupCategoryTabListeners();
+        
+        // Enhanced Trading Dashboard listeners
+        this.setupTradingTabListeners();
+        this.setupCashManagementListeners();
         
         // Global event delegation
         this.setupGlobalEventDelegation();
@@ -454,23 +570,51 @@ class InvestmentTracker {
         const portfolioType = document.getElementById('portfolioType');
         const longtermType = document.getElementById('longtermType');
         const quantityField = document.getElementById('quantityField');
+        const categoryField = document.getElementById('categoryField');
 
-        if (portfolioType && longtermType && quantityField) {
-            const toggleQuantityField = () => {
-                if (longtermType.checked) {
-                    quantityField.classList.remove('hidden');
-                    document.getElementById('quantity').required = true;
-                } else {
-                    quantityField.classList.add('hidden');
-                    document.getElementById('quantity').required = false;
-                    document.getElementById('quantity').value = '';
-                }
-            };
+        if (portfolioType && longtermType && quantityField && categoryField) {
+            const toggleFields = () => {
+            // Update button states
+            document.querySelectorAll('.investment-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if (longtermType.checked) {
+                longtermType.parentElement.querySelector('.investment-type-btn').classList.add('active');
+                quantityField.classList.remove('hidden');
+                categoryField.classList.remove('hidden');
+                document.getElementById('quantity').required = true;
+                this.populateCategoryDropdown(); // Populate categories when shown
+                document.getElementById('investmentFormGrid').className = 'grid grid-cols-1 md:grid-cols-8 gap-4 mb-6';
+                document.getElementById('itemNameContainer').className = 'md:col-span-2';
+            } else {
+                portfolioType.parentElement.querySelector('.investment-type-btn').classList.add('active');
+                quantityField.classList.add('hidden');
+                categoryField.classList.add('hidden');
+                document.getElementById('quantity').required = false;
+                document.getElementById('quantity').value = '';
+                document.getElementById('categorySelect').value = '';
+                document.getElementById('investmentFormGrid').className = 'grid grid-cols-1 md:grid-cols-6 gap-4 mb-6';
+                document.getElementById('itemNameContainer').className = 'md:col-span-2 md:col-start-1';
+            }
+        };
 
-            portfolioType.addEventListener('change', toggleQuantityField);
-            longtermType.addEventListener('change', toggleQuantityField);
+        // Add click handlers to the visual buttons
+        document.querySelectorAll('.investment-type-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const input = e.target.parentElement.querySelector('input[type="radio"]');
+                input.checked = true;
+                toggleFields();
+            });
+        });
+
+        portfolioType.addEventListener('change', toggleFields);
+        longtermType.addEventListener('change', toggleFields);
+        toggleFields(); // Call on page load to set initial state
         }
     }
+
+    
 
     /**
      * Sets up collapse/expand functionality for sections
@@ -730,58 +874,148 @@ ensureModalStyles() {
         });
     }
 
+
+    /**
+    * Sets up category management listeners
+    */
+    setupCategoryListeners() {
+        this.setupButtonListener('addCategoryBtn', () => this.showAddCategoryForm());
+        this.setupButtonListener('saveCategoryBtn', () => this.addCategory());
+        this.setupButtonListener('cancelCategoryBtn', () => this.hideAddCategoryForm());
+    
+        // Add Enter key support for category input
+        const categoryInput = document.getElementById('newCategoryName');
+        if (categoryInput) {
+            categoryInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.addCategory();
+            } else if (e.key === 'Escape') {
+                this.hideAddCategoryForm();
+            }
+            });
+        }
+    }
+
+
+
     /**
      * Sets up global event delegation for dynamic elements
      */
     setupGlobalEventDelegation() {
         document.addEventListener('click', (e) => {
-            // Handle action buttons for investments
-            if (e.target.classList.contains('action-btn')) {
-                const action = e.target.dataset.action;
-                const id = e.target.dataset.id;
-                console.log(`🔥 Button clicked: ${action} for ID: ${id}`);
-                this.handleAction(action, id);
+        // Handle action buttons for investments
+        if (e.target.classList.contains('action-btn')) {
+            const action = e.target.dataset.action;
+            const id = e.target.dataset.id;
+            console.log(`🔥 Button clicked: ${action} for ID: ${id}`);
+            this.handleAction(action, id);
+        }
+        
+        // Handle case drop action buttons
+        if (e.target.classList.contains('case-action-btn')) {
+            const action = e.target.dataset.action;
+            const id = e.target.dataset.id;
+            console.log(`🎲 Case drop button clicked: ${action} for ID: ${id}`);
+            this.handleCaseDropAction(action, id);
+        }
+
+        // Handle long term investment action buttons
+        if (e.target.classList.contains('longterm-action-btn')) {
+            const action = e.target.dataset.action;
+            const id = e.target.dataset.id;
+            console.log(`💎 Long term investment button clicked: ${action} for ID: ${id}`);
+            this.handleLongTermAction(action, id);
+        }
+        
+        // Handle category tab clicks
+        if (e.target.classList.contains('category-tab') || e.target.closest('.category-tab')) {
+            const categoryTab = e.target.classList.contains('category-tab') ? e.target : e.target.closest('.category-tab');
+            const categoryId = categoryTab.dataset.categoryId;
+            
+            // Don't trigger if clicking delete button
+            if (e.target.classList.contains('category-tab-delete')) {
+                return;
             }
             
-            // Handle case drop action buttons
-            if (e.target.classList.contains('case-action-btn')) {
-                const action = e.target.dataset.action;
-                const id = e.target.dataset.id;
-                console.log(`🎲 Case drop button clicked: ${action} for ID: ${id}`);
-                this.handleCaseDropAction(action, id);
+            console.log(`📂 Category tab clicked: ${categoryId}`);
+            
+            if (categoryId === 'all') {
+                this.selectCategory(null);
+            } else {
+                this.selectCategory(categoryId);
             }
+        }
+        
+        // Handle category delete buttons
+        if (e.target.classList.contains('category-tab-delete') || e.target.dataset.deleteCategory) {
+            e.stopPropagation(); // Prevent category selection
+            const categoryId = e.target.dataset.deleteCategory;
+            console.log(`🗑️ Category delete clicked: ${categoryId}`);
+            this.removeCategory(categoryId);
+        }
+        
+        // Handle week tab clicks
+        if (e.target.classList.contains('week-tab')) {
+            const weekId = e.target.dataset.weekId;
+            console.log(`📅 Week tab clicked: ${weekId}`);
+            this.switchToWeek(weekId);
+        }
 
-            // Handle long term investment action buttons
-            if (e.target.classList.contains('longterm-action-btn')) {
-                const action = e.target.dataset.action;
-                const id = e.target.dataset.id;
-                console.log(`💎 Long term investment button clicked: ${action} for ID: ${id}`);
-                this.handleLongTermAction(action, id);
+        // Handle year tab clicks
+        if (e.target.classList.contains('year-tab')) {
+            const year = parseInt(e.target.dataset.year);
+            console.log(`📅 Year tab clicked: ${year}`);
+            this.selectYear(year);
+        }
+
+        // Handle custom dropdown option clicks
+        if (e.target.classList.contains('dropdown-option')) {
+            const monthIndex = parseInt(e.target.dataset.month);
+            if (!isNaN(monthIndex)) {
+                this.selectMonth(monthIndex);
+            }
+        }
+        });
+    }
+
+
+    /**
+    * Sets up category tab event listeners
+    */
+    setupCategoryTabListeners() {
+        // Use event delegation on the container
+        const categoryTabsContainer = document.getElementById('categoryTabsContainer');
+        if (categoryTabsContainer) {
+            categoryTabsContainer.addEventListener('click', (e) => {
+            // Handle delete button clicks
+            if (e.target.classList.contains('category-tab-delete')) {
+                e.stopPropagation();
+                const categoryId = e.target.dataset.deleteCategory;
+                console.log(`🗑️ Category delete clicked: ${categoryId}`);
+                this.removeCategory(categoryId);
+                return;
             }
             
-            // Handle week tab clicks
-            if (e.target.classList.contains('week-tab')) {
-                const weekId = e.target.dataset.weekId;
-                console.log(`📅 Week tab clicked: ${weekId}`);
-                this.switchToWeek(weekId);
-            }
-
-            // Handle year tab clicks
-            if (e.target.classList.contains('year-tab')) {
-                const year = parseInt(e.target.dataset.year);
-                console.log(`📅 Year tab clicked: ${year}`);
-                this.selectYear(year);
-            }
-
-            // Handle custom dropdown option clicks
-            if (e.target.classList.contains('dropdown-option')) {
-                const monthIndex = parseInt(e.target.dataset.month);
-                if (!isNaN(monthIndex)) {
-                    this.selectMonth(monthIndex);
+            // Handle tab clicks
+            const categoryTab = e.target.closest('.category-tab');
+            if (categoryTab) {
+                const categoryId = categoryTab.dataset.categoryId;
+                console.log(`📂 Category tab clicked: ${categoryId}`);
+                
+                if (categoryId === 'all') {
+                    this.selectCategory(null);
+                } else {
+                    this.selectCategory(categoryId);
                 }
             }
         });
+        }
     }
+
+
+
+
+
 
     // ============================================================================================
     // INVESTMENT MANAGEMENT - ADD/EDIT/REMOVE
@@ -810,19 +1044,21 @@ ensureModalStyles() {
     }
 
     /**
-     * Gets form data for investment creation
-     * @returns {Object} Form data object
-     */
+    * Gets form data for investment creation
+    * @returns {Object} Form data object
+    */
     getInvestmentFormData() {
         return {
             itemName: document.getElementById('itemName').value.trim(),
             buyPrice: parseFloat(document.getElementById('buyPrice').value),
             buyDate: document.getElementById('buyDate').value,
             sellPrice: document.getElementById('sellPrice').value ? parseFloat(document.getElementById('sellPrice').value) : null,
+            sellDate: document.getElementById('sellDate').value || null,
             isLongTerm: document.getElementById('longtermType').checked,
-            quantity: document.getElementById('longtermType').checked ? parseInt(document.getElementById('quantity').value) : 1
+            quantity: document.getElementById('longtermType').checked ? parseInt(document.getElementById('quantity').value) : 1,
+            categoryId: document.getElementById('longtermType').checked ? document.getElementById('categorySelect').value : null
         };
-    }
+    }   
 
     /**
      * Validates investment form data
@@ -854,7 +1090,7 @@ ensureModalStyles() {
             buyPrice: formData.buyPrice,
             sellPrice: formData.sellPrice,
             buyDate: formData.buyDate,
-            sellDate: formData.sellPrice ? new Date().toISOString().split('T')[0] : null,
+            sellDate: formData.sellPrice ? (formData.sellDate || new Date().toISOString().split('T')[0]) : null,
             status: formData.sellPrice ? 'sold' : 'holding',
             profit: this.calculateProfit(formData.buyPrice, formData.sellPrice),
             returnPercentage: this.calculateReturnPercentage(formData.buyPrice, formData.sellPrice),
@@ -866,31 +1102,42 @@ ensureModalStyles() {
         this.showNotification(`Added "${formData.itemName}" to your portfolio`, 'success');
     }
 
-    /**
-     * Adds long-term investment to portfolio
-     * @param {Object} formData - Investment data
-     */
-    addLongTermInvestment(formData) {
-        const longTermInvestment = {
-            id: this.generateUniqueId(),
-            itemName: formData.itemName,
-            quantity: formData.quantity,
-            unitBuyPrice: formData.buyPrice,
-            totalBuyPrice: formData.buyPrice * formData.quantity,
-            unitSellPrice: formData.sellPrice,
-            totalSellPrice: formData.sellPrice ? formData.sellPrice * formData.quantity : null,
-            buyDate: formData.buyDate,
-            sellDate: formData.sellPrice ? new Date().toISOString().split('T')[0] : null,
-            status: formData.sellPrice ? 'sold' : 'holding',
-            profit: formData.sellPrice ? (formData.sellPrice - formData.buyPrice) * formData.quantity : 0,
-            returnPercentage: formData.sellPrice ? ((formData.sellPrice - formData.buyPrice) / formData.buyPrice) * 100 : 0,
-            dateAdded: new Date().toISOString()
-        };
 
-        this.longTermInvestments.unshift(longTermInvestment);
-        this.renderLongTermInvestments();
-        this.showNotification(`Added "${formData.itemName}" (${formData.quantity}x) to long term investments`, 'success');
+    /**
+    * Adds long-term investment to portfolio
+    * @param {Object} formData - Investment data
+    */
+    addLongTermInvestment(formData) {
+        // Use selected category or default to uncategorized
+        let categoryId = formData.categoryId;
+        if (!categoryId) {
+            const uncategorizedCategory = this.categories.find(cat => cat.isDefault);
+            categoryId = uncategorizedCategory ? uncategorizedCategory.id : this.categories[0]?.id;
     }
+    
+    const longTermInvestment = {
+        id: this.generateUniqueId(),
+        itemName: formData.itemName,
+        quantity: formData.quantity,
+        unitBuyPrice: formData.buyPrice,
+        totalBuyPrice: formData.buyPrice * formData.quantity,
+        unitSellPrice: formData.sellPrice,
+        totalSellPrice: formData.sellPrice ? formData.sellPrice * formData.quantity : null,
+        buyDate: formData.buyDate,
+        sellDate: formData.sellPrice ? new Date().toISOString().split('T')[0] : null,
+        status: formData.sellPrice ? 'sold' : 'holding',
+        profit: formData.sellPrice ? (formData.sellPrice - formData.buyPrice) * formData.quantity : 0,
+        returnPercentage: formData.sellPrice ? ((formData.sellPrice - formData.buyPrice) / formData.buyPrice) * 100 : 0,
+        categoryId: categoryId, // Add category assignment
+        dateAdded: new Date().toISOString()
+    };
+
+    this.longTermInvestments.unshift(longTermInvestment);
+    this.renderLongTermInvestments();
+    this.renderCategoryTabs(); // Update category tabs to show new counts
+    this.showNotification(`Added "${formData.itemName}" (${formData.quantity}x) to long term investments`, 'success');
+    }
+
 
     /**
      * Generates unique ID for new items
@@ -1008,15 +1255,17 @@ ensureModalStyles() {
     }
 
     /**
-     * Validates edit form data
-     * @param {Object} editData - Edit form data
-     * @returns {boolean} Validation result
-     */
+    * Validates edit form data
+    * @param {Object} editData - Edit form data
+    * @returns {boolean} Validation result
+    */
     validateEditForm(editData) {
         if (!editData.itemName || !editData.buyPrice || editData.buyPrice <= 0 || !editData.buyDate) {
             this.showNotification('Please fill in all required fields with valid values', 'error');
             return false;
         }
+    
+        // Sell date is optional - no validation needed for it
         return true;
     }
 
@@ -1123,13 +1372,13 @@ ensureModalStyles() {
     }
 
     /**
-     * Opens edit modal for long-term investment
-     * @param {string} id - Investment ID
-     */
+    * Opens edit modal for long-term investment
+    * @param {string} id - Investment ID
+    */
     editLongTermInvestment(id) {
         console.log('🔧 Edit long term button clicked for ID:', id);
         const investment = this.longTermInvestments.find(inv => inv.id === id);
-        
+    
         if (!investment) {
             console.error('Long term investment not found with ID:', id);
             this.showNotification('Long term investment not found', 'error');
@@ -1137,7 +1386,7 @@ ensureModalStyles() {
         }
 
         this.editingLongTermInvestment = investment;
-        
+    
         // Populate edit form
         document.getElementById('editLongTermItemName').value = investment.itemName;
         document.getElementById('editLongTermQuantity').value = investment.quantity;
@@ -1145,6 +1394,10 @@ ensureModalStyles() {
         document.getElementById('editLongTermBuyDate').value = investment.buyDate.split('T')[0];
         document.getElementById('editLongTermSellPrice').value = investment.unitSellPrice || '';
         document.getElementById('editLongTermSellDate').value = investment.sellDate || '';
+    
+        // Populate and set category dropdown
+        this.populateEditCategoryDropdown();
+        document.getElementById('editLongTermCategory').value = investment.categoryId || '';
 
         // Show modal
         const modal = document.getElementById('editLongTermModal');
@@ -1154,45 +1407,68 @@ ensureModalStyles() {
     }
 
     /**
-     * Saves long-term investment edit changes
-     */
+    * Saves long-term investment edit changes
+    */
     saveLongTermEdit() {
-        if (!this.editingLongTermInvestment) {
-            this.showNotification('No long term investment selected for editing', 'error');
-            return;
-        }
+    if (!this.editingLongTermInvestment) {
+        this.showNotification('No long term investment selected for editing', 'error');
+        return;
+    }
 
-        const editData = this.getLongTermEditFormData();
+    const editData = this.getLongTermEditFormData();
+    
+    if (!this.validateLongTermEditForm(editData)) {
+        return;
+    }
+
+    // Use selected category or default to uncategorized if none selected
+    let categoryId = editData.categoryId;
+    if (!categoryId) {
+        const uncategorizedCategory = this.categories.find(cat => cat.isDefault);
+        categoryId = uncategorizedCategory ? uncategorizedCategory.id : this.categories[0]?.id;
+    }
+
+    const index = this.longTermInvestments.findIndex(inv => inv.id === this.editingLongTermInvestment.id);
+    if (index !== -1) {
+        const oldCategoryId = this.longTermInvestments[index].categoryId;
         
-        if (!this.validateLongTermEditForm(editData)) {
-            return;
-        }
+        this.longTermInvestments[index] = {
+            ...this.longTermInvestments[index],
+            ...editData,
+            categoryId: categoryId, // Update category
+            totalBuyPrice: editData.unitBuyPrice * editData.quantity,
+            totalSellPrice: editData.unitSellPrice ? editData.unitSellPrice * editData.quantity : null,
+            sellDate: editData.unitSellPrice ? (editData.sellDate || new Date().toISOString().split('T')[0]) : null,
+            status: editData.unitSellPrice ? 'sold' : 'holding',
+            profit: editData.unitSellPrice ? (editData.unitSellPrice - editData.unitBuyPrice) * editData.quantity : 0,
+            returnPercentage: editData.unitSellPrice ? ((editData.unitSellPrice - editData.unitBuyPrice) / editData.unitBuyPrice) * 100 : 0
+        };
 
-        const index = this.longTermInvestments.findIndex(inv => inv.id === this.editingLongTermInvestment.id);
-        if (index !== -1) {
-            this.longTermInvestments[index] = {
-                ...this.longTermInvestments[index],
-                ...editData,
-                totalBuyPrice: editData.unitBuyPrice * editData.quantity,
-                totalSellPrice: editData.unitSellPrice ? editData.unitSellPrice * editData.quantity : null,
-                sellDate: editData.unitSellPrice ? (editData.sellDate || new Date().toISOString().split('T')[0]) : null,
-                status: editData.unitSellPrice ? 'sold' : 'holding',
-                profit: editData.unitSellPrice ? (editData.unitSellPrice - editData.unitBuyPrice) * editData.quantity : 0,
-                returnPercentage: editData.unitSellPrice ? ((editData.unitSellPrice - editData.unitBuyPrice) / editData.unitBuyPrice) * 100 : 0
-            };
-
-            this.saveData();
-            this.renderLongTermInvestments();
-            this.updateMetrics();
-            this.updateCharts();
-            this.closeLongTermEditModal();
+        this.saveData();
+        this.renderLongTermInvestments();
+        
+        // Update category tabs if category changed
+        if (oldCategoryId !== categoryId) {
+            this.renderCategoryTabs();
+            
+            // Show notification about category change
+            const newCategory = this.categories.find(cat => cat.id === categoryId);
+            const categoryName = newCategory ? newCategory.name : 'Uncategorized';
+            this.showNotification(`Updated "${editData.itemName}" and moved to ${categoryName}`, 'success');
+        } else {
             this.showNotification(`Updated "${editData.itemName}" successfully`, 'success');
+        }
+        
+        this.updateMetrics();
+        this.updateCharts();
+        this.closeLongTermEditModal();
         }
     }
 
+
     /**
      * Gets long-term edit form data
-     * @returns {Object} Edit form data
+    * @returns {Object} Edit form data
      */
     getLongTermEditFormData() {
         return {
@@ -1201,14 +1477,15 @@ ensureModalStyles() {
             unitBuyPrice: parseFloat(document.getElementById('editLongTermBuyPrice').value),
             buyDate: document.getElementById('editLongTermBuyDate').value,
             unitSellPrice: document.getElementById('editLongTermSellPrice').value ? parseFloat(document.getElementById('editLongTermSellPrice').value) : null,
-            sellDate: document.getElementById('editLongTermSellDate').value || null
+            sellDate: document.getElementById('editLongTermSellDate').value || null,
+            categoryId: document.getElementById('editLongTermCategory').value || null
         };
     }
 
     /**
-     * Validates long-term edit form data
-     * @param {Object} editData - Edit form data
-     * @returns {boolean} Validation result
+    * Validates long-term edit form data
+    * @param {Object} editData - Edit form data
+    * @returns {boolean} Validation result
      */
     validateLongTermEditForm(editData) {
         if (!editData.itemName || !editData.quantity || editData.quantity <= 0 || 
@@ -1216,7 +1493,35 @@ ensureModalStyles() {
             this.showNotification('Please fill in all required fields with valid values', 'error');
             return false;
         }
+    
+        // Optional: Validate category exists if provided
+        if (editData.categoryId && !this.categories.find(cat => cat.id === editData.categoryId)) {
+            this.showNotification('Selected category no longer exists', 'error');
+            return false;
+        }
+    
         return true;
+    }
+
+    /**
+    * Ensures all long-term investments have a category assigned
+    */
+    ensureInvestmentsHaveCategories() {
+        const uncategorizedCategory = this.categories.find(cat => cat.isDefault);
+        if (!uncategorizedCategory) return;
+    
+        let updated = false;
+        this.longTermInvestments.forEach(investment => {
+            if (!investment.categoryId) {
+                investment.categoryId = uncategorizedCategory.id;
+                updated = true;
+            }
+        });
+    
+        if (updated) {
+            this.saveData();
+            console.log('📝 Updated existing investments to have category assignments');
+        }
     }
 
     /**
@@ -1547,25 +1852,94 @@ ensureModalStyles() {
      * Renders regular investments table
      */
     renderInvestments() {
-        const tbody = document.getElementById('investmentsTable');
-        const emptyState = document.getElementById('emptyState');
+    const tbody = document.getElementById('investmentsTable');
+    const emptyState = document.getElementById('emptyState');
 
-        if (!tbody) {
-            console.error('❌ investmentsTable not found');
-            return;
-        }
-
-        if (this.investments.length === 0) {
-            tbody.innerHTML = '';
-            if (emptyState) emptyState.classList.remove('hidden');
-            return;
-        }
-
-        if (emptyState) emptyState.classList.add('hidden');
-
-        tbody.innerHTML = this.investments.map(investment => this.generateInvestmentRow(investment)).join('');
-        console.log(`📋 Rendered ${this.investments.length} investments`);
+    if (!tbody) {
+        console.error('❌ investmentsTable not found');
+        return;
     }
+
+    if (this.investments.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+
+    tbody.innerHTML = this.investments.map(investment => this.generateInvestmentRow(investment)).join('');
+
+    // ADD THIS LINE:
+    this.loadPricesForVisibleItems();
+
+    console.log(`📋 Rendered ${this.investments.length} investments`);
+}
+
+    // ADD THIS METHOD HERE:
+    /**
+    * Load prices for all visible investment items
+    */
+    async loadPricesForVisibleItems() {
+        for (const investment of this.investments) {
+            const priceElement = document.getElementById(`price-info-${investment.id}`);
+            if (priceElement) {
+                try {
+                    const prices = await this.getItemPrices(investment.itemName);
+                    const priceHtml = this.formatPriceDisplay(prices);
+                    priceElement.innerHTML = priceHtml;
+                } catch (error) {
+                    priceElement.innerHTML = '<span style="color: #ef4444;">Price fetch failed</span>';
+                }
+            }
+        }
+    }
+
+
+
+    // Price comparison 
+    /**
+    * Load prices for all visible investment items
+    */
+    async loadPricesForVisibleItems() {
+        for (const investment of this.investments) {
+            const priceElement = document.getElementById(`price-info-${investment.id}`);
+            if (priceElement) {
+                try {
+                    const prices = await this.getItemPrices(investment.itemName);
+                    const priceHtml = this.formatPriceDisplay(prices);
+                    priceElement.innerHTML = priceHtml;
+                } catch (error) {
+                    priceElement.innerHTML = '<span style="color: #ef4444;">Price fetch failed</span>';
+                }
+            }
+        }
+    }
+
+/**
+ * Format price display
+ */
+formatPriceDisplay(prices) {
+    const formatPrice = (price) => price ? `$${price.toFixed(2)}` : 'N/A';
+    const csfloatPrice = formatPrice(prices.csfloatPrice);
+    const buffPrice = formatPrice(prices.buffPrice);
+
+    // This now uses the new 'price-comparison-card' class for proper styling.
+    return `
+        <div class="price-comparison-card">
+            <div class="price-comparison-row">
+                <span class="price-source">CSFloat:</span>
+                <span class="price-value csfloat-price">${csfloatPrice}</span>
+            </div>
+            <div class="price-comparison-row">
+                <span class="price-source">Buff:</span>
+                <span class="price-value buff-price">${buffPrice}</span>
+            </div>
+        </div>
+    `;
+}
+    // End of Price comparison
+
 
     /**
      * Generates HTML for single investment row
@@ -1586,7 +1960,7 @@ ensureModalStyles() {
             <tr class="border-b border-gray-800 hover:bg-gray-800/30 transition animate-fadeIn">
                 <td class="py-4 px-4">
                     <div class="font-medium text-white">${this.escapeHtml(investment.itemName)}</div>
-                    <div class="text-xs text-gray-400">ID: ${investment.id.slice(-8)}</div>
+                    <div class="price-info-container" id="price-info-${investment.id}">Loading prices...</div>
                 </td>
                 <td class="py-4 px-4 text-blue-400 font-semibold">${this.formatNumber(investment.buyPrice)}</td>
                 <td class="py-4 px-4 text-gray-300 text-sm">${buyDate}</td>
@@ -1602,17 +1976,17 @@ ensureModalStyles() {
                         ${profit !== 0 ? `${profitSign}${Math.abs(profit).toFixed(2)}` : '-'}
                     </span>
                 </td>
-                <td class="py-4 px-4">
+                <td class="py-4 px-4 text-center">
                     ${returnPct !== 0 ? 
-                        `<span class="performance-badge ${returnPct > 0 ? 'performance-positive' : 'performance-negative'}">
+                        `<span class="longterm-return ${returnPct > 0 ? 'longterm-return-positive' : 'longterm-return-negative'}">
                             ${returnSign}${Math.abs(returnPct).toFixed(2)}%
                         </span>` : 
                         '<span class="text-gray-500">-</span>'
                     }
                 </td>
-                <td class="py-4 px-4">
-                    <span class="performance-badge ${investment.status === 'sold' ? 'performance-positive' : 'performance-negative'}">
-                        ${investment.status === 'sold' ? '✅ Sold' : '📦 Holding'}
+                <td class="py-4 px-4 text-center">
+                    <span class="longterm-status-badge ${investment.status === 'sold' ? 'longterm-status-sold' : 'longterm-status-holding'}">
+                        ${investment.status === 'sold' ? '✅ Sold' : 'Holding'}
                     </span>
                 </td>
                 <td class="py-4 px-4">
@@ -1645,8 +2019,8 @@ ensureModalStyles() {
     }
 
     /**
-     * Renders long-term investments table
-     */
+    * Renders long-term investments table
+    */
     renderLongTermInvestments() {
         const tbody = document.getElementById('longTermInvestmentsTable');
         const emptyState = document.getElementById('longTermEmptyState');
@@ -1656,18 +2030,59 @@ ensureModalStyles() {
             return;
         }
 
-        if (this.longTermInvestments.length === 0) {
+        // Get filtered investments based on selected category
+        const filteredInvestments = this.getFilteredLongTermInvestments();
+
+        if (filteredInvestments.length === 0) {
             tbody.innerHTML = '';
-            if (emptyState) emptyState.classList.remove('hidden');
+            if (emptyState) {
+                emptyState.classList.remove('hidden');
+                // Update empty state message based on filter
+                const emptyStateText = emptyState.querySelector('p');
+                if (emptyStateText) {
+                    if (this.selectedCategoryId === null) {
+                        emptyStateText.textContent = 'Start tracking your bulk investments by adding items with quantities above.';
+                    } else {
+                        const selectedCategory = this.categories.find(cat => cat.id === this.selectedCategoryId);
+                        const categoryName = selectedCategory ? selectedCategory.name : 'this category';
+                        emptyStateText.textContent = `No investments found in ${categoryName}. Add items to this category or select a different category.`;
+                    }
+                }
+            }
             return;
         }
 
-        if (emptyState) emptyState.classList.add('hidden');
+            if (emptyState) emptyState.classList.add('hidden');
 
-        tbody.innerHTML = this.longTermInvestments.map(investment => this.generateLongTermRow(investment)).join('');
-        console.log(`📋 Rendered ${this.longTermInvestments.length} long term investments`);
+            tbody.innerHTML = filteredInvestments.map(investment => this.generateLongTermRow(investment)).join('');
+            console.log(`📋 Rendered ${filteredInvestments.length} long term investments (filtered from ${this.longTermInvestments.length} total)`);
+            
+            // Load prices for each long-term item
+            this.loadPricesForLongTermItems();
     }
 
+    // ADD THIS METHOD HERE:
+    /**
+    * Load prices for long term investment items
+    */
+    async loadPricesForLongTermItems() {
+        const filteredInvestments = this.getFilteredLongTermInvestments();
+    
+        for (const investment of filteredInvestments) {
+            const priceElement = document.getElementById(`longterm-price-info-${investment.id}`);
+            if (priceElement) {
+                try {
+                    const prices = await this.getItemPrices(investment.itemName);
+                    const priceHtml = this.formatPriceDisplay(prices);
+                    priceElement.innerHTML = priceHtml;
+                } catch (error) {
+                    priceElement.innerHTML = '<span style="color: #ef4444;">Price fetch failed</span>';
+                }
+            }
+        }
+    }
+
+ 
     /**
      * Generates HTML for single long-term investment row
      * @param {Object} investment - Long-term investment object
@@ -1687,7 +2102,7 @@ ensureModalStyles() {
             <tr class="border-b border-gray-800 hover:bg-gray-800/30 transition animate-fadeIn">
                 <td class="py-4 px-4">
                     <div class="longterm-item-name font-medium text-white">${this.escapeHtml(investment.itemName)}</div>
-                    <div class="longterm-item-id">ID: ${investment.id.slice(-8)}</div>
+                    <div class="price-info-container" id="longterm-price-info-${investment.id}">Loading prices...</div>
                 </td>
                 <td class="py-4 px-4 text-center">
                     <span class="longterm-quantity">${investment.quantity}</span>
@@ -2517,9 +2932,581 @@ ensureModalStyles() {
         }
     }
 
+// ============================================================================================
+// PRICE COMPARISON INTEGRATION (Adapted from tradeit-price-compare.js)
+// ============================================================================================
+
+// ============================================================================================
+// SIMPLE PRICE COMPARISON INTEGRATION
+// ============================================================================================
+
+// ============================================================================================
+// DOPPLER-AWARE PRICE COMPARISON INTEGRATION
+// ============================================================================================
+
+/**
+ * Fetch price data from APIs
+ */
+async fetchPriceData() {
+    // Use cache if it's less than 1 hour old
+    if (this.priceDataCache && (Date.now() - this.priceCacheTimestamp < 3600000)) {
+        return this.priceDataCache;
+    }
+
+    console.log('📡 Fetching fresh prices from csgotrader.app APIs...');
+    
+    try {
+        const [csfloatResponse, buffResponse] = await Promise.all([
+            fetch('https://prices.csgotrader.app/latest/csfloat.json'),
+            fetch('https://prices.csgotrader.app/latest/buff163.json')
+        ]);
+
+        if (!csfloatResponse.ok || !buffResponse.ok) {
+            throw new Error('Failed to fetch price data');
+        }
+
+        const csfloatData = await csfloatResponse.json();
+        const buffData = await buffResponse.json();
+        
+        this.priceDataCache = this.combinePriceData(csfloatData, buffData);
+        this.priceCacheTimestamp = Date.now();
+        
+        console.log(`✅ Price cache updated with ${Object.keys(this.priceDataCache).length} items.`);
+        return this.priceDataCache;
+
+    } catch (error) {
+        console.error('❌ Error fetching prices:', error.message);
+        return this.priceDataCache || {};
+    }
+}
+
+/**
+ * Combine price data from both APIs (preserving doppler structure)
+ */
+combinePriceData(csfloatData, buffData) {
+    const combinedPrices = {};
+
+    // Add CSFloat prices (preserve doppler structure)
+    for (const [name, data] of Object.entries(csfloatData)) {
+        combinedPrices[name.toLowerCase()] = { 
+            csfloatPrice: data.price,
+            csfloatDoppler: data.doppler || null
+        };
+    }
+    
+    // Add Buff163 prices (preserve doppler structure)
+    for (const [name, data] of Object.entries(buffData)) {
+        const lowerName = name.toLowerCase();
+        if (!combinedPrices[lowerName]) {
+            combinedPrices[lowerName] = {};
+        }
+        
+        if (data?.starting_at?.price) {
+            combinedPrices[lowerName].buffPrice = data.starting_at.price;
+            if (data.starting_at.doppler) {
+                combinedPrices[lowerName].buffDoppler = data.starting_at.doppler;
+            }
+        }
+    }
+    
+    return combinedPrices;
+}
+
+/**
+ * Check if item is a Doppler item and extract phase/gem (FIXED VERSION)
+ */
+parseDopplerItem(itemName) {
+    console.log(`🔍 Parsing Doppler for: "${itemName}"`);
+    
+    const lowerName = itemName.toLowerCase();
+    
+    // Check if it contains "doppler"
+    if (!lowerName.includes('doppler')) {
+        console.log(`   ❌ No "doppler" found`);
+        return { isDoppler: false };
+    }
+    
+    console.log(`   ✅ Contains "doppler"`);
+    
+    // Define phase/gem patterns more carefully
+    const patterns = [
+        // Gem patterns: "Doppler - Sapphire", "Doppler Sapphire"
+        { 
+            regex: /\|\s*doppler\s*[-\s]*sapphire/i, 
+            phase: 'Sapphire',
+            replacement: '| Doppler'
+        },
+        { 
+            regex: /\|\s*doppler\s*[-\s]*ruby/i, 
+            phase: 'Ruby',
+            replacement: '| Doppler'
+        },
+        { 
+            regex: /\|\s*doppler\s*[-\s]*emerald/i, 
+            phase: 'Emerald',
+            replacement: '| Doppler'
+        },
+        { 
+            regex: /\|\s*doppler\s*[-\s]*black\s+pearl/i, 
+            phase: 'Black Pearl',
+            replacement: '| Doppler'
+        },
+        // Phase patterns: "Doppler (Phase 3)", "Doppler - Phase 3"
+        { 
+            regex: /\|\s*doppler\s*[-\s]*phase\s+([1-4])/i, 
+            phase: 'Phase',
+            replacement: '| Doppler'
+        },
+        { 
+            regex: /\|\s*doppler\s*\(\s*phase\s+([1-4])\s*\)/i, 
+            phase: 'Phase',
+            replacement: '| Doppler'
+        }
+    ];
+    
+    for (const pattern of patterns) {
+        console.log(`   Testing pattern: ${pattern.regex}`);
+        const match = itemName.match(pattern.regex);
+        
+        if (match) {
+            console.log(`   ✅ Pattern matched!`, match);
+            
+            let phase = pattern.phase;
+            if (pattern.phase === 'Phase' && match[1]) {
+                phase = `Phase ${match[1]}`;
+            }
+            
+            // Create base name by replacing the matched part with just "| Doppler"
+            const baseName = itemName.replace(pattern.regex, pattern.replacement);
+            
+            console.log(`   Phase: "${phase}"`);
+            console.log(`   Base name: "${baseName}"`);
+            
+            return {
+                isDoppler: true,
+                baseName: baseName.trim(),
+                phase: phase
+            };
+        }
+    }
+    
+    console.log(`   ❌ No Doppler patterns matched`);
+    return { isDoppler: false };
+}
+
+/**
+ * Generate name variations for matching
+ */
+generateNameVariations(itemName) {
+    const variations = [];
+    let workingName = itemName.trim();
+    
+    // Original name
+    variations.push(workingName);
+    
+    // Fix quality: "Factory-New" → "Factory New"
+    const qualityFixed = workingName.replace(/\(([^)]+)\)/, (match, quality) => {
+        return `(${quality.replace(/-/g, ' ')})`;
+    });
+    variations.push(qualityFixed);
+    
+    // Add star for knives
+    const knifeNames = ['knife', 'bayonet', 'karambit'];
+    const isKnife = knifeNames.some(k => workingName.toLowerCase().includes(k));
+    
+    if (isKnife && !workingName.includes('★')) {
+        variations.push(`★ ${qualityFixed}`);
+    }
+    
+    // Remove star if present
+    if (workingName.includes('★')) {
+        variations.push(qualityFixed.replace('★ ', ''));
+    }
+    
+    // StatTrak variations
+    if (workingName.includes('StatTrak')) {
+        const statTrakFixed = qualityFixed.replace(/StatTrak[™]?\s*/gi, 'StatTrak™ ');
+        variations.push(statTrakFixed);
+        
+        if (isKnife && !statTrakFixed.includes('★')) {
+            variations.push(`★ ${statTrakFixed}`);
+        }
+    }
+    
+    // Remove duplicates and return
+    return [...new Set(variations)];
+}
+
+/**
+ * Get prices for an item name (with Doppler support)
+ */
+async getItemPrices(itemName) {
+    console.log(`\n🔍 === SUPER DEBUG FOR: "${itemName}" ===`);
+    
+    try {
+        const priceData = await this.fetchPriceData();
+        
+        if (!priceData || Object.keys(priceData).length === 0) {
+            console.log('❌ No price data available');
+            return { csfloatPrice: null, buffPrice: null };
+        }
+
+        // Step 1: Check if this is a Doppler item
+        const dopplerInfo = this.parseDopplerItem(itemName);
+        console.log(`🎯 Doppler check result:`, dopplerInfo);
+        
+        if (dopplerInfo.isDoppler) {
+            console.log(`🔍 Processing as Doppler item...`);
+            console.log(`   Base name: "${dopplerInfo.baseName}"`);
+            console.log(`   Phase: "${dopplerInfo.phase}"`);
+            
+            // Generate variations for base name
+            const baseVariations = this.generateNameVariations(dopplerInfo.baseName);
+            console.log(`   Base variations:`, baseVariations);
+            
+            // Try to find the base item
+            for (const variation of baseVariations) {
+                const lowerVariation = variation.toLowerCase();
+                console.log(`   Checking: "${lowerVariation}"`);
+                
+                if (priceData[lowerVariation]) {
+                    const itemData = priceData[lowerVariation];
+                    console.log(`   ✅ Found base item!`);
+                    console.log(`   Item data:`, {
+                        csfloatPrice: itemData.csfloatPrice,
+                        buffPrice: itemData.buffPrice,
+                        hasCsfloatDoppler: !!itemData.csfloatDoppler,
+                        hasBuffDoppler: !!itemData.buffDoppler
+                    });
+                    
+                    if (itemData.csfloatDoppler) {
+                        console.log(`   CSFloat Doppler phases:`, Object.keys(itemData.csfloatDoppler));
+                    }
+                    if (itemData.buffDoppler) {
+                        console.log(`   Buff163 Doppler phases:`, Object.keys(itemData.buffDoppler));
+                    }
+                    
+                    // Try to get phase-specific price
+                    let csfloatPrice = null;
+                    let buffPrice = null;
+                    
+                    if (itemData.csfloatDoppler && itemData.csfloatDoppler[dopplerInfo.phase]) {
+                        csfloatPrice = itemData.csfloatDoppler[dopplerInfo.phase];
+                        console.log(`   ✅ Found CSFloat ${dopplerInfo.phase}: $${csfloatPrice}`);
+                    } else {
+                        console.log(`   ❌ CSFloat ${dopplerInfo.phase} not found`);
+                    }
+                    
+                    if (itemData.buffDoppler && itemData.buffDoppler[dopplerInfo.phase]) {
+                        buffPrice = itemData.buffDoppler[dopplerInfo.phase];
+                        console.log(`   ✅ Found Buff163 ${dopplerInfo.phase}: $${buffPrice}`);
+                    } else {
+                        console.log(`   ❌ Buff163 ${dopplerInfo.phase} not found`);
+                    }
+                    
+                    return { csfloatPrice, buffPrice };
+                } else {
+                    console.log(`   ❌ Not found: "${lowerVariation}"`);
+                }
+            }
+            
+            console.log(`❌ No Doppler base item found`);
+            return { csfloatPrice: null, buffPrice: null };
+        }
+        
+        // Regular item processing
+        console.log(`🔍 Processing as regular item...`);
+        const variations = this.generateNameVariations(itemName);
+        console.log(`   Variations:`, variations);
+        
+        for (const variation of variations) {
+            const lowerVariation = variation.toLowerCase();
+            console.log(`   Trying: "${lowerVariation}"`);
+            
+            if (priceData[lowerVariation]) {
+                console.log(`   ✅ Found regular item!`);
+                return {
+                    csfloatPrice: priceData[lowerVariation].csfloatPrice || null,
+                    buffPrice: priceData[lowerVariation].buffPrice || null
+                };
+            }
+        }
+        
+        console.log(`❌ No match found`);
+        return { csfloatPrice: null, buffPrice: null };
+        
+    } catch (error) {
+        console.error('❌ Error getting item prices:', error);
+        return { csfloatPrice: null, buffPrice: null };
+    }
+}
+
+/**
+ * Get Doppler-specific prices
+ */
+async getDopplerPrices(baseName, phase, priceData) {
+    // Generate variations for the base name
+    const variations = this.generateNameVariations(baseName);
+    
+    for (const variation of variations) {
+        const lowerVariation = variation.toLowerCase();
+        
+        if (priceData[lowerVariation]) {
+            const itemData = priceData[lowerVariation];
+            
+            console.log(`✅ Found Doppler base: "${variation}"`);
+            
+            // Get phase-specific prices
+            let csfloatPrice = null;
+            let buffPrice = null;
+            
+            if (itemData.csfloatDoppler && itemData.csfloatDoppler[phase]) {
+                csfloatPrice = itemData.csfloatDoppler[phase];
+                console.log(`   CSFloat ${phase}: $${csfloatPrice}`);
+            }
+            
+            if (itemData.buffDoppler && itemData.buffDoppler[phase]) {
+                buffPrice = itemData.buffDoppler[phase];
+                console.log(`   Buff163 ${phase}: $${buffPrice}`);
+            }
+            
+            // Fallback to base price if phase not found
+            if (!csfloatPrice && itemData.csfloatPrice) {
+                csfloatPrice = itemData.csfloatPrice;
+                console.log(`   CSFloat fallback: $${csfloatPrice}`);
+            }
+            
+            if (!buffPrice && itemData.buffPrice) {
+                buffPrice = itemData.buffPrice;
+                console.log(`   Buff163 fallback: $${buffPrice}`);
+            }
+            
+            return { csfloatPrice, buffPrice };
+        }
+    }
+    
+    console.log(`❌ No Doppler base found for: "${baseName}"`);
+    return { csfloatPrice: null, buffPrice: null };
+}
+
+
     // ============================================================================================
     // CHART DATA GENERATION
     // ============================================================================================
+
+// ============================================================================================
+// CATEGORY MANAGEMENT
+// ============================================================================================
+
+/**
+ * Shows the add category form
+ */
+showAddCategoryForm() {
+    document.getElementById('addCategoryForm').classList.remove('hidden');
+    document.getElementById('newCategoryName').focus();
+}
+
+/**
+ * Hides the add category form
+ */
+hideAddCategoryForm() {
+    document.getElementById('addCategoryForm').classList.add('hidden');
+    document.getElementById('newCategoryName').value = '';
+}
+
+/**
+ * Adds a new category
+ */
+addCategory() {
+    const categoryName = document.getElementById('newCategoryName').value.trim();
+    
+    if (!categoryName) {
+        this.showNotification('Please enter a category name', 'error');
+        return;
+    }
+    
+    // Check if category already exists
+    if (this.categories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase())) {
+        this.showNotification('Category already exists', 'error');
+        return;
+    }
+    
+    const category = {
+        id: this.generateUniqueId(),
+        name: categoryName,
+        isDefault: false,
+        dateCreated: new Date().toISOString()
+    };
+    
+    this.categories.push(category);
+    this.saveData();
+    this.renderCategoryTabs();
+    this.hideAddCategoryForm();
+    
+    this.showNotification(`Category "${categoryName}" created successfully`, 'success');
+}
+
+/**
+ * Removes a category
+ * @param {string} categoryId - Category ID to remove
+ */
+removeCategory(categoryId) {
+    const category = this.categories.find(cat => cat.id === categoryId);
+    
+    if (!category) {
+        this.showNotification('Category not found', 'error');
+        return;
+    }
+    
+    if (category.isDefault) {
+        this.showNotification('Cannot delete default category', 'error');
+        return;
+    }
+    
+    // Count items in this category
+    const itemsInCategory = this.longTermInvestments.filter(inv => inv.categoryId === categoryId).length;
+    
+    if (itemsInCategory > 0) {
+        if (!confirm(`This category contains ${itemsInCategory} items. Items will be moved to "Uncategorized". Continue?`)) {
+            return;
+        }
+        
+        // Move items to uncategorized
+        const uncategorizedCategory = this.categories.find(cat => cat.isDefault);
+        this.longTermInvestments.forEach(inv => {
+            if (inv.categoryId === categoryId) {
+                inv.categoryId = uncategorizedCategory.id;
+            }
+        });
+    }
+    
+    this.categories = this.categories.filter(cat => cat.id !== categoryId);
+    
+    // If we're currently viewing this category, switch to "All"
+    if (this.selectedCategoryId === categoryId) {
+        this.selectedCategoryId = null;
+    }
+    
+    this.saveData();
+    this.renderCategoryTabs();
+    this.renderLongTermInvestments();
+    
+    this.showNotification(`Category "${category.name}" deleted successfully`, 'success');
+}
+
+/**
+ * Populates the category dropdown in the form
+ */
+populateCategoryDropdown() {
+    const categorySelect = document.getElementById('categorySelect');
+    if (!categorySelect) return;
+    
+    // Clear existing options except the first one
+    categorySelect.innerHTML = '<option value="">Select Category</option>';
+    
+    // Add all categories as options
+    this.categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = category.name;
+        categorySelect.appendChild(option);
+    });
+    
+    // If no categories exist except default, show a message
+    if (this.categories.length <= 1) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No categories created yet';
+        option.disabled = true;
+        categorySelect.appendChild(option);
+    }
+}
+
+/**
+ * Populates the category dropdown in the edit modal
+ */
+populateEditCategoryDropdown() {
+    const categorySelect = document.getElementById('editLongTermCategory');
+    if (!categorySelect) return;
+    
+    // Clear existing options except the first one
+    categorySelect.innerHTML = '<option value="">Select Category</option>';
+    
+    // Add all categories as options
+    this.categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = category.name;
+        categorySelect.appendChild(option);
+    });
+}
+
+
+/**
+ * Selects a category for filtering
+ * @param {string} categoryId - Category ID to select (null for "All")
+ */
+selectCategory(categoryId) {
+    this.selectedCategoryId = categoryId;
+    this.renderCategoryTabs();
+    this.renderLongTermInvestments();
+}
+
+/**
+ * Renders category tabs horizontally
+ */
+renderCategoryTabs() {
+    const categoryTabsContainer = document.getElementById('categoryTabsContainer');
+    
+    if (!categoryTabsContainer) return;
+    
+    const allItemsCount = this.longTermInvestments.length;
+    
+    // Create "All" tab
+    let tabsHTML = `
+        <div class="category-tab ${this.selectedCategoryId === null ? 'active' : ''}" data-category-id="all">
+            <span class="category-tab-name">All</span>
+            <span class="category-tab-count">${allItemsCount}</span>
+        </div>
+    `;
+    
+    // Create tabs for each category
+    this.categories.forEach(category => {
+        const itemCount = this.longTermInvestments.filter(inv => inv.categoryId === category.id).length;
+        const isActive = this.selectedCategoryId === category.id;
+        
+        tabsHTML += `
+            <div class="category-tab ${isActive ? 'active' : ''}" data-category-id="${category.id}">
+                <span class="category-tab-name">${this.escapeHtml(category.name)}</span>
+                <span class="category-tab-count">${itemCount}</span>
+                ${!category.isDefault ? `
+                    <button class="category-tab-delete" data-delete-category="${category.id}" title="Delete category">
+                        ×
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    });
+    
+    categoryTabsContainer.innerHTML = tabsHTML;
+
+    // Also update the form dropdown when categories change
+    this.populateCategoryDropdown();
+}
+
+
+/**
+ * Gets filtered long term investments based on selected category
+ * @returns {Array} Filtered investments
+ */
+getFilteredLongTermInvestments() {
+    if (this.selectedCategoryId === null) {
+        return this.longTermInvestments; // Show all
+    }
+    
+    return this.longTermInvestments.filter(inv => inv.categoryId === this.selectedCategoryId);
+}
+  
     
     /**
      * Generates performance chart data based on current period
@@ -3455,21 +4442,1543 @@ ensureModalStyles() {
             const element = document.getElementById(id);
             if (element) element.value = '';
         });
-        
+    
+        // Reset category selection
+        const categorySelect = document.getElementById('categorySelect');
+        if (categorySelect) categorySelect.value = '';
+    
         // Reset radio button to default
         document.getElementById('portfolioType').checked = true;
         document.getElementById('longtermType').checked = false;
-        
-        // Hide quantity field
+    
+        // Hide quantity and category fields
         document.getElementById('quantityField').classList.add('hidden');
+        document.getElementById('categoryField').classList.add('hidden');
         document.getElementById('quantity').required = false;
-        
+    
         const buyDateElement = document.getElementById('buyDate');
         if (buyDateElement) {
             buyDateElement.value = new Date().toISOString().split('T')[0];
         }
     }
+
+    // ============================================================================================
+    // ENHANCED TRADING DASHBOARD METHODS
+    // ============================================================================================
+
+    /**
+     * Sets up trading tab event listeners
+     */
+    setupTradingTabListeners() {
+        const tradingTabs = document.querySelectorAll('.trading-tab');
+        tradingTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tabId = tab.id.replace('tab-', '');
+                this.switchTradingTab(tabId);
+            });
+        });
+    }
+
+    /**
+     * Sets up cash management event listeners
+     */
+    setupCashManagementListeners() {
+        this.setupButtonListener('addDepositBtn', () => this.addDeposit());
+        this.setupButtonListener('addWithdrawalBtn', () => this.addWithdrawal());
+    }
+
+    /**
+     * Initializes notification system
+     */
+    initializeNotifications() {
+        if (typeof Notyf !== 'undefined') {
+            this.notyf = new Notyf({
+                duration: 3000,
+                position: { x: 'right', y: 'top' },
+                types: [
+                    {
+                        type: 'success',
+                        background: '#22c55e',
+                        icon: {
+                            className: 'notyf__icon--success',
+                            tagName: 'i',
+                            text: '✓'
+                        }
+                    },
+                    {
+                        type: 'error',
+                        background: '#ef4444',
+                        icon: {
+                            className: 'notyf__icon--error',
+                            tagName: 'i',
+                            text: '✗'
+                        }
+                    }
+                ]
+            });
+            console.log('✅ Notification system initialized');
+        } else {
+            console.warn('⚠️ Notyf not loaded, using fallback notifications');
+        }
+    }
+
+    /**
+     * Initializes trading tabs
+     */
+    initializeTradingTabs() {
+        // Ensure DOM elements exist before initializing
+        setTimeout(() => {
+            this.switchTradingTab('holdings');
+        }, 100);
+    }
+
+    /**
+     * Initializes Lucide icons
+     */
+    initializeLucideIcons() {
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+            console.log('✅ Lucide icons initialized');
+        } else {
+            console.warn('⚠️ Lucide not loaded, icons may not display correctly');
+        }
+    }
+
+    /**
+     * Switches to specified trading tab
+     */
+    switchTradingTab(tabName) {
+        console.log(`🔄 Attempting to switch to trading tab: ${tabName}`);
+        
+        // Update current tab state
+        this.currentTradingTab = tabName;
+
+        // Update tab button styles
+        const tradingTabs = document.querySelectorAll('.trading-tab');
+        console.log(`Found ${tradingTabs.length} trading tabs`);
+        tradingTabs.forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        const activeTab = document.getElementById(`tab-${tabName}`);
+        if (activeTab) {
+            activeTab.classList.add('active');
+            console.log(`✅ Activated tab button: tab-${tabName}`);
+        } else {
+            console.warn(`❌ Tab button not found: tab-${tabName}`);
+        }
+
+        // Update tab content visibility
+        const tabContents = document.querySelectorAll('.tab-content');
+        console.log(`Found ${tabContents.length} tab contents`);
+        tabContents.forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        const activeContent = document.getElementById(`content-${tabName}`);
+        if (activeContent) {
+            activeContent.classList.add('active');
+            console.log(`✅ Activated tab content: content-${tabName}`);
+        } else {
+            console.warn(`❌ Tab content not found: content-${tabName}`);
+        }
+
+        // Update tab-specific data
+        this.updateTradingTabContent(tabName);
+
+        console.log(`📋 Successfully switched to trading tab: ${tabName}`);
+    }
+
+    /**
+     * Updates content for specific trading tab
+     */
+    updateTradingTabContent(tabName) {
+        switch (tabName) {
+            case 'holdings':
+                this.updateHoldingsTab();
+                break;
+            case 'performance':
+                this.updatePerformanceTab();
+                break;
+            case 'account':
+                this.updateAccountTab();
+                break;
+        }
+    }
+
+    /**
+     * Updates Holdings tab content
+     */
+    updateHoldingsTab() {
+        const holdings = this.investments.filter(inv => !inv.sellPrice);
+        
+        // Update metrics
+        const totalItems = holdings.length;
+        const invested = holdings.reduce((sum, inv) => sum + inv.buyPrice, 0);
+        const currentValue = invested; // TODO: Add real-time pricing
+        const unrealizedPnL = currentValue - invested;
+
+        this.updateElement('holdingsTotalItems', totalItems);
+        this.updateElement('holdingsInvested', `$${this.formatNumber(invested)}`);
+        this.updateElement('holdingsCurrentValue', `$${this.formatNumber(currentValue)}`);
+        this.updateElement('holdingsUnrealizedPnL', `$${this.formatNumber(unrealizedPnL)}`, 
+                          unrealizedPnL >= 0 ? 'text-green-400' : 'text-red-400');
+
+        // Update holdings table
+        this.renderHoldingsTable(holdings);
+
+        // Update holdings chart
+        this.updateHoldingsChart(holdings);
+    }
+
+    /**
+     * Updates Performance tab content
+     */
+    updatePerformanceTab() {
+        const completedTrades = this.investments.filter(inv => inv.sellPrice);
+        
+        // Calculate performance metrics
+        const totalTrades = completedTrades.length;
+        const winningTrades = completedTrades.filter(inv => inv.sellPrice > inv.buyPrice).length;
+        const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+        const totalProfit = completedTrades.reduce((sum, inv) => sum + (inv.sellPrice - inv.buyPrice), 0);
+        const avgProfit = totalTrades > 0 ? totalProfit / totalTrades : 0;
+        const avgReturn = totalTrades > 0 ? completedTrades.reduce((sum, inv) => 
+            sum + this.calculateReturnPercentage(inv.buyPrice, inv.sellPrice), 0) / totalTrades : 0;
+
+        // Update performance metrics
+        this.updateElement('performanceTotalTrades', totalTrades);
+        this.updateElement('performanceWinRate', `${this.formatNumber(winRate)}%`, 
+                          winRate >= 50 ? 'text-green-400' : 'text-red-400');
+        this.updateElement('performanceAvgProfit', `$${this.formatNumber(avgProfit)}`,
+                          avgProfit >= 0 ? 'text-green-400' : 'text-red-400');
+        this.updateElement('performanceTotalProfit', `$${this.formatNumber(totalProfit)}`,
+                          totalProfit >= 0 ? 'text-green-400' : 'text-red-400');
+        this.updateElement('performanceAvgReturn', `${this.formatNumber(avgReturn)}%`,
+                          avgReturn >= 0 ? 'text-green-400' : 'text-red-400');
+
+        // Update performance charts
+        this.updatePerformanceCharts();
+
+        // Update trade history table
+        this.renderTradeHistoryTable(completedTrades);
+    }
+
+    /**
+     * Updates Account tab content with enhanced trading analytics
+     */
+    updateAccountTab() {
+        // Calculate advanced trading metrics
+        const tradingMetrics = this.calculateTradingMetrics();
+        
+        // Update Trading Capital KPIs
+        this.updateElement('availableCapital', `$${this.formatNumber(tradingMetrics.availableCapital)}`);
+        this.updateElement('capitalInUse', `$${this.formatNumber(tradingMetrics.capitalInUse)}`);
+        this.updateElement('capitalEfficiency', `${tradingMetrics.capitalEfficiency}x`);
+        this.updateElement('riskExposure', `${tradingMetrics.riskExposure}%`);
+        
+        // Update Professional P&L Analysis
+        this.updateElement('realizedPnL', `$${this.formatNumber(tradingMetrics.realizedPnL)}`,
+                          tradingMetrics.realizedPnL >= 0 ? 'text-emerald-400' : 'text-red-400');
+        this.updateElement('unrealizedPnL', `$${this.formatNumber(tradingMetrics.unrealizedPnL)}`,
+                          tradingMetrics.unrealizedPnL >= 0 ? 'text-cyan-400' : 'text-red-400');
+        this.updateElement('tradingVelocity', tradingMetrics.tradingVelocity.toFixed(1));
+        this.updateElement('profitFactor', tradingMetrics.profitFactor.toFixed(1));
+        
+        // Update enhanced charts
+        this.updateEnhancedAccountCharts();
+        
+        // Update intelligent insights
+        this.updateTradingInsights(tradingMetrics);
+    }
+    
+    /**
+     * Calculate advanced trading metrics for professional traders
+     */
+    calculateTradingMetrics() {
+        // Get unsold holdings (capital in use)
+        const activeHoldings = this.investments.filter(inv => !inv.sellPrice);
+        const capitalInUse = activeHoldings.reduce((sum, inv) => sum + (inv.buyPrice || 0), 0);
+        
+        // Available capital = account balance (assuming account balance is free cash)
+        const availableCapital = this.accountBalance;
+        
+        // Total capital = available + in use
+        const totalCapital = availableCapital + capitalInUse;
+        
+        // Risk exposure = (capital in use / total capital) * 100
+        const riskExposure = totalCapital > 0 ? ((capitalInUse / totalCapital) * 100) : 0;
+        
+        // Calculate realized P&L from completed trades
+        const completedTrades = this.investments.filter(inv => inv.sellPrice);
+        const realizedPnL = completedTrades.reduce((sum, inv) => {
+            return sum + ((inv.sellPrice || 0) - (inv.buyPrice || 0));
+        }, 0);
+        
+        // Calculate unrealized P&L from current holdings (assuming current value = buy price + 5% for demo)
+        const unrealizedPnL = activeHoldings.reduce((sum, inv) => {
+            const currentValue = (inv.buyPrice || 0) * 1.05; // Demo assumption
+            return sum + (currentValue - (inv.buyPrice || 0));
+        }, 0);
+        
+        // Calculate trading velocity (trades per week)
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+        const recentTrades = completedTrades.filter(inv => {
+            const sellDate = new Date(inv.sellDate || inv.date);
+            return sellDate >= thirtyDaysAgo;
+        });
+        const tradingVelocity = (recentTrades.length / 30) * 7; // trades per week
+        
+        // Calculate profit factor (gross profits / gross losses)
+        let grossProfits = 0;
+        let grossLosses = 0;
+        completedTrades.forEach(inv => {
+            const profit = (inv.sellPrice || 0) - (inv.buyPrice || 0);
+            if (profit > 0) {
+                grossProfits += profit;
+            } else {
+                grossLosses += Math.abs(profit);
+            }
+        });
+        const profitFactor = grossLosses > 0 ? (grossProfits / grossLosses) : (grossProfits > 0 ? 999 : 0);
+        
+        // Calculate capital efficiency (total traded value / average capital balance)
+        const totalTradedValue = completedTrades.reduce((sum, inv) => sum + (inv.sellPrice || 0), 0);
+        const avgCapitalBalance = (totalCapital || 1000); // Default assumption
+        const capitalEfficiency = avgCapitalBalance > 0 ? (totalTradedValue / avgCapitalBalance) : 0;
+        
+        return {
+            availableCapital,
+            capitalInUse,
+            capitalEfficiency: Math.max(0, capitalEfficiency.toFixed(1)),
+            riskExposure: Math.min(100, Math.max(0, riskExposure.toFixed(0))),
+            realizedPnL,
+            unrealizedPnL,
+            tradingVelocity: Math.max(0, tradingVelocity),
+            profitFactor: Math.max(0, profitFactor),
+            totalCapital,
+            completedTrades,
+            activeHoldings,
+            grossProfits,
+            grossLosses
+        };
+    }
+
+    /**
+     * Helper method to update element content and styling
+     */
+    updateElement(id, content, className = '') {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = content;
+            if (className) {
+                element.className = element.className.replace(/text-(green|red|blue)-\d+/g, '') + ' ' + className;
+            }
+        }
+    }
+
+    /**
+     * Updates the main trading dashboard
+     */
+    updateTradingDashboard() {
+        this.updateTradingTabContent(this.currentTradingTab);
+    }
+
+    /**
+     * Adds a deposit to the account
+     */
+    addDeposit() {
+        const amount = parseFloat(document.getElementById('depositAmount').value);
+        const note = document.getElementById('depositNote').value;
+
+        if (!amount || amount <= 0) {
+            this.showNotification('Please enter a valid deposit amount', 'error');
+            return;
+        }
+
+        const deposit = {
+            id: Date.now().toString(),
+            amount: amount,
+            note: note || '',
+            date: new Date().toISOString(),
+            type: 'deposit'
+        };
+
+        this.deposits.push(deposit);
+        this.accountBalance += amount;
+        this.saveData();
+
+        // Clear form
+        document.getElementById('depositAmount').value = '';
+        document.getElementById('depositNote').value = '';
+
+        // Update display
+        this.updateAccountTab();
+        
+        this.showNotification(`Successfully added deposit of $${this.formatNumber(amount)}`, 'success');
+    }
+
+    /**
+     * Adds a withdrawal from the account
+     */
+    addWithdrawal() {
+        const amount = parseFloat(document.getElementById('withdrawalAmount').value);
+        const note = document.getElementById('withdrawalNote').value;
+
+        if (!amount || amount <= 0) {
+            this.showNotification('Please enter a valid withdrawal amount', 'error');
+            return;
+        }
+
+        if (amount > this.accountBalance) {
+            this.showNotification('Insufficient account balance', 'error');
+            return;
+        }
+
+        const withdrawal = {
+            id: Date.now().toString(),
+            amount: amount,
+            note: note || '',
+            date: new Date().toISOString(),
+            type: 'withdrawal'
+        };
+
+        this.withdrawals.push(withdrawal);
+        this.accountBalance -= amount;
+        this.saveData();
+
+        // Clear form
+        document.getElementById('withdrawalAmount').value = '';
+        document.getElementById('withdrawalNote').value = '';
+
+        // Update display
+        this.updateAccountTab();
+
+        this.showNotification(`Successfully added withdrawal of $${this.formatNumber(amount)}`, 'success');
+    }
+
+    /**
+     * Enhanced notification with Notyf fallback
+     */
+    showNotification(message, type = 'info') {
+        if (this.notyf) {
+            this.notyf.open({ type, message });
+        } else {
+            // Fallback to existing notification system
+            const notification = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-600' : 
+                            type === 'error' ? 'bg-red-600' : 'bg-blue-600';
+            
+            notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-sm`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+    }
+
+    /**
+     * Renders holdings table
+     */
+    renderHoldingsTable(holdings) {
+        const table = document.getElementById('holdingsTable');
+        if (!table) return;
+
+        if (holdings.length === 0) {
+            table.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-8 text-gray-400">
+                        No active holdings
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        table.innerHTML = holdings.map(holding => `
+            <tr class="border-b border-gray-700 hover:bg-gray-800/50 transition-colors">
+                <td class="py-3 px-4 text-left">${this.escapeHtml(holding.itemName)}</td>
+                <td class="py-3 px-4 text-center">$${this.formatNumber(holding.buyPrice)}</td>
+                <td class="py-3 px-4 text-center">$${this.formatNumber(holding.buyPrice)}</td>
+                <td class="py-3 px-4 text-center text-gray-400">$0.00</td>
+                <td class="py-3 px-4 text-center">
+                    <button class="btn-primary text-xs py-1 px-3 rounded" onclick="investmentTracker.quickSell('${holding.id}')">
+                        Quick Sell
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    /**
+     * Renders trade history table
+     */
+    renderTradeHistoryTable(trades) {
+        const table = document.getElementById('tradeHistoryTable');
+        if (!table) return;
+
+        if (trades.length === 0) {
+            table.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-8 text-gray-400">
+                        No completed trades yet
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        table.innerHTML = trades.map(trade => {
+            const profit = trade.sellPrice - trade.buyPrice;
+            const returnPct = this.calculateReturnPercentage(trade.buyPrice, trade.sellPrice);
+            const profitClass = profit >= 0 ? 'text-green-400' : 'text-red-400';
+            
+            return `
+                <tr class="border-b border-gray-700 hover:bg-gray-800/50 transition-colors">
+                    <td class="py-3 px-4 text-left">${this.escapeHtml(trade.itemName)}</td>
+                    <td class="py-3 px-4 text-center">$${this.formatNumber(trade.buyPrice)}</td>
+                    <td class="py-3 px-4 text-center">$${this.formatNumber(trade.sellPrice)}</td>
+                    <td class="py-3 px-4 text-center ${profitClass}">$${this.formatNumber(profit)}</td>
+                    <td class="py-3 px-4 text-center ${profitClass}">${this.formatNumber(returnPct)}%</td>
+                    <td class="py-3 px-4 text-center text-sm text-gray-400">${trade.sellDate || 'N/A'}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Updates holdings chart with ApexCharts pie chart
+     */
+    updateHoldingsChart(holdings) {
+        if (typeof ApexCharts === 'undefined') {
+            console.warn('❌ ApexCharts not loaded');
+            return;
+        }
+
+        const chartElement = document.getElementById('holdingsDistributionChart');
+        if (!chartElement) {
+            console.warn('❌ Holdings chart container not found');
+            return;
+        }
+
+        // Destroy existing chart
+        if (this.charts.holdingsDistribution) {
+            this.charts.holdingsDistribution.destroy();
+        }
+
+        if (holdings.length === 0) {
+            chartElement.innerHTML = '<div class="text-center text-gray-400 py-12">No holdings to display</div>';
+            return;
+        }
+
+        // Prepare data for pie chart
+        const chartData = holdings.map(holding => ({
+            name: holding.itemName.length > 20 ? holding.itemName.substring(0, 20) + '...' : holding.itemName,
+            value: holding.buyPrice
+        }));
+
+        const options = {
+            series: chartData.map(item => item.value),
+            labels: chartData.map(item => item.name),
+            chart: {
+                type: 'pie',
+                height: 300,
+                background: 'transparent',
+                toolbar: {
+                    show: false
+                }
+            },
+            colors: ['#667eea', '#764ba2', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16'],
+            legend: {
+                show: true,
+                position: 'bottom',
+                labels: {
+                    colors: '#d1d5db'
+                }
+            },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '40%'
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function(val) {
+                    return val.toFixed(1) + '%';
+                },
+                style: {
+                    colors: ['#ffffff']
+                }
+            },
+            tooltip: {
+                theme: 'dark',
+                y: {
+                    formatter: function(val) {
+                        return '$' + val.toFixed(2);
+                    }
+                }
+            },
+            responsive: [{
+                breakpoint: 480,
+                options: {
+                    chart: {
+                        height: 250
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }]
+        };
+
+        this.charts.holdingsDistribution = new ApexCharts(chartElement, options);
+        this.charts.holdingsDistribution.render();
+        
+        console.log('📊 Holdings distribution chart updated');
+    }
+
+    /**
+     * Updates performance charts with ApexCharts
+     */
+    updatePerformanceCharts() {
+        this.updateDailyPnLChart();
+        this.updateWinLossChart();
+    }
+
+    /**
+     * Updates Daily P&L chart
+     */
+    updateDailyPnLChart() {
+        if (typeof ApexCharts === 'undefined') {
+            console.warn('❌ ApexCharts not loaded');
+            return;
+        }
+
+        const chartElement = document.getElementById('dailyPnLChart');
+        if (!chartElement) {
+            console.warn('❌ Daily P&L chart container not found');
+            return;
+        }
+
+        // Destroy existing chart
+        if (this.charts.dailyPnL) {
+            this.charts.dailyPnL.destroy();
+        }
+
+        const completedTrades = this.investments.filter(inv => inv.sellPrice);
+        
+        if (completedTrades.length === 0) {
+            chartElement.innerHTML = '<div class="text-center text-gray-400 py-12">No trades to display</div>';
+            return;
+        }
+
+        // Group trades by date and calculate daily P&L
+        const dailyPnL = {};
+        completedTrades.forEach(trade => {
+            const date = trade.sellDate || new Date().toISOString().split('T')[0];
+            const profit = trade.sellPrice - trade.buyPrice;
+            
+            if (!dailyPnL[date]) {
+                dailyPnL[date] = 0;
+            }
+            dailyPnL[date] += profit;
+        });
+
+        // Convert to chart data
+        const sortedDates = Object.keys(dailyPnL).sort();
+        const chartData = sortedDates.map(date => ({
+            x: date,
+            y: dailyPnL[date]
+        }));
+
+        const options = {
+            series: [{
+                name: 'Daily P&L',
+                data: chartData
+            }],
+            chart: {
+                type: 'line',
+                height: 300,
+                background: 'transparent',
+                toolbar: {
+                    show: true,
+                    tools: {
+                        zoom: true,
+                        pan: true,
+                        reset: true
+                    }
+                }
+            },
+            colors: ['#667eea'],
+            stroke: {
+                curve: 'smooth',
+                width: 3
+            },
+            grid: {
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                strokeDashArray: 0,
+                xaxis: {
+                    lines: {
+                        show: true
+                    }
+                },
+                yaxis: {
+                    lines: {
+                        show: true
+                    }
+                }
+            },
+            xaxis: {
+                type: 'datetime',
+                labels: {
+                    style: {
+                        colors: '#d1d5db'
+                    }
+                }
+            },
+            yaxis: {
+                labels: {
+                    style: {
+                        colors: '#d1d5db'
+                    },
+                    formatter: function(val) {
+                        return '$' + val.toFixed(2);
+                    }
+                }
+            },
+            tooltip: {
+                theme: 'dark',
+                y: {
+                    formatter: function(val) {
+                        return '$' + val.toFixed(2);
+                    }
+                }
+            },
+            markers: {
+                size: 4,
+                colors: ['#667eea'],
+                strokeColors: '#fff',
+                strokeWidth: 2,
+                hover: {
+                    size: 6
+                }
+            }
+        };
+
+        this.charts.dailyPnL = new ApexCharts(chartElement, options);
+        this.charts.dailyPnL.render();
+        
+        console.log('📊 Daily P&L chart updated');
+    }
+
+    /**
+     * Updates Win/Loss distribution chart
+     */
+    updateWinLossChart() {
+        if (typeof ApexCharts === 'undefined') {
+            console.warn('❌ ApexCharts not loaded');
+            return;
+        }
+
+        const chartElement = document.getElementById('winLossChart');
+        if (!chartElement) {
+            console.warn('❌ Win/Loss chart container not found');
+            return;
+        }
+
+        // Destroy existing chart
+        if (this.charts.winLoss) {
+            this.charts.winLoss.destroy();
+        }
+
+        const completedTrades = this.investments.filter(inv => inv.sellPrice);
+        
+        if (completedTrades.length === 0) {
+            chartElement.innerHTML = '<div class="text-center text-gray-400 py-12">No trades to display</div>';
+            return;
+        }
+
+        const winningTrades = completedTrades.filter(trade => trade.sellPrice > trade.buyPrice).length;
+        const losingTrades = completedTrades.length - winningTrades;
+
+        const options = {
+            series: [winningTrades, losingTrades],
+            labels: ['Winning Trades', 'Losing Trades'],
+            chart: {
+                type: 'pie',
+                height: 300,
+                background: 'transparent',
+                toolbar: {
+                    show: false
+                }
+            },
+            colors: ['#22c55e', '#ef4444'],
+            legend: {
+                show: true,
+                position: 'bottom',
+                labels: {
+                    colors: '#d1d5db'
+                }
+            },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '50%',
+                        labels: {
+                            show: true,
+                            total: {
+                                show: true,
+                                label: 'Win Rate',
+                                formatter: function(w) {
+                                    const total = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                                    const winRate = ((winningTrades / total) * 100).toFixed(1);
+                                    return winRate + '%';
+                                },
+                                style: {
+                                    color: '#d1d5db'
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function(val) {
+                    return val.toFixed(1) + '%';
+                },
+                style: {
+                    colors: ['#ffffff']
+                }
+            },
+            tooltip: {
+                theme: 'dark',
+                y: {
+                    formatter: function(val) {
+                        return val + ' trades';
+                    }
+                }
+            }
+        };
+
+        this.charts.winLoss = new ApexCharts(chartElement, options);
+        this.charts.winLoss.render();
+        
+        console.log('📊 Win/Loss chart updated');
+    }
+
+    /**
+     * Updates account charts with ApexCharts
+     */
+    updateEnhancedAccountCharts() {
+        this.updateCapitalFlowChart();
+        this.updateRiskRewardChart();
+        this.updateProfitHeatmapChart();
+        this.updateActivityTimelineChart();
+    }
+
+    /**
+     * Updates Account Balance Over Time chart
+     */
+    updateAccountBalanceChart() {
+        if (typeof ApexCharts === 'undefined') {
+            console.warn('❌ ApexCharts not loaded');
+            return;
+        }
+
+        const chartElement = document.getElementById('accountBalanceChart');
+        if (!chartElement) {
+            console.warn('❌ Account balance chart container not found');
+            return;
+        }
+
+        // Destroy existing chart
+        if (this.charts.accountBalance) {
+            this.charts.accountBalance.destroy();
+        }
+
+        // Create timeline data from deposits, withdrawals, and trades
+        const events = [];
+        
+        // Add deposits
+        this.deposits.forEach(deposit => {
+            events.push({
+                date: deposit.date,
+                amount: deposit.amount,
+                type: 'deposit',
+                description: `Deposit: ${deposit.note || 'Manual deposit'}`
+            });
+        });
+
+        // Add withdrawals
+        this.withdrawals.forEach(withdrawal => {
+            events.push({
+                date: withdrawal.date,
+                amount: -withdrawal.amount,
+                type: 'withdrawal',
+                description: `Withdrawal: ${withdrawal.note || 'Manual withdrawal'}`
+            });
+        });
+
+        // Add completed trades
+        const completedTrades = this.investments.filter(inv => inv.sellPrice);
+        completedTrades.forEach(trade => {
+            const profit = trade.sellPrice - trade.buyPrice;
+            events.push({
+                date: trade.sellDate || new Date().toISOString(),
+                amount: profit,
+                type: 'trade',
+                description: `Trade: ${trade.itemName}`
+            });
+        });
+
+        if (events.length === 0) {
+            chartElement.innerHTML = '<div class="text-center text-gray-400 py-12">No account activity to display</div>';
+            return;
+        }
+
+        // Sort events by date and calculate running balance
+        events.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        let runningBalance = 0;
+        const chartData = events.map(event => {
+            runningBalance += event.amount;
+            return {
+                x: event.date,
+                y: runningBalance
+            };
+        });
+
+        const options = {
+            series: [{
+                name: 'Account Balance',
+                data: chartData
+            }],
+            chart: {
+                type: 'area',
+                height: 300,
+                background: 'transparent',
+                toolbar: {
+                    show: true,
+                    tools: {
+                        zoom: true,
+                        pan: true,
+                        reset: true
+                    }
+                }
+            },
+            colors: ['#667eea'],
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.7,
+                    opacityTo: 0.1,
+                    stops: [0, 100]
+                }
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 2
+            },
+            grid: {
+                borderColor: 'rgba(255, 255, 255, 0.1)'
+            },
+            xaxis: {
+                type: 'datetime',
+                labels: {
+                    style: {
+                        colors: '#d1d5db'
+                    }
+                }
+            },
+            yaxis: {
+                labels: {
+                    style: {
+                        colors: '#d1d5db'
+                    },
+                    formatter: function(val) {
+                        return '$' + val.toFixed(2);
+                    }
+                }
+            },
+            tooltip: {
+                theme: 'dark',
+                y: {
+                    formatter: function(val) {
+                        return '$' + val.toFixed(2);
+                    }
+                }
+            }
+        };
+
+        this.charts.accountBalance = new ApexCharts(chartElement, options);
+        this.charts.accountBalance.render();
+        
+        console.log('📊 Account balance chart updated');
+    }
+
+    /**
+     * Updates Cash Flow chart
+     */
+    updateCashFlowChart() {
+        if (typeof ApexCharts === 'undefined') {
+            console.warn('❌ ApexCharts not loaded');
+            return;
+        }
+
+        const chartElement = document.getElementById('cashFlowChart');
+        if (!chartElement) {
+            console.warn('❌ Cash flow chart container not found');
+            return;
+        }
+
+        // Destroy existing chart
+        if (this.charts.cashFlow) {
+            this.charts.cashFlow.destroy();
+        }
+
+        const totalDeposits = this.deposits.reduce((sum, dep) => sum + dep.amount, 0);
+        const totalWithdrawals = this.withdrawals.reduce((sum, wit) => sum + wit.amount, 0);
+        const completedTrades = this.investments.filter(inv => inv.sellPrice);
+        const totalTradingProfit = completedTrades.reduce((sum, trade) => sum + (trade.sellPrice - trade.buyPrice), 0);
+
+        if (totalDeposits === 0 && totalWithdrawals === 0 && totalTradingProfit === 0) {
+            chartElement.innerHTML = '<div class="text-center text-gray-400 py-12">No cash flow data to display</div>';
+            return;
+        }
+
+        const options = {
+            series: [{
+                name: 'Cash Flow',
+                data: [
+                    { x: 'Deposits', y: totalDeposits },
+                    { x: 'Trading Profit', y: totalTradingProfit },
+                    { x: 'Withdrawals', y: -totalWithdrawals }
+                ]
+            }],
+            chart: {
+                type: 'bar',
+                height: 300,
+                background: 'transparent',
+                toolbar: {
+                    show: false
+                }
+            },
+            colors: function({value, seriesIndex, dataPointIndex, w}) {
+                if (value > 0) {
+                    return '#22c55e'; // Green for positive
+                } else {
+                    return '#ef4444'; // Red for negative
+                }
+            },
+            plotOptions: {
+                bar: {
+                    columnWidth: '60%',
+                    distributed: true
+                }
+            },
+            grid: {
+                borderColor: 'rgba(255, 255, 255, 0.1)'
+            },
+            xaxis: {
+                labels: {
+                    style: {
+                        colors: '#d1d5db'
+                    }
+                }
+            },
+            yaxis: {
+                labels: {
+                    style: {
+                        colors: '#d1d5db'
+                    },
+                    formatter: function(val) {
+                        return '$' + val.toFixed(2);
+                    }
+                }
+            },
+            tooltip: {
+                theme: 'dark',
+                y: {
+                    formatter: function(val) {
+                        return '$' + Math.abs(val).toFixed(2);
+                    }
+                }
+            },
+            legend: {
+                show: false
+            }
+        };
+
+        this.charts.cashFlow = new ApexCharts(chartElement, options);
+        this.charts.cashFlow.render();
+        
+        console.log('📊 Cash flow chart updated');
+    }
+
+    /**
+     * Updates Trading Capital Flow chart
+     */
+    updateCapitalFlowChart() {
+        if (typeof ApexCharts === 'undefined') {
+            console.warn('❌ ApexCharts not loaded');
+            return;
+        }
+
+        const chartElement = document.getElementById('capitalFlowChart');
+        if (!chartElement) {
+            console.warn('❌ Capital flow chart container not found');
+            return;
+        }
+
+        // Destroy existing chart
+        if (this.charts.capitalFlow) {
+            this.charts.capitalFlow.destroy();
+        }
+
+        const tradingMetrics = this.calculateTradingMetrics();
+        
+        if (tradingMetrics.totalCapital === 0) {
+            chartElement.innerHTML = '<div class="text-center text-gray-400 py-12">No capital data to display</div>';
+            return;
+        }
+
+        const options = {
+            series: [{
+                name: 'Available Capital',
+                data: [tradingMetrics.availableCapital]
+            }, {
+                name: 'Capital in Use',
+                data: [tradingMetrics.capitalInUse]
+            }],
+            chart: {
+                type: 'area',
+                height: 280,
+                background: 'transparent',
+                stacked: true,
+                toolbar: { show: false }
+            },
+            colors: ['#22c55e', '#3b82f6'],
+            stroke: {
+                width: 2,
+                curve: 'smooth'
+            },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.7,
+                    opacityTo: 0.3
+                }
+            },
+            xaxis: {
+                categories: ['Current'],
+                labels: { style: { colors: '#9ca3af' } }
+            },
+            yaxis: {
+                labels: {
+                    style: { colors: '#9ca3af' },
+                    formatter: (val) => `$${this.formatNumber(val)}`
+                }
+            },
+            tooltip: {
+                theme: 'dark',
+                y: {
+                    formatter: (val) => `$${this.formatNumber(val)}`
+                }
+            },
+            legend: {
+                labels: { colors: '#9ca3af' }
+            },
+            grid: {
+                borderColor: '#374151',
+                strokeDashArray: 3
+            }
+        };
+
+        this.charts.capitalFlow = new ApexCharts(chartElement, options);
+        this.charts.capitalFlow.render();
+        
+        console.log('📊 Capital flow chart updated');
+    }
+
+    /**
+     * Updates Risk vs Reward scatter chart
+     */
+    updateRiskRewardChart() {
+        if (typeof ApexCharts === 'undefined') {
+            console.warn('❌ ApexCharts not loaded');
+            return;
+        }
+
+        const chartElement = document.getElementById('riskRewardChart');
+        if (!chartElement) {
+            console.warn('❌ Risk reward chart container not found');
+            return;
+        }
+
+        // Destroy existing chart
+        if (this.charts.riskReward) {
+            this.charts.riskReward.destroy();
+        }
+
+        const completedTrades = this.investments.filter(inv => inv.sellPrice);
+        
+        if (completedTrades.length === 0) {
+            chartElement.innerHTML = '<div class="text-center text-gray-400 py-12">No completed trades to analyze</div>';
+            return;
+        }
+
+        const scatterData = completedTrades.map(trade => {
+            const risk = trade.buyPrice || 0;
+            const reward = (trade.sellPrice || 0) - (trade.buyPrice || 0);
+            return { x: risk, y: reward };
+        });
+
+        const options = {
+            series: [{
+                name: 'Trades',
+                data: scatterData
+            }],
+            chart: {
+                type: 'scatter',
+                height: 280,
+                background: 'transparent',
+                toolbar: { show: false },
+                zoom: { enabled: true }
+            },
+            colors: ['#8b5cf6'],
+            xaxis: {
+                title: {
+                    text: 'Risk (Buy Price)',
+                    style: { color: '#9ca3af' }
+                },
+                labels: {
+                    style: { colors: '#9ca3af' },
+                    formatter: (val) => `$${this.formatNumber(val)}`
+                }
+            },
+            yaxis: {
+                title: {
+                    text: 'Reward (P&L)',
+                    style: { color: '#9ca3af' }
+                },
+                labels: {
+                    style: { colors: '#9ca3af' },
+                    formatter: (val) => `$${this.formatNumber(val)}`
+                }
+            },
+            tooltip: {
+                theme: 'dark',
+                x: {
+                    formatter: (val) => `Risk: $${this.formatNumber(val)}`
+                },
+                y: {
+                    formatter: (val) => `Reward: $${this.formatNumber(val)}`
+                }
+            },
+            grid: {
+                borderColor: '#374151',
+                strokeDashArray: 3
+            }
+        };
+
+        this.charts.riskReward = new ApexCharts(chartElement, options);
+        this.charts.riskReward.render();
+        
+        console.log('📊 Risk vs Reward chart updated');
+    }
+
+    /**
+     * Updates Profit Distribution Heatmap
+     */
+    updateProfitHeatmapChart() {
+        const chartElement = document.getElementById('profitHeatmapChart');
+        if (!chartElement) {
+            console.warn('❌ Profit heatmap chart container not found');
+            return;
+        }
+
+        const completedTrades = this.investments.filter(inv => inv.sellPrice);
+        
+        if (completedTrades.length === 0) {
+            chartElement.innerHTML = '<div class="text-center text-gray-400 py-12">No trading data for heatmap</div>';
+            return;
+        }
+
+        // For demo, show a simple distribution
+        chartElement.innerHTML = `
+            <div class="grid grid-cols-7 gap-1 p-4">
+                <div class="text-xs text-gray-400 text-center">Daily Profit Distribution</div>
+                <div class="col-span-6"></div>
+                ${Array.from({length: 35}, (_, i) => {
+                    const profit = Math.random() * 200 - 100;
+                    const intensity = Math.abs(profit) / 100;
+                    const color = profit > 0 ? `bg-green-500` : `bg-red-500`;
+                    return `<div class="${color}" style="opacity: ${intensity}" title="$${profit.toFixed(2)}" class="w-4 h-4 rounded-sm"></div>`;
+                }).join('')}
+            </div>
+        `;
+        
+        console.log('📊 Profit heatmap chart updated');
+    }
+
+    /**
+     * Updates Trading Activity Timeline
+     */
+    updateActivityTimelineChart() {
+        if (typeof ApexCharts === 'undefined') {
+            console.warn('❌ ApexCharts not loaded');
+            return;
+        }
+
+        const chartElement = document.getElementById('activityTimelineChart');
+        if (!chartElement) {
+            console.warn('❌ Activity timeline chart container not found');
+            return;
+        }
+
+        // Destroy existing chart
+        if (this.charts.activityTimeline) {
+            this.charts.activityTimeline.destroy();
+        }
+
+        const completedTrades = this.investments.filter(inv => inv.sellPrice);
+        
+        if (completedTrades.length === 0) {
+            chartElement.innerHTML = '<div class="text-center text-gray-400 py-12">No trading activity to display</div>';
+            return;
+        }
+
+        // Group trades by date
+        const tradesByDate = {};
+        completedTrades.forEach(trade => {
+            const date = new Date(trade.sellDate || trade.date).toDateString();
+            if (!tradesByDate[date]) {
+                tradesByDate[date] = { count: 0, profit: 0 };
+            }
+            tradesByDate[date].count++;
+            tradesByDate[date].profit += (trade.sellPrice - trade.buyPrice);
+        });
+
+        const dates = Object.keys(tradesByDate).sort();
+        const volumes = dates.map(date => tradesByDate[date].count);
+        const profits = dates.map(date => tradesByDate[date].profit);
+
+        const options = {
+            series: [{
+                name: 'Trade Volume',
+                type: 'column',
+                data: volumes
+            }, {
+                name: 'Daily P&L',
+                type: 'line',
+                data: profits
+            }],
+            chart: {
+                type: 'line',
+                height: 280,
+                background: 'transparent',
+                toolbar: { show: false }
+            },
+            colors: ['#f59e0b', '#22c55e'],
+            stroke: {
+                width: [0, 3],
+                curve: 'smooth'
+            },
+            xaxis: {
+                categories: dates.map(date => new Date(date).toLocaleDateString()),
+                labels: { style: { colors: '#9ca3af' } }
+            },
+            yaxis: [{
+                title: {
+                    text: 'Trade Volume',
+                    style: { color: '#9ca3af' }
+                },
+                labels: { style: { colors: '#9ca3af' } }
+            }, {
+                opposite: true,
+                title: {
+                    text: 'Daily P&L',
+                    style: { color: '#9ca3af' }
+                },
+                labels: {
+                    style: { colors: '#9ca3af' },
+                    formatter: (val) => `$${this.formatNumber(val)}`
+                }
+            }],
+            tooltip: {
+                theme: 'dark',
+                y: [{
+                    formatter: (val) => `${val} trades`
+                }, {
+                    formatter: (val) => `$${this.formatNumber(val)}`
+                }]
+            },
+            legend: {
+                labels: { colors: '#9ca3af' }
+            },
+            grid: {
+                borderColor: '#374151',
+                strokeDashArray: 3
+            }
+        };
+
+        this.charts.activityTimeline = new ApexCharts(chartElement, options);
+        this.charts.activityTimeline.render();
+        
+        console.log('📊 Activity timeline chart updated');
+    }
+
+    /**
+     * Updates intelligent trading insights
+     */
+    updateTradingInsights(tradingMetrics) {
+        const insightsContainer = document.getElementById('tradingInsights');
+        if (!insightsContainer) {
+            return;
+        }
+
+        const insights = this.generateTradingInsights(tradingMetrics);
+        
+        insightsContainer.innerHTML = insights.map(insight => `
+            <div class="flex items-start gap-3 p-4 bg-gray-800/50 rounded-lg">
+                <i data-lucide="${insight.icon}" class="w-5 h-5 ${insight.color} mt-0.5"></i>
+                <div>
+                    <div class="text-sm font-medium text-gray-200">${insight.title}</div>
+                    <div class="text-xs text-gray-400 mt-1">${insight.description}</div>
+                </div>
+            </div>
+        `).join('');
+
+        // Re-initialize lucide icons for the new content
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    /**
+     * Generate intelligent trading insights based on metrics
+     */
+    generateTradingInsights(metrics) {
+        const insights = [];
+
+        // Capital efficiency insight
+        if (metrics.capitalEfficiency > 2) {
+            insights.push({
+                icon: 'zap',
+                color: 'text-green-400',
+                title: 'Excellent Capital Efficiency',
+                description: `Your ${metrics.capitalEfficiency}x turnover rate shows efficient capital usage`
+            });
+        } else if (metrics.capitalEfficiency > 0) {
+            insights.push({
+                icon: 'trending-up',
+                color: 'text-yellow-400',
+                title: 'Moderate Capital Efficiency',
+                description: `Consider increasing trading frequency to improve your ${metrics.capitalEfficiency}x turnover`
+            });
+        }
+
+        // Risk exposure insight
+        if (metrics.riskExposure > 80) {
+            insights.push({
+                icon: 'alert-triangle',
+                color: 'text-red-400',
+                title: 'High Risk Exposure',
+                description: `${metrics.riskExposure}% of capital at risk - consider diversifying or reducing position sizes`
+            });
+        } else if (metrics.riskExposure < 30) {
+            insights.push({
+                icon: 'shield-check',
+                color: 'text-green-400',
+                title: 'Conservative Risk Profile',
+                description: `Your ${metrics.riskExposure}% risk exposure is very conservative - could potentially increase for higher returns`
+            });
+        }
+
+        // Profit factor insight
+        if (metrics.profitFactor > 2) {
+            insights.push({
+                icon: 'trophy',
+                color: 'text-gold-400',
+                title: 'Excellent Profit Factor',
+                description: `Your ${metrics.profitFactor.toFixed(1)} profit factor indicates strong trading performance`
+            });
+        } else if (metrics.profitFactor < 1 && metrics.completedTrades.length > 5) {
+            insights.push({
+                icon: 'trending-down',
+                color: 'text-red-400',
+                title: 'Review Trading Strategy',
+                description: `Profit factor of ${metrics.profitFactor.toFixed(1)} suggests losses exceed profits`
+            });
+        }
+
+        // Trading velocity insight
+        if (metrics.tradingVelocity > 10) {
+            insights.push({
+                icon: 'clock',
+                color: 'text-blue-400',
+                title: 'High Trading Activity',
+                description: `${metrics.tradingVelocity.toFixed(1)} trades per week - ensure you're not overtrading`
+            });
+        } else if (metrics.tradingVelocity < 1 && metrics.activeHoldings.length > 0) {
+            insights.push({
+                icon: 'clock',
+                color: 'text-yellow-400',
+                title: 'Low Trading Velocity',
+                description: `Consider increasing trading frequency to improve capital turnover`
+            });
+        }
+
+        // Default insight if no data
+        if (insights.length === 0) {
+            insights.push({
+                icon: 'lightbulb',
+                color: 'text-yellow-400',
+                title: 'Start Trading for Insights',
+                description: 'Complete more trades to unlock personalized performance insights'
+            });
+        }
+
+        return insights;
+    }
+
+    /**
+     * Quick sell functionality
+     */
+    quickSell(investmentId) {
+        const investment = this.investments.find(inv => inv.id === investmentId);
+        if (!investment) return;
+
+        const sellPrice = prompt(`Quick sell ${investment.itemName}?\nEnter sell price:`, investment.buyPrice);
+        if (!sellPrice || sellPrice <= 0) return;
+
+        investment.sellPrice = parseFloat(sellPrice);
+        investment.sellDate = new Date().toISOString().split('T')[0];
+        
+        this.saveData();
+        this.updateTradingDashboard();
+        
+        const profit = investment.sellPrice - investment.buyPrice;
+        const profitText = profit >= 0 ? `profit of $${this.formatNumber(profit)}` : `loss of $${this.formatNumber(Math.abs(profit))}`;
+        
+        this.showNotification(`Sold ${investment.itemName} with ${profitText}`, profit >= 0 ? 'success' : 'error');
+    }
+    
 }
+
+
 // Fix for Modal (forces modals to be appended to body)
 document.addEventListener('DOMContentLoaded', function() {
     const modals = ['editModal', 'editLongTermModal', 'editCaseDropModal', 'addYearModal', 'addWeekModal'];

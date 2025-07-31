@@ -93,6 +93,8 @@ class ExtensionManager {
     
     this.keychainFilter = {
       percentageThreshold: 50,
+      minItemPrice: null,  // Minimum item market value in dollars (null = no limit)
+      maxItemPrice: null,  // Maximum item market value in dollars (null = no limit)
       enabledKeychains: new Set([
         "Hot Howl", "Baby Karat T", "Hot Wurst", "Baby Karat CT", "Semi-Precious", 
         "Diamond Dog", "Titeenium AWP", "Lil' Monster", "Diner Dog", "Lil' Squirt"
@@ -333,6 +335,19 @@ class ExtensionManager {
         importStats.keychainThreshold = true;
       }
       
+      // Import keychain item price settings
+      if (settings.keychainMinItemPrice !== undefined) {
+        this.keychainFilter.minItemPrice = settings.keychainMinItemPrice;
+        await chrome.storage.sync.set({ keychainMinItemPrice: settings.keychainMinItemPrice });
+        importStats.keychainMinItemPrice = true;
+      }
+      
+      if (settings.keychainMaxItemPrice !== undefined) {
+        this.keychainFilter.maxItemPrice = settings.keychainMaxItemPrice;
+        await chrome.storage.sync.set({ keychainMaxItemPrice: settings.keychainMaxItemPrice });
+        importStats.keychainMaxItemPrice = true;
+      }
+      
       if (Array.isArray(settings.enabledKeychains)) {
         this.keychainFilter.enabledKeychains = new Set(settings.enabledKeychains);
         await chrome.storage.local.set({ enabledKeychains: settings.enabledKeychains });
@@ -446,6 +461,8 @@ class ExtensionManager {
           priceFilterMin: -50,
           priceFilterMax: 5,
           keychainPercentageThreshold: 50,
+          keychainMinItemPrice: null,
+          keychainMaxItemPrice: null,
           itemTargetList: []
         }).catch(() => ({})),
         chrome.storage.local.get({
@@ -483,6 +500,8 @@ class ExtensionManager {
     this.priceFilter.minAboveRecommended = syncSettings.priceFilterMin ?? -50;
     this.priceFilter.maxAboveRecommended = syncSettings.priceFilterMax ?? 5;
     this.keychainFilter.percentageThreshold = syncSettings.keychainPercentageThreshold ?? 50;
+    this.keychainFilter.minItemPrice = syncSettings.keychainMinItemPrice ?? null;
+    this.keychainFilter.maxItemPrice = syncSettings.keychainMaxItemPrice ?? null;
     
     // Use local storage only for large arrays
     this.itemTargetList = localSettings.itemTargetList || [];
@@ -534,6 +553,8 @@ class ExtensionManager {
     
     this.keychainFilter = {
       percentageThreshold: 50,
+      minItemPrice: null,  // Minimum item market value in dollars (null = no limit)
+      maxItemPrice: null,  // Maximum item market value in dollars (null = no limit)
       enabledKeychains: new Set([
         "Hot Howl", "Baby Karat T", "Hot Wurst", "Baby Karat CT", "Semi-Precious", 
         "Diamond Dog", "Titeenium AWP", "Lil' Monster", "Diner Dog", "Lil' Squirt"
@@ -1110,6 +1131,14 @@ async authenticateWithServer() {
         return false;
       }
       
+      const itemPriceRangeCheck = this.checkKeychainItemPriceRange(item);
+      if (!itemPriceRangeCheck.isGood) {
+        this.stats.itemsFiltered++;
+        this.incrementFilterReason('item_price_range');
+        console.log(`🚫 FILTERED: Item price range failed - ${itemPriceRangeCheck.reason}`);
+        return false;
+      }
+      
       const keychainPercentageCheck = this.checkKeychainPercentage(item, charmDetails);
       if (!keychainPercentageCheck.isGood) {
         this.stats.itemsFiltered++;
@@ -1673,6 +1702,62 @@ async authenticateWithServer() {
         percentage: percentage
       };
     }
+  }
+
+  /**
+   * Check if keychain item price is within allowed range
+   * @param {Object} item - Item to check
+   * @returns {Object} Price range check result
+   */
+  checkKeychainItemPriceRange(item) {
+    const marketValue = item.market_value ? (item.market_value / 100) : 0;
+    
+    console.log(`🔍 Checking item price range: Item market value: $${marketValue.toFixed(2)}, Min: ${this.keychainFilter.minItemPrice}, Max: ${this.keychainFilter.maxItemPrice}`);
+    
+    // If no price limits are set, always pass
+    if (this.keychainFilter.minItemPrice === null && this.keychainFilter.maxItemPrice === null) {
+      return { 
+        isGood: true, 
+        reason: 'No item price limits configured',
+        itemPrice: marketValue
+      };
+    }
+    
+    if (marketValue <= 0) {
+      return { 
+        isGood: false, 
+        reason: 'Item market value is zero or unknown',
+        itemPrice: 0
+      };
+    }
+    
+    // Check minimum price
+    if (this.keychainFilter.minItemPrice !== null && marketValue < this.keychainFilter.minItemPrice) {
+      return { 
+        isGood: false, 
+        reason: `Item price $${marketValue.toFixed(2)} is below minimum $${this.keychainFilter.minItemPrice.toFixed(2)}`,
+        itemPrice: marketValue
+      };
+    }
+    
+    // Check maximum price
+    if (this.keychainFilter.maxItemPrice !== null && marketValue > this.keychainFilter.maxItemPrice) {
+      return { 
+        isGood: false, 
+        reason: `Item price $${marketValue.toFixed(2)} is above maximum $${this.keychainFilter.maxItemPrice.toFixed(2)}`,
+        itemPrice: marketValue
+      };
+    }
+    
+    // Price is within range
+    const minStr = this.keychainFilter.minItemPrice !== null ? `$${this.keychainFilter.minItemPrice.toFixed(2)}` : 'no min';
+    const maxStr = this.keychainFilter.maxItemPrice !== null ? `$${this.keychainFilter.maxItemPrice.toFixed(2)}` : 'no max';
+    
+    return { 
+      isGood: true, 
+      reason: `Item price $${marketValue.toFixed(2)} is within range (${minStr} - ${maxStr})`,
+      itemPrice: marketValue
+    };
   }
 
   /**
@@ -2250,6 +2335,42 @@ chrome.notifications.create(notificationId, {
   }
 
   /**
+   * Update keychain item price filter settings
+   * @param {number|null} minItemPrice - Minimum item price in dollars (null = no limit)
+   * @param {number|null} maxItemPrice - Maximum item price in dollars (null = no limit)
+   */
+  async updateKeychainItemPriceFilter(minItemPrice, maxItemPrice) {
+    const minStr = minItemPrice !== null ? `$${minItemPrice.toFixed(2)}` : 'no min';
+    const maxStr = maxItemPrice !== null ? `$${maxItemPrice.toFixed(2)}` : 'no max';
+    console.log(`🔧 Updating Keychain Item Price Filter: ${minStr} to ${maxStr}`);
+    
+    this.keychainFilter.minItemPrice = minItemPrice;
+    this.keychainFilter.maxItemPrice = maxItemPrice;
+    
+    try {
+      await Promise.all([
+        chrome.storage.local.set({
+          keychainMinItemPrice: minItemPrice,
+          keychainMaxItemPrice: maxItemPrice
+        }),
+        chrome.storage.sync.set({
+          keychainMinItemPrice: minItemPrice,
+          keychainMaxItemPrice: maxItemPrice
+        }).catch(e => console.warn('Sync storage failed:', e.message))
+      ]);
+      
+      console.log(`✅ Keychain Item Price Filter saved: ${minStr} to ${maxStr}`);
+      
+      // Auto-sync to server settings
+      await this.autoSyncToServerSettings();
+      
+    } catch (error) {
+      console.error('❌ Error saving Keychain Item Price Filter:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Update keychain percentage threshold
    * @param {number} percentageThreshold 
    */
@@ -2360,6 +2481,8 @@ async updateItemTargetList(itemTargetList) {
         minAboveRecommended: this.priceFilter.minAboveRecommended,
         maxAboveRecommended: this.priceFilter.maxAboveRecommended,
         keychainPercentageThreshold: this.keychainFilter.percentageThreshold,
+        keychainMinItemPrice: this.keychainFilter.minItemPrice,
+        keychainMaxItemPrice: this.keychainFilter.maxItemPrice,
         enabledKeychains: Array.from(this.keychainFilter.enabledKeychains),
         itemTargetList: this.itemTargetList.map(item => ({
           id: item.id,
@@ -2642,6 +2765,8 @@ async updateItemTargetList(itemTargetList) {
       priceFilter: this.priceFilter,
       keychainFilter: {
         percentageThreshold: this.keychainFilter.percentageThreshold,
+        minItemPrice: this.keychainFilter.minItemPrice,
+        maxItemPrice: this.keychainFilter.maxItemPrice,
         enabledKeychainsCount: this.keychainFilter.enabledKeychains.size,
         totalKeychains: this.getAllKeychainNames().length
       },
@@ -2719,6 +2844,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       handleAsyncMessage(async () => {
         await manager.updatePriceFilter(message.data.minPercentage, message.data.maxPercentage);
         return { message: 'Price filter updated successfully!' };
+      }, sendResponse);
+      return true;
+      
+    case 'UPDATE_KEYCHAIN_ITEM_PRICE_FILTER':
+      handleAsyncMessage(async () => {
+        await manager.updateKeychainItemPriceFilter(message.data.minItemPrice, message.data.maxItemPrice);
+        return { message: 'Keychain item price filter updated successfully!' };
       }, sendResponse);
       return true;
       

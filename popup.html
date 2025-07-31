@@ -1998,6 +1998,29 @@
                     Range: -50% to +5% above recommended price
                 </div>
                 
+                <!-- Keychain Item Price Range Inputs -->
+                <div style="margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                    <div style="font-size: 13px; color: #94a3b8; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Keychain Item Price Range (Optional)
+                    </div>
+                    
+                    <div class="range-input">
+                        <label>Min:</label>
+                        <span style="color: #64748b; font-weight: 500; margin-right: 8px;">$</span>
+                        <input type="number" id="minKeychainItemPrice" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    
+                    <div class="range-input">
+                        <label>Max:</label>
+                        <span style="color: #64748b; font-weight: 500; margin-right: 8px;">$</span>
+                        <input type="number" id="maxKeychainItemPrice" step="0.01" min="0" placeholder="1000.00">
+                    </div>
+                    
+                    <div style="font-size: 11px; color: #64748b; margin-top: 8px; font-style: italic; line-height: 1.4;">
+                        <strong>For keychain items only:</strong> Filter items by their base market value (e.g., AK-47 Redline at $50). Leave empty for no price limits.
+                    </div>
+                </div>
+                
                 <button class="button" id="saveSettings" style="margin-top: 14px;">
                     <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>

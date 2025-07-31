@@ -1106,6 +1106,20 @@ itemEntry.innerHTML = `
                 }
             }
             
+            // Load keychain item price settings
+            if (stats && stats.keychainFilter) {
+                const minPriceInput = document.getElementById('minKeychainItemPrice');
+                const maxPriceInput = document.getElementById('maxKeychainItemPrice');
+                
+                if (minPriceInput && maxPriceInput) {
+                    // Set the values from extension (null values become empty strings)
+                    minPriceInput.value = stats.keychainFilter.minItemPrice !== null ? stats.keychainFilter.minItemPrice : '';
+                    maxPriceInput.value = stats.keychainFilter.maxItemPrice !== null ? stats.keychainFilter.maxItemPrice : '';
+                    
+                    console.log(`✅ Loaded keychain item price settings: $${stats.keychainFilter.minItemPrice || 'no min'} to $${stats.keychainFilter.maxItemPrice || 'no max'}`);
+                }
+            }
+            
         } catch (error) {
             console.error('❌ Error loading current filter settings:', error);
         }
@@ -1426,8 +1440,10 @@ itemEntry.innerHTML = `
     async saveSettings() {
         const minInput = document.getElementById('minPercentage');
         const maxInput = document.getElementById('maxPercentage');
+        const minPriceInput = document.getElementById('minKeychainItemPrice');
+        const maxPriceInput = document.getElementById('maxKeychainItemPrice');
 
-        if (!minInput || !maxInput) return;
+        if (!minInput || !maxInput || !minPriceInput || !maxPriceInput) return;
 
         const minPercentage = parseFloat(minInput.value);
         const maxPercentage = parseFloat(maxInput.value);
@@ -1437,16 +1453,44 @@ itemEntry.innerHTML = `
             return;
         }
 
+        // Parse keychain item price values (empty string becomes null)
+        const minItemPrice = minPriceInput.value.trim() === '' ? null : parseFloat(minPriceInput.value);
+        const maxItemPrice = maxPriceInput.value.trim() === '' ? null : parseFloat(maxPriceInput.value);
+
+        // Validate keychain item price range
+        if (minItemPrice !== null && maxItemPrice !== null && minItemPrice > maxItemPrice) {
+            this.showMessage('Minimum keychain item price cannot be greater than maximum', 'error');
+            return;
+        }
+
+        // Validate price values are not negative
+        if ((minItemPrice !== null && minItemPrice < 0) || (maxItemPrice !== null && maxItemPrice < 0)) {
+            this.showMessage('Keychain item prices cannot be negative', 'error');
+            return;
+        }
+
         try {
-            const response = await chrome.runtime.sendMessage({
+            // Update percentage filter
+            const priceResponse = await chrome.runtime.sendMessage({
                 type: 'UPDATE_PRICE_FILTER',
                 data: { minPercentage, maxPercentage }
             });
 
-            if (response && response.success) {
-                this.showMessage(response.message || 'Settings saved successfully!', 'success');
+            if (!priceResponse || !priceResponse.success) {
+                this.showMessage(priceResponse?.error || 'Failed to save percentage settings', 'error');
+                return;
+            }
+
+            // Update keychain item price filter
+            const itemPriceResponse = await chrome.runtime.sendMessage({
+                type: 'UPDATE_KEYCHAIN_ITEM_PRICE_FILTER',
+                data: { minItemPrice, maxItemPrice }
+            });
+
+            if (itemPriceResponse && itemPriceResponse.success) {
+                this.showMessage(itemPriceResponse.message || 'Settings saved successfully!', 'success');
             } else {
-                this.showMessage(response?.error || 'Failed to save settings', 'error');
+                this.showMessage(itemPriceResponse?.error || 'Failed to save keychain item price settings', 'error');
             }
         } catch (error) {
             console.error('Error saving settings:', error);
