@@ -22,6 +22,9 @@
 // Import Socket.IO for WebSocket connections
 importScripts('socket.io.min.js');
 
+// Import Automation Manager
+importScripts('automation.js');
+
 /**
  * ============================================================================
  * MAIN EXTENSION MANAGER CLASS
@@ -90,17 +93,24 @@ class ExtensionManager {
       minAboveRecommended: -50,
       maxAboveRecommended: 5
     };
-    
+
     this.keychainFilter = {
       percentageThreshold: 50,
       minItemPrice: null,  // Minimum item market value in dollars (null = no limit)
       maxItemPrice: null,  // Maximum item market value in dollars (null = no limit)
       enabledKeychains: new Set([
-        "Hot Howl", "Baby Karat T", "Hot Wurst", "Baby Karat CT", "Semi-Precious", 
+        "Hot Howl", "Baby Karat T", "Hot Wurst", "Baby Karat CT", "Semi-Precious",
         "Diamond Dog", "Titeenium AWP", "Lil' Monster", "Diner Dog", "Lil' Squirt"
       ])
     };
-    
+
+    this.blueGemFilter = {
+      enabled: false,
+      minBluePercentage: 70,  // Minimum blue percentage (0-100)
+      minPrice: null,  // Minimum item price in dollars (null = no limit)
+      maxPrice: null   // Maximum item price in dollars (null = no limit)
+    };
+
     this.itemTargetList = [];
     
     // === NOTIFICATION MANAGEMENT ===
@@ -113,6 +123,10 @@ class ExtensionManager {
     
     // === CHARM PRICING DATA ===
     this.charmPricing = this.getCharmPricingData();
+
+    // === AUTOMATION MANAGERS ===
+    this.automationManager = new AutomationManager();
+    this.itemTargetAutomationManager = new ItemTargetAutomationManager();
   }
 
   /**
@@ -121,46 +135,131 @@ class ExtensionManager {
    */
   getCharmPricingData() {
     return {
-      "Red": {
-        "Hot Howl": 70.0,
-        "Baby Karat T": 50.0,
-        "Hot Wurst": 30.0,
-        "Baby Karat CT": 30.0
+      "Small Arms": {
+        "Red": {
+          "Baby Karat T": 65.0,
+          "Baby Karat CT": 45.0
+        },
+        "Pink": {
+          "Semi-Precious": 50.0,
+          "Titanium AWP": 15.0,
+          "Lil' Squirt": 10.00
+        },
+        "Purple": {
+          "Die-cast AK": 10.00,
+          "Glamour Shot": 3.00,
+          "Hot Hands": 2.50,
+          "POP Art": 2.50,
+          "Disco MAC": 2.00
+        },
+        "Blue": {
+          "Baby's AK": 0.80,
+          "Pocket AWP": 0.5,
+          "Whittle Knife": 0.5,
+          "Backsplash": 0.24,
+          "Stitch-Loaded": 0.25,
+          "Lil' Cap Gun": 0.25
+        }
       },
-      "Pink": {
-        "Semi-Precious": 40.0,
-        "Diamond Dog": 25.0,
-        "Titeenium AWP": 10.0,
-        "Lil' Monster": 10.0,
-        "Diner Dog": 5.00,
-        "Lil' Squirt": 5.00
+      "Missing Link": {
+        "Red": {
+          "Hot Howl": 85.0,
+          "Hot Wurst": 60.0
+        },
+        "Pink": {
+          "Diamond Dog": 30.0,
+          "Lil' Monster": 20.0,
+          "Diner Dog": 15.00
+        },
+        "Purple": {
+          "Lil' Teacup": 5.0,
+          "Chicken Lil'": 4.50,
+          "That's Bananas": 3.50,
+          "Lil' Whiskers": 2.50,
+          "Lil' Sandy": 2.50,
+          "Lil' Squatch": 1.50
+        },
+        "Blue": {
+          "Lil' SAS": 1.00,
+          "Hot Sauce": 0.50,
+          "Pinch O' Salt": 0.50,
+          "Big Kev": 0.50,
+          "Lil' Crass": 0.40,
+          "Lil' Ava": 0.40
+        }
       },
-      "Purple": {
-        "Die-cast AK": 9.00,
-        "Lil' Teacup": 4.50,
-        "Chicken Lil'": 3.00,
-        "That's Bananas": 3.00,
-        "Lil' Whiskers": 3.00,
-        "Glamour Shot": 2.50,
-        "Lil' Sandy": 2.50,
-        "Hot Hands": 2.00,
-        "POP Art": 2.00,
-        "Disco MAC": 1.60,
-        "Lil' Squatch": 1.50
+      "Missing Link Community": {
+        "Red": {
+          "Lil' Boo": 100.00,
+          "Lil' Eldritch": 50.00,
+          "Quick Silver": 45.00,
+          "Lil' Serpent": 35.00
+        },
+        "Pink": {
+          "Lil' Hero": 20.00,
+          "Piñatita": 15.00,
+          "Lil' Happy": 12.00,
+          "Lil' Chirp": 12.00,
+          "Lil' Prick": 8.00
+        },
+        "Purple": {
+          "Pocket Pop": 3.50,
+          "Lil' Moments": 3.00,
+          "Magmatude": 2.50,
+          "Lil' Goop": 2.25,
+          "Lil' Buns": 1.50,
+          "Hang Loose": 1.25
+        },
+        "Blue": {
+          "Lil' No. 2": 0.50,
+          "Lil' Cackle": 0.35,
+          "Dead Weight": 0.30,
+          "Lil' Baller": 0.30,
+          "Lil' Smokey": 0.25,
+          "Lil' Tusk": 0.20,
+          "Lil' Vino": 0.20,
+          "Lil' Curse": 0.20
+        }
       },
-      "Blue": {
-        "Lil' SAS": 1.00,
-        "Baby's AK": 0.80,
-        "Hot Sauce": 0.90,
-        "Pinch O' Salt": 1.0,
-        "Big Kev": 0.70,
-        "Whittle Knife": 0.65,
-        "Lil' Crass": 0.60,
-        "Pocket AWP": 0.60,
-        "Lil' Ava": 0.50,
-        "Stitch-Loaded": 0.30,
-        "Backsplash": 0.28,
-        "Lil' Cap Gun": 0.30
+      "Dr Boom": {
+        "Red": {
+          "Butane Buddy": 100.0,
+          "Glitter Bomb": 60.0,
+          "8 Ball IGL": 50.0,
+          "Lil' Ferno": 35.0
+        },
+        "Pink": {
+          "Lil' Eco": 13.00,
+          "Lil' Yeti": 13.00,
+          "Flash Bomb": 10.00,
+          "Eye of Ball": 8.00,
+          "Hungry Eyes": 7.00
+        },
+        "Purple": {
+          "Lil' Bloody": 2.50,
+          "Lil' Dumplin'": 2.00,
+          "Dr. Brian": 1.50,
+          "Lil' Chomper": 1.00,
+          "Lil' Facelift": 1.00,
+          "Big Brain": 1.00,
+          "Bomb Tag": 1.00
+        },
+        "Blue": {
+          "Lil' Zen": 0.50,
+          "Splatter Cat": 0.25,
+          "Gritty": 0.20,
+          "Whittle Guy": 0.20,
+          "Fluffy": 0.20,
+          "Biomech": 0.20
+        }
+      },
+      "Austin Major": {
+        "Red": {
+          "Austin Charm (Unknown)": 0.0
+        },
+        "Pink": {},
+        "Purple": {},
+        "Blue": {}
       }
     };
   }
@@ -191,10 +290,22 @@ class ExtensionManager {
       
       // Load API key and connect if available
       await this.loadAPIKey();
-      
+
+      // Load automation settings
+      await this.automationManager.loadSettings();
+      if (this.apiKey) {
+        this.automationManager.setAPIKey(this.apiKey, this.domain);
+      }
+
+      // Load Item Target automation settings
+      await this.itemTargetAutomationManager.loadSettings();
+      if (this.apiKey) {
+        this.itemTargetAutomationManager.setAPIKey(this.apiKey, this.domain);
+      }
+
       // Setup periodic stats update
       this.setupPeriodicUpdates();
-      
+
       this.updateBadge();
       
     } catch (error) {
@@ -463,6 +574,10 @@ class ExtensionManager {
           keychainPercentageThreshold: 50,
           keychainMinItemPrice: null,
           keychainMaxItemPrice: null,
+          blueGemEnabled: false,
+          blueGemMinPercentage: 70,
+          blueGemMinPrice: null,
+          blueGemMaxPrice: null,
           itemTargetList: []
         }).catch(() => ({})),
         chrome.storage.local.get({
@@ -502,7 +617,13 @@ class ExtensionManager {
     this.keychainFilter.percentageThreshold = syncSettings.keychainPercentageThreshold ?? 50;
     this.keychainFilter.minItemPrice = syncSettings.keychainMinItemPrice ?? null;
     this.keychainFilter.maxItemPrice = syncSettings.keychainMaxItemPrice ?? null;
-    
+
+    // Apply blue gem filter settings
+    this.blueGemFilter.enabled = syncSettings.blueGemEnabled ?? false;
+    this.blueGemFilter.minBluePercentage = syncSettings.blueGemMinPercentage ?? 70;
+    this.blueGemFilter.minPrice = syncSettings.blueGemMinPrice ?? null;
+    this.blueGemFilter.maxPrice = syncSettings.blueGemMaxPrice ?? null;
+
     // Use local storage only for large arrays
     this.itemTargetList = localSettings.itemTargetList || [];
     
@@ -601,6 +722,11 @@ class ExtensionManager {
       });
       this.apiKey = apiKey;
       this.domain = domain;
+
+      // Update automation managers API keys
+      this.automationManager.setAPIKey(apiKey, domain);
+      this.itemTargetAutomationManager.setAPIKey(apiKey, domain);
+
       console.log('✅ API key saved successfully');
     } catch (error) {
       console.error('❌ Error saving API key:', error);
@@ -1062,10 +1188,28 @@ async authenticateWithServer() {
       itemProcessed = await this.processKeychainMatch(item);
     }
 
-    // PRIORITY 3: Apply universal filters (ONLY if no specific match or keychain processed)
+    // PRIORITY 2.5: Process Austin 2025 charms (sticker-based detection)
+    // Workaround for Empire API not populating keychain names for Austin charms
+    if (!itemProcessed && item.stickers && item.stickers.length > 0) {
+      itemProcessed = await this.processAustinCharmMatch(item);
+    }
+
+    // PRIORITY 3: Process Blue Gem Detection (for Case Hardened items)
+    if (!itemProcessed && this.blueGemFilter.enabled && item.blue_percentage !== null && item.blue_percentage !== undefined) {
+      itemProcessed = await this.processBlueGemMatch(item);
+    }
+
+    // PRIORITY 4: Apply universal filters (ONLY if no specific match or keychain processed)
     if (!itemProcessed && targetMatches.universalMatch) {
       itemProcessed = await this.processUniversalFilterMatch(item, targetMatches.universalMatch);
     }
+
+    // ALWAYS check Item Target Automation (independent of Control Panel filters)
+    // Only log if automation is enabled to avoid confusion
+    if (this.itemTargetAutomationManager.config.enabled) {
+      console.log(`🔄 Checking Item Target Automation for: ${item.market_name}`);
+    }
+    await this.triggerItemTargetAutomation(item, item);
 
     // Log if item was filtered out
     if (!itemProcessed) {
@@ -1082,18 +1226,33 @@ async authenticateWithServer() {
    */
   async processSpecificTargetMatch(item, targetMatch) {
     console.log(`🎯 Found specific target item match: ${targetMatch.name || targetMatch.keyword}`);
-    
+
     const priceCheck = this.isGoodPrice(item);
+    console.log(`💰 Price check result:`, priceCheck);
     if (priceCheck.isGood) {
       const filtersCheck = await this.checkItemFilters(item, targetMatch);
+      console.log(`🔍 Filters check result:`, filtersCheck);
       if (filtersCheck.isGood) {
         console.log('🎉 🎯 SPECIFIC TARGET ITEM FOUND - ALL FILTERS PASSED! 🎯 🎉');
-        
+
         item.notification_type = 'target_item';
         item.target_item_matched = targetMatch;
         await this.handleNotificationFound(item);
+
+        // Trigger charm automation if item has charms/keychains
+        if (item.keychains && item.keychains.length > 0) {
+          const charmDetails = this.getCharmDetails(item);
+          if (charmDetails) {
+            await this.triggerAutomation(item, charmDetails.price);
+          }
+        }
+
         return true;
+      } else {
+        console.log(`🚫 FILTERED: Item filters check failed - ${filtersCheck.reason}`);
       }
+    } else {
+      console.log(`🚫 FILTERED: Price check failed - ${priceCheck.reason}`);
     }
     return false;
   }
@@ -1152,10 +1311,15 @@ async authenticateWithServer() {
       item.charm_category = charmDetails.category;
       item.charm_name = charmDetails.name;
       item.charm_price = charmDetails.price;
+      item.charm_collection = charmDetails.collection; // Add collection info
       item.charm_price_display = this.formatCharmPrice(charmDetails.price, item.purchase_price);
       item.notification_type = 'keychain';
 
       await this.handleNotificationFound(item);
+
+      // Trigger automation if enabled
+      await this.triggerAutomation(item, charmDetails.price);
+
       return true;
     } else {
       console.log(`🔍 Unknown keychains found: ${item.keychains.map(k => k.name).join(', ')}`);
@@ -1166,6 +1330,116 @@ async authenticateWithServer() {
   }
 
   /**
+   * Process Blue Gem match (for Case Hardened items)
+   * @param {Object} item - Item data
+   * @returns {Promise<boolean>} True if item was processed
+   */
+  async processBlueGemMatch(item) {
+    const bluePercentage = parseFloat(item.blue_percentage);
+    console.log(`💎 Blue Gem detected: ${item.market_name} - ${bluePercentage.toFixed(2)}% blue`);
+
+    // Check if blue percentage meets minimum threshold
+    if (bluePercentage < this.blueGemFilter.minBluePercentage) {
+      this.stats.itemsFiltered++;
+      this.incrementFilterReason('blue_percentage_too_low');
+      console.log(`🚫 FILTERED: Blue percentage ${bluePercentage.toFixed(2)}% below threshold ${this.blueGemFilter.minBluePercentage}%`);
+      return false;
+    }
+
+    // Check optional price range filter
+    const itemPriceInDollars = item.market_value / 100;
+    if (this.blueGemFilter.minPrice !== null && itemPriceInDollars < this.blueGemFilter.minPrice) {
+      this.stats.itemsFiltered++;
+      this.incrementFilterReason('blue_gem_price_too_low');
+      console.log(`🚫 FILTERED: Blue Gem price $${itemPriceInDollars.toFixed(2)} below minimum $${this.blueGemFilter.minPrice}`);
+      return false;
+    }
+
+    if (this.blueGemFilter.maxPrice !== null && itemPriceInDollars > this.blueGemFilter.maxPrice) {
+      this.stats.itemsFiltered++;
+      this.incrementFilterReason('blue_gem_price_too_high');
+      console.log(`🚫 FILTERED: Blue Gem price $${itemPriceInDollars.toFixed(2)} above maximum $${this.blueGemFilter.maxPrice}`);
+      return false;
+    }
+
+    console.log('🎉 💎 BLUE GEM FOUND - ALL FILTERS PASSED! 💎 🎉');
+
+    item.notification_type = 'blue_gem';
+    item.blue_percentage_display = `${bluePercentage.toFixed(2)}% Blue`;
+
+    await this.handleNotificationFound(item);
+    return true;
+  }
+
+  /**
+   * Process Austin 2025 charm match (sticker-based detection)
+   * Workaround for Empire API not populating keychain names for Austin charms
+   * @param {Object} item - Item data
+   * @returns {Promise<boolean>} True if item was processed
+   */
+  async processAustinCharmMatch(item) {
+    const austinCharm = this.detectAustinCharm(item);
+
+    if (!austinCharm) {
+      return false;
+    }
+
+    console.log(`🏆 Austin charm detected: ${item.market_name} - ${austinCharm.stickerCount} gold stickers`);
+
+    // Check if Austin Major collection is enabled
+    if (!this.keychainFilter.enabledKeychains.has('Austin Charm (Unknown)')) {
+      this.stats.itemsFiltered++;
+      this.incrementFilterReason('keychain_disabled');
+      console.log(`🚫 FILTERED: Austin Major collection disabled in settings`);
+      return false;
+    }
+
+    // Apply price filter (above recommended %)
+    const priceCheck = this.isGoodPrice(item);
+    if (!priceCheck.isGood) {
+      this.stats.itemsFiltered++;
+      this.incrementFilterReason('price_filter');
+      console.log(`🚫 FILTERED: Price filter failed - ${priceCheck.reason}`);
+      return false;
+    }
+
+    // Apply item price range filter
+    const itemPriceRangeCheck = this.checkKeychainItemPriceRange(item);
+    if (!itemPriceRangeCheck.isGood) {
+      this.stats.itemsFiltered++;
+      this.incrementFilterReason('item_price_range');
+      console.log(`🚫 FILTERED: Item price range failed - ${itemPriceRangeCheck.reason}`);
+      return false;
+    }
+
+    // SKIP keychain percentage filter for Austin charms (no price data available)
+    // User will manually inspect to determine charm value
+
+    console.log('🎉 🏆 AUSTIN CHARM FOUND - ALL FILTERS PASSED! 🏆 🎉');
+
+    // Attach Austin charm info to item
+    item.charm_category = austinCharm.category;
+    item.charm_name = austinCharm.name;
+    item.charm_price = null; // No price available
+    item.charm_collection = austinCharm.collection;
+    item.austin_sticker_count = austinCharm.stickerCount;
+    item.austin_sticker_names = austinCharm.stickerNames;
+    item.notification_type = 'austin_charm';
+
+    console.log('🏆 [Background] Austin charm data being sent:', {
+      id: item.id,
+      market_name: item.market_name,
+      notification_type: item.notification_type,
+      austin_sticker_count: item.austin_sticker_count,
+      austin_sticker_names: item.austin_sticker_names,
+      charm_name: item.charm_name
+    });
+
+    await this.handleNotificationFound(item);
+    return true;
+  }
+
+  /**
    * Process universal filter match
    * @param {Object} item - Item data
    * @param {Object} universalMatch - Universal filter
@@ -1173,13 +1447,13 @@ async authenticateWithServer() {
    */
   async processUniversalFilterMatch(item, universalMatch) {
     console.log(`🌐 Applying universal filter: ${universalMatch.name}`);
-    
+
     const priceCheck = this.isGoodPrice(item);
     if (priceCheck.isGood) {
       const filtersCheck = await this.checkItemFilters(item, universalMatch);
       if (filtersCheck.isGood) {
         console.log('🎉 🌐 UNIVERSAL FILTER MATCH - ALL FILTERS PASSED! 🌐 🎉');
-        
+
         item.notification_type = 'target_item';
         item.target_item_matched = universalMatch;
         await this.handleNotificationFound(item);
@@ -1630,16 +1904,58 @@ async authenticateWithServer() {
       const keychainName = keychain.name;
       if (!keychainName) continue;
 
-      for (const category in this.charmPricing) {
-        if (this.charmPricing[category].hasOwnProperty(keychainName)) {
-          return {
-            category: category,
-            name: keychainName,
-            price: this.charmPricing[category][keychainName]
-          };
+      // Search through collections -> colors -> charms
+      for (const collection in this.charmPricing) {
+        for (const category in this.charmPricing[collection]) {
+          if (this.charmPricing[collection][category].hasOwnProperty(keychainName)) {
+            return {
+              collection: collection,
+              category: category,
+              name: keychainName,
+              price: this.charmPricing[collection][category][keychainName]
+            };
+          }
         }
       }
     }
+    return null;
+  }
+
+  /**
+   * Detect Austin 2025 charm based on gold sticker pattern
+   * Workaround for Empire API not populating keychain names for Austin charms yet
+   * @param {Object} item - Item to check
+   * @returns {Object|null} Austin charm detection result or null
+   */
+  detectAustinCharm(item) {
+    // Check if item has stickers array
+    if (!item.stickers || !Array.isArray(item.stickers) || item.stickers.length === 0) {
+      return null;
+    }
+
+    // Count Austin 2025 gold stickers and collect their names
+    const austinGoldStickers = [];
+    for (const sticker of item.stickers) {
+      if (sticker && sticker.name && sticker.name.includes('(Gold) | Austin 2025')) {
+        austinGoldStickers.push(sticker.name);
+      }
+    }
+
+    // Require at least 3 Austin gold stickers to consider it an Austin charm item
+    if (austinGoldStickers.length >= 3) {
+      return {
+        detected: true,
+        stickerCount: austinGoldStickers.length,
+        stickerNames: austinGoldStickers,
+        collection: 'Austin Major',
+        // We can't know the specific charm name or price from stickers alone
+        // User will need to manually inspect the item
+        name: 'Austin Charm (Unknown)',
+        category: 'Unknown',
+        price: null // No price available
+      };
+    }
+
     return null;
   }
 
@@ -1649,8 +1965,10 @@ async authenticateWithServer() {
    */
   getAllKeychainNames() {
     const keychains = [];
-    for (const category in this.charmPricing) {
-      keychains.push(...Object.keys(this.charmPricing[category]));
+    for (const collection in this.charmPricing) {
+      for (const category in this.charmPricing[collection]) {
+        keychains.push(...Object.keys(this.charmPricing[collection][category]));
+      }
     }
     return keychains.sort();
   }
@@ -1661,9 +1979,27 @@ async authenticateWithServer() {
    * @returns {string|null} Category or null
    */
   getKeychainCategory(keychainName) {
-    for (const category in this.charmPricing) {
-      if (this.charmPricing[category].hasOwnProperty(keychainName)) {
-        return category;
+    for (const collection in this.charmPricing) {
+      for (const category in this.charmPricing[collection]) {
+        if (this.charmPricing[collection][category].hasOwnProperty(keychainName)) {
+          return category;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Get keychain collection by name
+   * @param {string} keychainName - Keychain name
+   * @returns {string|null} Collection or null
+   */
+  getKeychainCollection(keychainName) {
+    for (const collection in this.charmPricing) {
+      for (const category in this.charmPricing[collection]) {
+        if (this.charmPricing[collection][category].hasOwnProperty(keychainName)) {
+          return collection;
+        }
       }
     }
     return null;
@@ -1832,13 +2168,296 @@ async authenticateWithServer() {
     await this.showBackgroundNotification(enhancedItemData);
 
     // Send notification to content script
-    const notificationType = enhancedItemData.notification_type === 'target_item' ? 'ITEM_TARGET_FOUND' : 'KEYCHAIN_FOUND';
+    let notificationType = 'KEYCHAIN_FOUND'; // Default
+    if (enhancedItemData.notification_type === 'target_item') {
+      notificationType = 'ITEM_TARGET_FOUND';
+    } else if (enhancedItemData.notification_type === 'blue_gem') {
+      notificationType = 'BLUE_GEM_FOUND';
+    } else if (enhancedItemData.notification_type === 'austin_charm') {
+      // Austin charms use the same display as keychains, but with Austin-specific info
+      notificationType = 'KEYCHAIN_FOUND';
+      console.log('🏆 [Background] Sending Austin charm to content script:', {
+        notificationType,
+        notification_type: enhancedItemData.notification_type,
+        austin_sticker_count: enhancedItemData.austin_sticker_count
+      });
+    }
+
     this.sendToContentScript(notificationType, {
       ...enhancedItemData,
-      soundEnabled: false
+      soundEnabled: this.isSoundEnabled
     });
 
     this.updateBadge();
+  }
+
+  /**
+   * Trigger automation for item withdrawal
+   * @param {Object} item - Item data
+   * @param {number} charmValue - Total charm value in USD
+   */
+  async triggerAutomation(item, charmValue) {
+    console.log(`🤖 [Charm Automation] Checking item for automation:`, {
+      id: item.id,
+      market_name: item.market_name,
+      charmValue: charmValue,
+      itemValueUSD: (item.market_value || 0) / 100,
+      enabled: this.automationManager.config.enabled,
+      thresholdPercentage: this.automationManager.config.thresholdPercentage,
+      minPrice: this.automationManager.config.minPrice,
+      maxPrice: this.automationManager.config.maxPrice
+    });
+
+    try {
+      const result = await this.automationManager.processItem(item, charmValue);
+
+      if (!result) {
+        console.log(`🤖⏭️ [Charm Automation] Item skipped - check logs above for reason`);
+      }
+
+      if (result) {
+        if (result.success) {
+          console.log(`🤖✅ CHARM AUTOMATION: Successfully withdrew ${item.market_name} (ID: ${item.id})`);
+
+          // Enhance item data with price comparison information (like Item Target Automation)
+          const enhancedItemData = await this.enhanceItemDataWithPrices({
+            ...item,
+            notification_type: 'automation_purchase',
+            charm_automation: true,
+            charm_value: charmValue
+          });
+
+          console.log('🔍 [DEBUG] Charm automation enhanced data:', {
+            id: enhancedItemData.id,
+            market_name: enhancedItemData.market_name,
+            notification_type: enhancedItemData.notification_type,
+            charm_value: charmValue,
+            buff163_price: enhancedItemData.buff163_price,
+            csfloat_price: enhancedItemData.csfloat_price
+          });
+
+          // Create rich browser notification with price comparison
+          const itemValue = (item.market_value || item.purchase_price || 0) / 100;
+          const floatText = item.wear ? `Float: ${item.wear.toFixed(6)}` : 'N/A';
+          const charmText = charmValue ? `\n💎 Charm Value: $${charmValue.toFixed(2)}` : '';
+
+          // Build price comparison text
+          let priceComparison = '';
+          if (enhancedItemData.buff163_price) {
+            const buff163Diff = enhancedItemData.buff163_percentage ||
+              (((itemValue - enhancedItemData.buff163_price) / enhancedItemData.buff163_price) * 100);
+            priceComparison += `\n💰 Buff163: $${enhancedItemData.buff163_price.toFixed(2)} (${buff163Diff.toFixed(1)}% diff)`;
+          }
+          if (enhancedItemData.csfloat_price) {
+            priceComparison += `\n💰 CSFloat: $${enhancedItemData.csfloat_price.toFixed(2)}`;
+          }
+
+          const notificationId = `charm_automation_${item.id}_${Date.now()}`;
+          chrome.notifications.create(notificationId, {
+            type: 'basic',
+            iconUrl: 'icons/icon128.png',
+            title: '🤖 AUTO-PURCHASED! (Charm)',
+            message: `${item.market_name}\n💰 Empire: $${itemValue.toFixed(2)}\n🎯 ${floatText}${charmText}${priceComparison}`,
+            priority: 2,
+            requireInteraction: true
+          }, (createdId) => {
+            if (chrome.runtime.lastError) {
+              console.error('❌ Charm automation notification error:', chrome.runtime.lastError);
+            } else {
+              console.log('✅ Charm automation notification created:', createdId);
+
+              // Auto-clear after 30 seconds
+              setTimeout(() => {
+                chrome.notifications.clear(createdId);
+              }, 30000);
+            }
+          });
+
+          // Store in notification history (same as Item Target Automation)
+          await this.storeNotificationHistory(enhancedItemData);
+          console.log('💾 Charm automation purchase stored in notification history');
+
+          // Send popup notification to content script
+          console.log('📤 Sending charm automation data to content script:', {
+            buff163_price: enhancedItemData.buff163_price,
+            csfloat_price: enhancedItemData.csfloat_price,
+            market_value: enhancedItemData.market_value,
+            notification_type: enhancedItemData.notification_type
+          });
+
+          this.sendToContentScript('ITEM_TARGET_FOUND', {
+            ...enhancedItemData,
+            soundEnabled: this.isSoundEnabled
+          });
+
+          // Send notification to popup to update stats
+          chrome.runtime.sendMessage({
+            type: 'AUTOMATION_WITHDRAWAL_SUCCESS',
+            data: {
+              item: item,
+              charmValue: charmValue,
+              stats: this.automationManager.getSettings().stats
+            }
+          }).catch(() => {
+            // Popup may not be open, ignore error
+          });
+
+        } else {
+          console.log(`🤖❌ CHARM AUTOMATION: Failed to withdraw ${item.market_name}: ${result.error}`);
+
+          // Create browser notification for failed auto-purchase
+          const itemValue = (item.market_value || item.purchase_price || 0) / 100;
+
+          chrome.notifications.create({
+            type: 'basic',
+            iconUrl: 'icon128.png',
+            title: '❌ AUTO-PURCHASE FAILED (Charm)',
+            message: `${item.market_name} ($${itemValue.toFixed(2)})\nReason: ${result.error}`,
+            priority: 1
+          });
+
+          // Send failure notification
+          chrome.runtime.sendMessage({
+            type: 'AUTOMATION_WITHDRAWAL_FAILED',
+            data: {
+              item: item,
+              error: result.error,
+              stats: this.automationManager.getSettings().stats
+            }
+          }).catch(() => {
+            // Popup may not be open, ignore error
+          });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error in charm automation trigger:', error);
+    }
+  }
+
+  /**
+   * Trigger Item Target automation for item withdrawal
+   * @param {Object} item - Item data
+   * @param {Object} priceData - Price data from external marketplaces
+   */
+  async triggerItemTargetAutomation(item, priceData = null) {
+    try {
+      const result = await this.itemTargetAutomationManager.processItem(item, priceData);
+
+      if (result) {
+        if (result.success) {
+          console.log(`🎯✅ ITEM TARGET AUTOMATION: Successfully withdrew ${item.market_name} (ID: ${item.id})`);
+
+          // Enhance item data with price comparison information
+          const enhancedItemData = await this.enhanceItemDataWithPrices({
+            ...item,
+            notification_type: 'automation_purchase',
+            automation_matched_entry: result.matchedEntry
+          });
+
+          console.log('🔍 [DEBUG] Enhanced item data after enhanceItemDataWithPrices:', {
+            id: enhancedItemData.id,
+            market_name: enhancedItemData.market_name,
+            notification_type: enhancedItemData.notification_type,
+            buff163_price: enhancedItemData.buff163_price,
+            csfloat_price: enhancedItemData.csfloat_price,
+            market_value: enhancedItemData.market_value
+          });
+
+          // Create rich browser notification with price comparison
+          const itemValue = (item.market_value || item.purchase_price || 0) / 100;
+          const floatText = item.wear ? `Float: ${item.wear.toFixed(6)}` : 'N/A';
+
+          // Build price comparison text
+          let priceComparison = '';
+          if (enhancedItemData.buff163_price) {
+            const buff163Diff = enhancedItemData.buff163_percentage ||
+              (((itemValue - enhancedItemData.buff163_price) / enhancedItemData.buff163_price) * 100);
+            priceComparison += `\n💰 Buff163: $${enhancedItemData.buff163_price.toFixed(2)} (${buff163Diff.toFixed(1)}% diff)`;
+          }
+          if (enhancedItemData.csfloat_price) {
+            priceComparison += `\n💰 CSFloat: $${enhancedItemData.csfloat_price.toFixed(2)}`;
+          }
+
+          const notificationId = `automation_${item.id}_${Date.now()}`;
+          chrome.notifications.create(notificationId, {
+            type: 'basic',
+            iconUrl: 'icons/icon128.png',
+            title: '🤖 AUTO-PURCHASED!',
+            message: `${item.market_name}\n💰 Empire: $${itemValue.toFixed(2)}\n🎯 ${floatText}${priceComparison}`,
+            priority: 2,
+            requireInteraction: true
+          }, (createdId) => {
+            if (chrome.runtime.lastError) {
+              console.error('❌ Automation notification error:', chrome.runtime.lastError);
+            } else {
+              console.log('✅ Automation notification created:', createdId);
+
+              // Auto-clear after 30 seconds
+              setTimeout(() => {
+                chrome.notifications.clear(createdId);
+              }, 30000);
+            }
+          });
+
+          // Store in notification history (like Control Panel does)
+          await this.storeNotificationHistory(enhancedItemData);
+          console.log('💾 Automation purchase stored in notification history');
+
+          // Log the enhanced data being sent to content script
+          console.log('📤 Sending automation data to content script:', {
+            buff163_price: enhancedItemData.buff163_price,
+            csfloat_price: enhancedItemData.csfloat_price,
+            market_value: enhancedItemData.market_value,
+            notification_type: enhancedItemData.notification_type
+          });
+
+          // Send popup notification to content script (like Control Panel does)
+          this.sendToContentScript('ITEM_TARGET_FOUND', {
+            ...enhancedItemData,
+            soundEnabled: this.isSoundEnabled
+          });
+
+          // Send notification to popup to update stats
+          chrome.runtime.sendMessage({
+            type: 'ITEM_TARGET_AUTOMATION_WITHDRAWAL_SUCCESS',
+            data: {
+              item: item,
+              stats: this.itemTargetAutomationManager.getSettings().stats
+            }
+          }).catch(() => {
+            // Popup may not be open, ignore error
+          });
+
+        } else {
+          console.log(`🎯❌ ITEM TARGET AUTOMATION: Failed to withdraw ${item.market_name}: ${result.error}`);
+
+          // Create browser notification for failed auto-purchase
+          const itemValue = (item.market_value || item.purchase_price || 0) / 100;
+
+          chrome.notifications.create({
+            type: 'basic',
+            iconUrl: 'icon128.png',
+            title: '❌ AUTO-PURCHASE FAILED',
+            message: `${item.market_name} ($${itemValue.toFixed(2)})\nReason: ${result.error}`,
+            priority: 1
+          });
+
+          // Send failure notification
+          chrome.runtime.sendMessage({
+            type: 'ITEM_TARGET_AUTOMATION_WITHDRAWAL_FAILED',
+            data: {
+              item: item,
+              error: result.error,
+              stats: this.itemTargetAutomationManager.getSettings().stats
+            }
+          }).catch(() => {
+            // Popup may not be open, ignore error
+          });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error in Item Target automation trigger:', error);
+    }
   }
 
   /**
@@ -1919,6 +2538,18 @@ async authenticateWithServer() {
     }
     if (priceInfo?.csfloatPrice?.price) {
       enhancedItemData.csfloat_price = priceInfo.csfloatPrice.price;
+    }
+    if (priceInfo?.youpinPrice?.price) {
+      enhancedItemData.youpin_price = priceInfo.youpinPrice.price;
+    }
+    if (priceInfo?.steamPrice?.price) {
+      enhancedItemData.steam_price = priceInfo.steamPrice.price;
+    }
+    if (priceInfo?.bitskinsPrice?.price) {
+      enhancedItemData.bitskins_price = priceInfo.bitskinsPrice.price;
+    }
+    if (priceInfo?.skinportPrice?.price) {
+      enhancedItemData.skinport_price = priceInfo.skinportPrice.price;
     }
   }
 
@@ -2127,17 +2758,25 @@ chrome.notifications.create(notificationId, {
       history = history.filter(item => item.timestamp > twentyFourHoursAgo);
       
       const historyItem = this.createHistoryItem(itemData);
-      
+
+      console.log('🔍 [DEBUG] History item created:', {
+        id: historyItem.id,
+        market_name: historyItem.market_name,
+        notification_type: historyItem.notification_type,
+        buff163_price: historyItem.buff163_price,
+        csfloat_price: historyItem.csfloat_price
+      });
+
       history.unshift(historyItem);
-      
+
       // Limit history size
       if (history.length > 100) {
         history = history.slice(0, 100);
       }
-      
+
       await chrome.storage.local.set({notificationHistory: history});
-      
-      console.log('💾 Notification stored in history');
+
+      console.log(`💾 Notification stored in history (total: ${history.length} items)`);
     } catch (error) {
       console.error('❌ Error storing notification history:', error);
     }
@@ -2157,20 +2796,29 @@ chrome.notifications.create(notificationId, {
       suggested_price: itemData.suggested_price,
       above_recommended_price: itemData.above_recommended_price,
       wear: itemData.wear,
-      keychains: itemData.keychains ? 
-        (Array.isArray(itemData.keychains) ? itemData.keychains : [itemData.keychains]) : 
+      keychains: itemData.keychains ?
+        (Array.isArray(itemData.keychains) ? itemData.keychains : [itemData.keychains]) :
         [],
       notification_type: itemData.notification_type || 'keychain',
       target_item_matched: itemData.target_item_matched,
       charm_category: itemData.charm_category,
       charm_name: itemData.charm_name,
       charm_price: itemData.charm_price,
+      charm_collection: itemData.charm_collection,
       published_at: itemData.published_at || new Date().toISOString(),
       timestamp: Date.now(),
-      
+
+      // Blue Gem fields
+      blue_percentage: itemData.blue_percentage,
+      blue_percentage_display: itemData.blue_percentage_display,
+
       // Price fields
       buff163_price: itemData.buff163_price,
       csfloat_price: itemData.csfloat_price,
+      youpin_price: itemData.youpin_price,
+      steam_price: itemData.steam_price,
+      bitskins_price: itemData.bitskins_price,
+      skinport_price: itemData.skinport_price,
       buff163_percentage: itemData.buff163_percentage,
       empire_price: itemData.market_value ? (itemData.market_value / 100) : 0
     };
@@ -2193,27 +2841,64 @@ chrome.notifications.create(notificationId, {
     }
 
     console.log('📡 Fetching fresh prices from csgotrader.app APIs...');
-    const csfloatUrl = 'https://prices.csgotrader.app/latest/csfloat.json';
-    const buffUrl = 'https://prices.csgotrader.app/latest/buff163.json';
+
+    // Get enabled marketplaces from settings
+    const settings = await chrome.storage.sync.get({
+      marketplaces: {
+        csfloat: true,
+        buff163: true,
+        youpin: true,
+        steam: true,
+        bitskins: true,
+        skinport: true
+      }
+    });
+
+    const marketplaces = settings.marketplaces;
+    const fetchPromises = [];
+    const marketplaceNames = [];
+
+    // Add enabled marketplaces to fetch list
+    if (marketplaces.csfloat) {
+      fetchPromises.push(fetch('https://prices.csgotrader.app/latest/csfloat.json'));
+      marketplaceNames.push('csfloat');
+    }
+    if (marketplaces.buff163) {
+      fetchPromises.push(fetch('https://prices.csgotrader.app/latest/buff163.json'));
+      marketplaceNames.push('buff163');
+    }
+    if (marketplaces.youpin) {
+      fetchPromises.push(fetch('https://prices.csgotrader.app/latest/youpin.json'));
+      marketplaceNames.push('youpin');
+    }
+    if (marketplaces.steam) {
+      fetchPromises.push(fetch('https://prices.csgotrader.app/latest/steam.json'));
+      marketplaceNames.push('steam');
+    }
+    if (marketplaces.bitskins) {
+      fetchPromises.push(fetch('https://prices.csgotrader.app/latest/bitskins.json'));
+      marketplaceNames.push('bitskins');
+    }
+    if (marketplaces.skinport) {
+      fetchPromises.push(fetch('https://prices.csgotrader.app/latest/skinport.json'));
+      marketplaceNames.push('skinport');
+    }
 
     try {
-      const [csfloatResponse, buffResponse] = await Promise.all([
-        fetch(csfloatUrl),
-        fetch(buffUrl)
-      ]);
+      const responses = await Promise.all(fetchPromises);
+      const priceDataArray = await Promise.all(responses.map(r => r.json()));
 
-      if (!csfloatResponse.ok || !buffResponse.ok) {
-        throw new Error('Failed to fetch price data from one or more sources.');
-      }
+      // Combine all price data
+      const allPriceData = {};
+      priceDataArray.forEach((data, index) => {
+        allPriceData[marketplaceNames[index]] = data;
+      });
 
-      const csfloatData = await csfloatResponse.json();
-      const buffData = await buffResponse.json();
-      
-      this.priceDataCache = this.combinePriceData(csfloatData, buffData);
+      this.priceDataCache = this.combinePriceData(allPriceData);
       this.priceCacheTimestamp = Date.now();
-      
-      console.log(`✅ Price cache updated with ${Object.keys(this.priceDataCache).length} items.`);
-      
+
+      console.log(`✅ Price cache updated with ${Object.keys(this.priceDataCache).length} items from ${marketplaceNames.join(', ')}.`);
+
       return this.priceDataCache;
 
     } catch (error) {
@@ -2223,29 +2908,72 @@ chrome.notifications.create(notificationId, {
   }
 
   /**
-   * Combine CSFloat and Buff163 price data
-   * @param {Object} csfloatData - CSFloat price data
-   * @param {Object} buffData - Buff163 price data
+   * Combine price data from multiple marketplaces
+   * @param {Object} allPriceData - Object containing price data from all marketplaces
    * @returns {Object} Combined price data
    */
-  combinePriceData(csfloatData, buffData) {
+  combinePriceData(allPriceData) {
     const combinedPrices = new Map();
 
-    // Process CSFloat prices
-    for (const [name, data] of Object.entries(csfloatData)) {
-      combinedPrices.set(name.toLowerCase(), { csfloatPrice: data });
-    }
-    
-    // Merge Buff163 prices
-    for (const [name, data] of Object.entries(buffData)) {
-      const lowerName = name.toLowerCase();
-      const existingEntry = combinedPrices.get(lowerName) || {};
-      
-      if (data && data.starting_at) {
-        combinedPrices.set(lowerName, { ...existingEntry, buffPrice: data.starting_at });
+    // Process each marketplace's data
+    const marketplaceMap = {
+      csfloat: 'csfloatPrice',
+      buff163: 'buffPrice',
+      youpin: 'youpinPrice',
+      steam: 'steamPrice',
+      bitskins: 'bitskinsPrice',
+      skinport: 'skinportPrice'
+    };
+
+    for (const [marketplace, priceKey] of Object.entries(marketplaceMap)) {
+      const marketplaceData = allPriceData[marketplace];
+      if (!marketplaceData) continue;
+
+      for (const [name, data] of Object.entries(marketplaceData)) {
+        const lowerName = name.toLowerCase();
+        const existingEntry = combinedPrices.get(lowerName) || {};
+
+        // Handle different data structures from different marketplaces
+        let priceData = null;
+
+        if (marketplace === 'buff163') {
+          // Buff163 has starting_at structure: { starting_at: { price, doppler: {...} } }
+          if (data && data.starting_at) {
+            priceData = data.starting_at;
+          }
+        } else if (marketplace === 'steam') {
+          // Steam has time-based pricing: { last_24h, last_7d, last_30d, last_90d }
+          // Use last_7d as it's more stable than last_24h
+          if (data && typeof data === 'object' && data.last_7d !== undefined && data.last_7d !== null) {
+            priceData = { price: data.last_7d };
+          } else if (data && typeof data === 'object' && data.last_30d !== undefined && data.last_30d !== null) {
+            // Fallback to last_30d if last_7d is unavailable
+            priceData = { price: data.last_30d };
+          }
+        } else if (marketplace === 'youpin') {
+          // YouPin has direct price: just a number
+          if (typeof data === 'number' && data !== null) {
+            priceData = { price: data };
+          }
+        } else if (marketplace === 'skinport') {
+          // Skinport has: { starting_at: number, suggested_price: number|null }
+          if (data && typeof data === 'object' && data.starting_at !== undefined && data.starting_at !== null) {
+            priceData = { price: data.starting_at };
+          }
+        } else {
+          // CSFloat, BitSkins have object structure: { price, doppler: {...} }
+          if (data && typeof data === 'object') {
+            priceData = data;
+          }
+        }
+
+        // Store the price data if we successfully parsed it
+        if (priceData) {
+          combinedPrices.set(lowerName, { ...existingEntry, [priceKey]: priceData });
+        }
       }
     }
-    
+
     return Object.fromEntries(combinedPrices);
   }
 
@@ -2428,22 +3156,91 @@ chrome.notifications.create(notificationId, {
  */
 async updateItemTargetList(itemTargetList) {
   console.log(`🔧 Updating Item Target List: ${itemTargetList.length} items`);
-  
+
   this.itemTargetList = itemTargetList;
-  
+
   try {
     // Only use local storage for large item lists
     await chrome.storage.local.set({ itemTargetList: itemTargetList });
-    
+
     console.log(`✅ Item Target List saved to local storage: ${itemTargetList.length} items`);
-    
+
     await this.autoSyncToServerSettings();
-    
+
   } catch (error) {
     console.error('❌ Error saving Item Target List:', error);
     throw error;
   }
 }
+
+  /**
+   * ========================================================================
+   * BLUE GEM DETECTION SETTINGS
+   * ========================================================================
+   */
+
+  /**
+   * Set Blue Gem Detection enabled/disabled state
+   * @param {boolean} enabled - Whether Blue Gem Detection is enabled
+   */
+  async setBlueGemState(enabled) {
+    console.log(`🔧 Setting Blue Gem Detection: ${enabled ? 'enabled' : 'disabled'}`);
+
+    this.blueGemFilter.enabled = enabled;
+
+    try {
+      await Promise.all([
+        chrome.storage.local.set({ blueGemEnabled: enabled }),
+        chrome.storage.sync.set({ blueGemEnabled: enabled })
+          .catch(e => console.warn('Sync storage failed:', e.message))
+      ]);
+
+      console.log(`✅ Blue Gem Detection state saved: ${enabled}`);
+
+      await this.autoSyncToServerSettings();
+
+    } catch (error) {
+      console.error('❌ Error saving Blue Gem state:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update Blue Gem Detection settings
+   * @param {number} minBluePercentage - Minimum blue percentage (0-100)
+   * @param {number|null} minPrice - Minimum price filter
+   * @param {number|null} maxPrice - Maximum price filter
+   */
+  async updateBlueGemSettings(minBluePercentage, minPrice, maxPrice) {
+    console.log(`🔧 Updating Blue Gem Settings: ${minBluePercentage}% blue, price: $${minPrice || 0} - $${maxPrice || '∞'}`);
+
+    this.blueGemFilter.minBluePercentage = minBluePercentage;
+    this.blueGemFilter.minPrice = minPrice;
+    this.blueGemFilter.maxPrice = maxPrice;
+
+    try {
+      await Promise.all([
+        chrome.storage.local.set({
+          blueGemMinPercentage: minBluePercentage,
+          blueGemMinPrice: minPrice,
+          blueGemMaxPrice: maxPrice
+        }),
+        chrome.storage.sync.set({
+          blueGemMinPercentage: minBluePercentage,
+          blueGemMinPrice: minPrice,
+          blueGemMaxPrice: maxPrice
+        }).catch(e => console.warn('Sync storage failed:', e.message))
+      ]);
+
+      console.log(`✅ Blue Gem settings saved successfully`);
+
+      await this.autoSyncToServerSettings();
+
+    } catch (error) {
+      console.error('❌ Error saving Blue Gem settings:', error);
+      throw error;
+    }
+  }
 
   /**
    * Auto-sync all settings to server-settings.json
@@ -2711,34 +3508,79 @@ async updateItemTargetList(itemTargetList) {
    * @returns {Promise<Object>}
    */
   async testNotification() {
-    const testItem = {
-      id: 'test-' + Date.now(),
-      market_name: 'Test AK-47 | Redline (Field-Tested)',
+    console.log('🧪 Sending 3 test notifications...');
+
+    const baseTimestamp = Date.now();
+
+    // Test 1: Regular item without charm
+    const testItem1 = {
+      id: 'test-regular-' + baseTimestamp + '-1',
+      market_name: 'AK-47 | Redline (Field-Tested)',
       market_value: 3907,
       purchase_price: 3907,
       suggested_price: 4100,
       above_recommended_price: -4.7,
       wear: 0.1234567,
+      keychains: [],
+      published_at: new Date().toISOString(),
+      notification_type: 'target_item'
+    };
+
+    // Test 2: Item with charm
+    const testItem2 = {
+      id: 'test-charm-' + baseTimestamp + '-2',
+      market_name: 'M4A4 | Asiimov (Field-Tested)',
+      market_value: 8500,
+      purchase_price: 8500,
+      suggested_price: 9000,
+      above_recommended_price: -5.6,
+      wear: 0.2567891,
       keychains: [{ name: 'Hot Howl', wear: null }],
       published_at: new Date().toISOString(),
       notification_type: 'keychain'
     };
-    
-    console.log('🧪 Sending test notification...');
-    
-    const charmDetails = this.getCharmDetails(testItem);
+
+    // Get charm details for test item 2
+    const charmDetails = this.getCharmDetails(testItem2);
     if (charmDetails) {
-      testItem.charm_category = charmDetails.category;
-      testItem.charm_name = charmDetails.name;
-      testItem.charm_price = charmDetails.price;
-      testItem.charm_price_display = this.formatCharmPrice(charmDetails.price, testItem.purchase_price);
+      testItem2.charm_category = charmDetails.category;
+      testItem2.charm_name = charmDetails.name;
+      testItem2.charm_price = charmDetails.price;
+      testItem2.charm_collection = charmDetails.collection;
+      testItem2.charm_price_display = this.formatCharmPrice(charmDetails.price, testItem2.purchase_price);
     }
-    
-    await this.handleNotificationFound(testItem);
-    
+
+    // Test 3: Blue Gem item
+    const testItem3 = {
+      id: 'test-bluegem-' + baseTimestamp + '-3',
+      market_name: '★ Karambit | Case Hardened (Battle-Scarred)',
+      market_value: 163215,
+      purchase_price: 163215,
+      suggested_price: 170000,
+      above_recommended_price: -4.0,
+      wear: 0.7891234,
+      blue_percentage: 87.54,
+      keychains: [],
+      published_at: new Date().toISOString(),
+      notification_type: 'blue_gem',
+      blue_percentage_display: '87.54% Blue'
+    };
+
+    // Send all 3 notifications with slight delays
+    await this.handleNotificationFound(testItem1);
+    console.log('✅ Test notification 1/3 sent (Regular Item)');
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await this.handleNotificationFound(testItem2);
+    console.log('✅ Test notification 2/3 sent (Charm Item)');
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await this.handleNotificationFound(testItem3);
+    console.log('✅ Test notification 3/3 sent (Blue Gem)');
+
     return {
       success: true,
-      message: 'Test notification sent successfully!'
+      message: '3 test notifications sent successfully! (Regular item, Charm item, Blue Gem)'
     };
   }
 
@@ -2871,6 +3713,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'UPDATE_ITEM_TARGET_LIST':
       handleAsyncMessage(async () => {
         await manager.updateItemTargetList(message.data.itemTargetList);
+        // Note: Item Target Automation now uses separate filters
         return { message: 'Item target list updated successfully!' };
       }, sendResponse);
       return true;
@@ -2902,7 +3745,110 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'EXPORT_JSON_SETTINGS':
       handleAsyncMessage(() => manager.exportSettingsToJson(), sendResponse);
       return true;
-      
+
+    // Blue Gem Detection message handlers
+    case 'GET_BLUE_GEM_SETTINGS':
+      sendResponse({
+        success: true,
+        data: {
+          enabled: manager.blueGemFilter.enabled,
+          minBluePercentage: manager.blueGemFilter.minBluePercentage,
+          minPrice: manager.blueGemFilter.minPrice,
+          maxPrice: manager.blueGemFilter.maxPrice
+        }
+      });
+      break;
+
+    case 'SET_BLUE_GEM_STATE':
+      handleAsyncMessage(async () => {
+        await manager.setBlueGemState(message.data.enabled);
+        return { message: `Blue Gem Detection ${message.data.enabled ? 'enabled' : 'disabled'}` };
+      }, sendResponse);
+      return true;
+
+    case 'UPDATE_BLUE_GEM_SETTINGS':
+      handleAsyncMessage(async () => {
+        await manager.updateBlueGemSettings(
+          message.data.minBluePercentage,
+          message.data.minPrice,
+          message.data.maxPrice
+        );
+        return { message: 'Blue Gem settings updated successfully!' };
+      }, sendResponse);
+      return true;
+
+    case 'CLEAR_PRICE_CACHE':
+      manager.priceDataCache = null;
+      manager.priceCacheTimestamp = 0;
+      console.log('🗑️ Price cache cleared');
+      sendResponse({ success: true, message: 'Price cache cleared' });
+      break;
+
+    // Automation message handlers
+    case 'GET_AUTOMATION_SETTINGS':
+      sendResponse({
+        success: true,
+        data: manager.automationManager.getSettings()
+      });
+      break;
+
+    case 'SET_AUTOMATION_STATE':
+      handleAsyncMessage(async () => {
+        await manager.automationManager.setEnabled(message.data.enabled);
+        return { message: `Automation ${message.data.enabled ? 'enabled' : 'disabled'}` };
+      }, sendResponse);
+      return true;
+
+    case 'UPDATE_AUTOMATION_SETTINGS':
+      handleAsyncMessage(async () => {
+        await manager.automationManager.updateSettings({
+          thresholdPercentage: message.data.thresholdPercentage,
+          minPrice: message.data.minPrice,
+          maxPrice: message.data.maxPrice
+        });
+        return { message: 'Automation settings updated successfully!' };
+      }, sendResponse);
+      return true;
+
+    case 'RESET_AUTOMATION_STATS':
+      handleAsyncMessage(async () => {
+        await manager.automationManager.resetStats();
+        return {
+          message: 'Automation statistics reset!',
+          data: manager.automationManager.getSettings()
+        };
+      }, sendResponse);
+      return true;
+
+    // Item Target Automation message handlers
+    case 'GET_ITEM_TARGET_AUTOMATION_SETTINGS':
+      sendResponse({
+        success: true,
+        data: manager.itemTargetAutomationManager.getSettings()
+      });
+      break;
+
+    case 'SET_ITEM_TARGET_AUTOMATION_STATE':
+      handleAsyncMessage(async () => {
+        await manager.itemTargetAutomationManager.setEnabled(message.data.enabled);
+        return { message: `Item Target Automation ${message.data.enabled ? 'enabled' : 'disabled'}` };
+      }, sendResponse);
+      return true;
+
+    case 'ADD_AUTOMATION_FILTER_ENTRY':
+      handleAsyncMessage(async () => {
+        await manager.itemTargetAutomationManager.addFilterEntry(message.data.entry);
+        return { message: 'Automation filter entry added successfully!' };
+      }, sendResponse);
+      return true;
+
+    case 'REMOVE_AUTOMATION_FILTER_ENTRY':
+      handleAsyncMessage(async () => {
+        await manager.itemTargetAutomationManager.removeFilterEntry(message.data.entryId);
+        return { message: 'Automation filter entry removed successfully!' };
+      }, sendResponse);
+      return true;
+
     default:
       console.warn(`Unknown message type: ${message.type}`);
       sendResponse({ success: false, error: 'Unknown message type' });
@@ -2933,17 +3879,44 @@ async function handleAsyncMessage(asyncOperation, sendResponse) {
 function getKeychainFilterSettings(manager) {
   const allKeychains = manager.getAllKeychainNames();
   const enabledKeychainsArray = Array.from(manager.keychainFilter.enabledKeychains);
-  
+
+  // Build collection structure
+  const collectionData = {};
+  for (const collection in manager.charmPricing) {
+    collectionData[collection] = {
+      "Red": [],
+      "Pink": [],
+      "Purple": [],
+      "Blue": []
+    };
+
+    for (const category in manager.charmPricing[collection]) {
+      for (const name in manager.charmPricing[collection][category]) {
+        const price = manager.charmPricing[collection][category][name];
+        collectionData[collection][category].push({
+          name,
+          price,
+          enabled: manager.keychainFilter.enabledKeychains.has(name)
+        });
+      }
+      // Sort by price descending within each color category
+      collectionData[collection][category].sort((a, b) => b.price - a.price);
+    }
+  }
+
   return {
     success: true,
     data: {
       percentageThreshold: manager.keychainFilter.percentageThreshold,
       enabledKeychains: enabledKeychainsArray,
+      collections: collectionData,
       allKeychains: allKeychains.map(name => {
         const category = manager.getKeychainCategory(name);
-        const price = category ? manager.charmPricing[category][name] : 0;
+        const collection = manager.getKeychainCollection(name);
+        const price = (collection && category) ? manager.charmPricing[collection][category][name] : 0;
         return {
           name,
+          collection,
           category,
           price,
           enabled: manager.keychainFilter.enabledKeychains.has(name)

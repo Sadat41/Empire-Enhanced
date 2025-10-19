@@ -18,7 +18,8 @@ class CSGOEmpireNotificationOverlay {
     this.monitoringEnabled = true;
     this.currentTheme = 'shooting-star'; // Default theme
     this.siteThemingEnabled = true; // Site theming state
-    
+    this.notificationData = new Map(); // Store item data for price refresh
+
     // Charm category color mapping
     this.charmColors = {
       'Red': '#ef4444',      // Red
@@ -26,8 +27,8 @@ class CSGOEmpireNotificationOverlay {
       'Purple': '#a855f7',   // Purple
       'Blue': '#3b82f6'      // Blue
     };
-    
-    
+
+
     this.fallbackCharmPricing = {
       "Red": {
         "Hot Howl": 70.0,
@@ -71,7 +72,10 @@ class CSGOEmpireNotificationOverlay {
         "Lil' Cap Gun": 0.30
       }
     };
-    
+
+    // Make overlay accessible globally for refresh button
+    window.empireEnhancedOverlay = this;
+
     this.init();
   }
 
@@ -93,17 +97,30 @@ class CSGOEmpireNotificationOverlay {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       switch (message.type) {
         case 'KEYCHAIN_FOUND':
-          console.log('🔍 DEBUG: Received KEYCHAIN_FOUND message:', message.data);
+          console.log('🔔 [Content Script] Received KEYCHAIN_FOUND:', {
+            monitoringEnabled: this.monitoringEnabled,
+            notification_type: message.data.notification_type,
+            market_name: message.data.market_name,
+            austin_sticker_count: message.data.austin_sticker_count
+          });
           if (this.monitoringEnabled) {
             this.showKeychainNotification(message.data);
+          } else {
+            console.log('🚫 [Content Script] Monitoring disabled, skipping notification display');
           }
           sendResponse({success: true});
           break;
         case 'ITEM_TARGET_FOUND':
-         
-          console.log('🎯 DEBUG: Received ITEM_TARGET_FOUND message:', message.data);
-          if (this.monitoringEnabled) {
+          // Always show automation purchase notifications, even if monitoring is disabled
+          // Only check monitoring state for regular target item notifications
+          if (message.data.notification_type === 'automation_purchase' || this.monitoringEnabled) {
             this.showItemTargetNotification(message.data);
+          }
+          sendResponse({success: true});
+          break;
+        case 'BLUE_GEM_FOUND':
+          if (this.monitoringEnabled) {
+            this.showKeychainNotification(message.data);
           }
           sendResponse({success: true});
           break;
@@ -136,20 +153,22 @@ class CSGOEmpireNotificationOverlay {
         monitoringEnabled: true,
         soundEnabled: true,
         selectedTheme: 'shooting-star',
-        siteThemingEnabled: true
+        siteThemingEnabled: true,
+        selectedMarketplace1: 'csfloat',
+        selectedMarketplace2: 'buff163',
+        differenceMarketplace: 'marketplace1',
+        differenceCalculationMethod: 'marketplace_over_empire'
       });
-      
+
       this.monitoringEnabled = settings.monitoringEnabled;
       this.soundEnabled = settings.soundEnabled;
       this.currentTheme = settings.selectedTheme;
       this.siteThemingEnabled = settings.siteThemingEnabled;
-      
-      console.log('Content script settings loaded:', { 
-        monitoring: this.monitoringEnabled, 
-        sound: this.soundEnabled,
-        theme: this.currentTheme,
-        siteTheming: this.siteThemingEnabled
-      });
+      this.selectedMarketplace1 = settings.selectedMarketplace1;
+      this.selectedMarketplace2 = settings.selectedMarketplace2;
+      this.differenceMarketplace = settings.differenceMarketplace;
+      this.differenceCalculationMethod = settings.differenceCalculationMethod;
+
     } catch (error) {
       console.error('Error loading settings in content script:', error);
     }
@@ -176,6 +195,18 @@ class CSGOEmpireNotificationOverlay {
           if (changes.siteThemingEnabled) {
             this.siteThemingEnabled = changes.siteThemingEnabled.newValue;
             this.setSiteThemingState(this.siteThemingEnabled);
+          }
+          if (changes.selectedMarketplace1) {
+            this.selectedMarketplace1 = changes.selectedMarketplace1.newValue;
+          }
+          if (changes.selectedMarketplace2) {
+            this.selectedMarketplace2 = changes.selectedMarketplace2.newValue;
+          }
+          if (changes.differenceMarketplace) {
+            this.differenceMarketplace = changes.differenceMarketplace.newValue;
+          }
+          if (changes.differenceCalculationMethod) {
+            this.differenceCalculationMethod = changes.differenceCalculationMethod.newValue;
           }
         }
       });
@@ -623,20 +654,15 @@ class CSGOEmpireNotificationOverlay {
 
   // Fallback method to get charm details from fallback data (matches server logic exactly)
   getFallbackCharmDetails(itemData) {
-    console.log('🔍 DEBUG: Using fallback charm detection for:', itemData);
-    
     if (!itemData.keychains || !Array.isArray(itemData.keychains)) {
-      console.log('❌ No keychains array found');
       return null;
     }
 
     for (const keychain of itemData.keychains) {
       const keychainName = keychain.name || keychain;
-      console.log('🔍 Checking keychain:', keychainName);
-      
+
       for (const category in this.fallbackCharmPricing) {
         if (this.fallbackCharmPricing[category].hasOwnProperty(keychainName)) {
-          console.log('✅ Found charm in fallback data:', category, keychainName);
           return {
             category: category,
             name: keychainName,
@@ -645,44 +671,72 @@ class CSGOEmpireNotificationOverlay {
         }
       }
     }
-    
-    console.log('❌ No charm found in fallback data');
+
     return null;
   }
 
-  
+
+
   formatCharmInfo(itemData) {
-    console.log('🔍 DEBUG: formatCharmInfo called with:', {
-      charm_name: itemData.charm_name,
-      charm_category: itemData.charm_category,
-      charm_price: itemData.charm_price,
-      keychains: itemData.keychains,
-      market_value: itemData.market_value
-    });
+    // Priority 0: Check if this is a Blue Gem item
+    if (itemData.notification_type === 'blue_gem' && itemData.blue_percentage !== null && itemData.blue_percentage !== undefined) {
+      const bluePercentage = parseFloat(itemData.blue_percentage);
+      return {
+        hasBlueGemData: true,
+        bluePercentage,
+        formattedDisplay: `${bluePercentage.toFixed(2)}% Blue`,
+        isBlueGem: true
+      };
+    }
+
+    // Priority 0.5: Check if this is an Austin charm (sticker-based detection)
+    if (itemData.notification_type === 'austin_charm') {
+      const stickerCount = itemData.austin_sticker_count || 0;
+      const stickerNames = itemData.austin_sticker_names || [];
+
+      console.log('🏆 [Content Script] Formatting Austin charm notification:', {
+        stickerCount,
+        stickerNames,
+        hasNames: stickerNames.length > 0
+      });
+
+      // Display sticker names if available (truncated for brevity)
+      const stickerDisplay = stickerNames.length > 0
+        ? stickerNames.slice(0, 2).map(name => name.replace(' (Gold) | Austin 2025', '')).join(', ')
+        : 'Austin 2025';
+
+      return {
+        hasAustinCharmData: true,
+        hasCharmData: true, // Treat as charm for display purposes
+        charmName: 'Potential Austin Charm',
+        charmCategory: 'Austin Major',
+        charmColor: '#f59e0b', // Gold color for Austin
+        categoryIcon: '🏆',
+        stickerCount: stickerCount,
+        percentageOfMarket: 0, // No price data available
+        formattedDisplay: `Potential Austin Charm – Inspect to Confirm`,
+        percentageDisplay: stickerCount > 0 ? `${stickerCount} Gold Stickers` : 'Manual Inspection Required',
+        isAustinCharm: true,
+        stickerDisplay: stickerDisplay
+      };
+    }
 
     // Priority 1: Check if we have charm data from the server
-    if (itemData.charm_name && itemData.charm_category && itemData.charm_price !== undefined) {
-      console.log('✅ Using server-provided charm data');
+    // IMPORTANT: Skip this if charm_price is null (Austin charms), let it fall through to Austin charm check
+    if (itemData.charm_name && itemData.charm_category && itemData.charm_price !== undefined && itemData.charm_price !== null) {
       const charmName = itemData.charm_name;
       const charmCategory = itemData.charm_category;
       const charmPrice = itemData.charm_price;
       const marketValue = itemData.market_value ? (itemData.market_value / 100) : 0;
-      
-      
+
       let percentageOfMarket = 0;
       if (marketValue > 0 && charmPrice > 0) {
         percentageOfMarket = (charmPrice / marketValue) * 100;
       }
-      
+
       const charmColor = this.charmColors[charmCategory] || '#ffffff';
       const categoryIcon = this.getCategoryIcon(charmCategory);
-      
-      console.log('🔍 Server charm calculation:', {
-        charmPrice,
-        marketValue,
-        percentage: percentageOfMarket.toFixed(2)
-      });
-      
+
       return {
         hasCharmData: true,
         charmName,
@@ -695,30 +749,21 @@ class CSGOEmpireNotificationOverlay {
         percentageDisplay: percentageOfMarket > 0 ? `${percentageOfMarket.toFixed(2)}% of market` : 'N/A'
       };
     }
-    
+
     // Priority 2: Try fallback charm detection from local data
-    console.log('⚠️ No server charm data, trying fallback detection...');
     const fallbackCharm = this.getFallbackCharmDetails(itemData);
-    
+
     if (fallbackCharm) {
-      console.log('✅ Using fallback charm data');
       const marketValue = itemData.market_value ? (itemData.market_value / 100) : 0;
-      
-      
+
       let percentageOfMarket = 0;
       if (marketValue > 0 && fallbackCharm.price > 0) {
         percentageOfMarket = (fallbackCharm.price / marketValue) * 100;
       }
-      
+
       const charmColor = this.charmColors[fallbackCharm.category] || '#ffffff';
       const categoryIcon = this.getCategoryIcon(fallbackCharm.category);
-      
-      console.log('🔍 Fallback charm calculation:', {
-        charmPrice: fallbackCharm.price,
-        marketValue: marketValue,
-        percentage: percentageOfMarket.toFixed(2)
-      });
-      
+
       return {
         hasCharmData: true,
         charmName: fallbackCharm.name,
@@ -731,13 +776,12 @@ class CSGOEmpireNotificationOverlay {
         percentageDisplay: percentageOfMarket > 0 ? `${percentageOfMarket.toFixed(2)}% of market` : 'N/A'
       };
     }
-    
+
     // Priority 3: Fallback to basic keychain names if no charm data
-    console.log('❌ No charm data found, using fallback display');
-    const keychainNames = itemData.keychains ? 
-      (Array.isArray(itemData.keychains) ? itemData.keychains.map(k => k.name || k).join(', ') : itemData.keychains) : 
+    const keychainNames = itemData.keychains ?
+      (Array.isArray(itemData.keychains) ? itemData.keychains.map(k => k.name || k).join(', ') : itemData.keychains) :
       'Unknown';
-      
+
     return {
       hasCharmData: false,
       fallbackDisplay: keychainNames
@@ -754,21 +798,132 @@ class CSGOEmpireNotificationOverlay {
     return icons[category] || '🔑';
   }
 
-showItemTargetNotification(itemData) {
-  if (!this.monitoringEnabled) {
-    console.log('🚫 Item target notification ignored - monitoring disabled');
-    return;
+  // Generate dynamic price comparison HTML based on selected marketplaces
+  generatePriceComparisonHTML(itemData, floatValue, aboveRecommended) {
+    const formatPrice = (price) => {
+      if (!price || price === 'Unknown' || isNaN(price)) return 'N/A';
+      return `$${parseFloat(price).toFixed(2)}`;
+    };
+
+    // Map marketplace IDs to their data
+    const marketplaceConfig = {
+      csfloat: {
+        name: 'CSFLOAT',
+        color: { bg: 'rgba(74, 144, 226, 0.12)', border: 'rgba(74, 144, 226, 0.25)', text: '#4a90e2' },
+        price: itemData.csfloat_price || itemData.csfloatPrice || null
+      },
+      buff163: {
+        name: 'BUFF163',
+        color: { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.25)', text: '#f59e0b' },
+        price: itemData.buff163_price || itemData.buffPrice || null
+      },
+      youpin: {
+        name: 'YOUPIN',
+        color: { bg: 'rgba(168, 85, 247, 0.12)', border: 'rgba(168, 85, 247, 0.25)', text: '#a855f7' },
+        price: itemData.youpin_price || itemData.youpinPrice || null
+      },
+      steam: {
+        name: 'STEAM',
+        color: { bg: 'rgba(30, 144, 255, 0.12)', border: 'rgba(30, 144, 255, 0.25)', text: '#1e90ff' },
+        price: itemData.steam_price || itemData.steamPrice || null
+      },
+      bitskins: {
+        name: 'BITSKINS',
+        color: { bg: 'rgba(236, 72, 153, 0.12)', border: 'rgba(236, 72, 153, 0.25)', text: '#ec4899' },
+        price: itemData.bitskins_price || itemData.bitskinsPrice || null
+      },
+      skinport: {
+        name: 'SKINPORT',
+        color: { bg: 'rgba(139, 92, 246, 0.12)', border: 'rgba(139, 92, 246, 0.25)', text: '#8b5cf6' },
+        price: itemData.skinport_price || itemData.skinportPrice || null
+      }
+    };
+
+    // Empire configuration (always displayed)
+    const empireConfig = {
+      name: 'EMPIRE',
+      color: { bg: 'rgba(34, 197, 94, 0.12)', border: 'rgba(34, 197, 94, 0.25)', text: '#22c55e' },
+      price: itemData.market_value ? (itemData.market_value / 100) : null
+    };
+
+    // Get selected marketplaces
+    const marketplace1 = marketplaceConfig[this.selectedMarketplace1] || marketplaceConfig.csfloat;
+    const marketplace2 = marketplaceConfig[this.selectedMarketplace2] || marketplaceConfig.buff163;
+
+    // Calculate percentage difference (using selected marketplace vs Empire)
+    const selectedMarketplaceForDiff = this.differenceMarketplace === 'marketplace1' ? marketplace1 : marketplace2;
+    let percentageDifference = null;
+    let differenceText = 'N/A';
+    let differenceClass = '';
+
+    if (selectedMarketplaceForDiff.price && empireConfig.price > 0) {
+      // Use the selected calculation method
+      if (this.differenceCalculationMethod === 'marketplace_over_empire') {
+        percentageDifference = (selectedMarketplaceForDiff.price / empireConfig.price) * 100;
+      } else {
+        // empire_over_marketplace
+        percentageDifference = (empireConfig.price / selectedMarketplaceForDiff.price) * 100;
+      }
+      differenceText = `${percentageDifference.toFixed(1)}%`;
+      differenceClass = percentageDifference < 100 ? 'positive' : 'negative';
+    }
+
+    return `
+      <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px; margin-bottom: 12px;">
+        <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; text-align: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 4px;">
+          PRICE COMPARISON
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+          <div style="text-align: center; padding: 6px; background: ${marketplace1.color.bg}; border: 1px solid ${marketplace1.color.border}; border-radius: 6px;">
+            <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">${marketplace1.name}</div>
+            <div style="font-size: 11px; font-weight: 700; color: ${marketplace1.color.text};">${formatPrice(marketplace1.price)}</div>
+          </div>
+          <div style="text-align: center; padding: 6px; background: ${marketplace2.color.bg}; border: 1px solid ${marketplace2.color.border}; border-radius: 6px;">
+            <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">${marketplace2.name}</div>
+            <div style="font-size: 11px; font-weight: 700; color: ${marketplace2.color.text};">${formatPrice(marketplace2.price)}</div>
+          </div>
+          <div style="text-align: center; padding: 6px; background: ${empireConfig.color.bg}; border: 1px solid ${empireConfig.color.border}; border-radius: 6px; position: relative;">
+            <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">${empireConfig.name}</div>
+            <div style="font-size: 11px; font-weight: 700; color: ${empireConfig.color.text}; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              <span id="empire-price-${itemData.id}">${formatPrice(empireConfig.price)}</span>
+              <button onclick="window.empireEnhancedOverlay.refreshEmpirePrice('${itemData.id}')" style="background: transparent; border: none; cursor: pointer; color: #94a3b8; padding: 2px; display: flex; align-items: center; transition: color 0.2s;" onmouseover="this.style.color='#22c55e'" onmouseout="this.style.color='#94a3b8'">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+          <div style="text-align: center; padding: 6px; background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 6px;">
+            <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">FLOAT</div>
+            <div style="font-size: 11px; font-weight: 700; color: #a855f7;">${floatValue}</div>
+          </div>
+          <div id="difference-box-${itemData.id}" style="text-align: center; padding: 6px; background: rgba(${differenceClass === 'positive' ? '34, 197, 94' : '239, 68, 68'}, 0.12); border: 1px solid rgba(${differenceClass === 'positive' ? '34, 197, 94' : '239, 68, 68'}, 0.25); border-radius: 6px;">
+            <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">% DIFFERENCE</div>
+            <div id="difference-text-${itemData.id}" style="font-size: 11px; font-weight: 700; color: ${differenceClass === 'positive' ? '#4ade80' : '#f87171'};">
+              ${differenceText}
+            </div>
+          </div>
+          <div style="text-align: center; padding: 6px; background: rgba(${parseFloat(aboveRecommended) > 0 ? '239, 68, 68' : '34, 197, 94'}, 0.12); border: 1px solid rgba(${parseFloat(aboveRecommended) > 0 ? '239, 68, 68' : '34, 197, 94'}, 0.25); border-radius: 6px;">
+            <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">ABOVE REC</div>
+            <div style="font-size: 11px; font-weight: 700; color: ${parseFloat(aboveRecommended) > 0 ? '#f87171' : '#4ade80'};">
+              ${parseFloat(aboveRecommended) > 0 ? '+' : ''}${aboveRecommended}%
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
-  console.log('🎯 Showing enhanced item target notification overlay:', itemData);
-  console.log('🔍 DEBUG: Full item target data received:', JSON.stringify(itemData, null, 2));
+showItemTargetNotification(itemData) {
+  // Allow automation purchase notifications even if monitoring is disabled
+  const isAutomationPurchase = itemData.notification_type === 'automation_purchase';
+  if (!this.monitoringEnabled && !isAutomationPurchase) return;
 
   // Check if we already have a notification for this item ID to prevent duplicates
   const existingNotification = document.getElementById(`notification-${itemData.id}`);
-  if (existingNotification) {
-    console.log('🚫 Duplicate notification prevented for item:', itemData.id);
-    return;
-  }
+  if (existingNotification) return;
 
   // Check if sound is enabled
   const soundEnabled = itemData.soundEnabled !== undefined ? itemData.soundEnabled : this.soundEnabled;
@@ -838,11 +993,24 @@ showItemTargetNotification(itemData) {
     </svg>
   `;
 
-  // Generate target info HTML
-  const targetKeyword = itemData.target_item_matched?.name || itemData.matched_keyword || 'Universal Filter';
-  const floatRange = itemData.target_item_matched?.floatFilter?.enabled 
-    ? `${itemData.target_item_matched.floatFilter.min.toFixed(3)} - ${itemData.target_item_matched.floatFilter.max.toFixed(3)}`
-    : 'Any float';
+  // Generate target info HTML (different for automation vs control panel)
+  let targetKeyword, floatRange, matchBadgeText;
+
+  if (isAutomationPurchase && itemData.automation_matched_entry) {
+    // Item Target Automation match
+    targetKeyword = itemData.automation_matched_entry.keyword || 'Universal Filter';
+    floatRange = itemData.automation_matched_entry.floatFilter?.enabled
+      ? `${itemData.automation_matched_entry.floatFilter.min.toFixed(3)} - ${itemData.automation_matched_entry.floatFilter.max.toFixed(3)}`
+      : 'Any float';
+    matchBadgeText = 'Auto Match';
+  } else {
+    // Control Panel match
+    targetKeyword = itemData.target_item_matched?.name || itemData.matched_keyword || 'Universal Filter';
+    floatRange = itemData.target_item_matched?.floatFilter?.enabled
+      ? `${itemData.target_item_matched.floatFilter.min.toFixed(3)} - ${itemData.target_item_matched.floatFilter.max.toFixed(3)}`
+      : 'Any float';
+    matchBadgeText = 'Target Match';
+  }
 
   const targetDisplayHTML = `
     <div class="target-info">
@@ -852,58 +1020,19 @@ showItemTargetNotification(itemData) {
           "${targetKeyword}"
         </div>
         <div class="target-description">
-          <span class="price-badge">Target Match</span>
+          <span class="price-badge">${matchBadgeText}</span>
           <span style="opacity: 0.6;">${floatRange}</span>
         </div>
       </div>
     </div>
   `;
 
-  // Enhanced compact price comparison section
-  const formatPrice = (price) => {
-    if (!price || price === 'Unknown' || isNaN(price)) return 'N/A';
-    return `$${parseFloat(price).toFixed(2)}`;
-  };
+  // Generate dynamic price comparison HTML based on selected marketplaces
+  const priceComparisonHTML = this.generatePriceComparisonHTML(itemData, floatValue, aboveRecommended);
 
-  const priceComparisonHTML = `
-    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px; margin-bottom: 12px;">
-      <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; text-align: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 4px;">
-        PRICE COMPARISON
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 6px;">
-        <div style="text-align: center; padding: 6px; background: rgba(74, 144, 226, 0.12); border: 1px solid rgba(74, 144, 226, 0.25); border-radius: 6px;">
-          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">CSFLOAT</div>
-          <div style="font-size: 11px; font-weight: 700; color: #4a90e2;">${formatPrice(csfloatPrice)}</div>
-        </div>
-        <div style="text-align: center; padding: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 6px;">
-          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">BUFF163</div>
-          <div style="font-size: 11px; font-weight: 700; color: #f59e0b;">${formatPrice(buff163Price)}</div>
-        </div>
-        <div style="text-align: center; padding: 6px; background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 6px;">
-          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">EMPIRE</div>
-          <div style="font-size: 11px; font-weight: 700; color: #22c55e;">${formatPrice(empirePrice)}</div>
-        </div>
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
-        <div style="text-align: center; padding: 6px; background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 6px;">
-          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">FLOAT</div>
-          <div style="font-size: 11px; font-weight: 700; color: #a855f7;">${floatValue}</div>
-        </div>
-        <div style="text-align: center; padding: 6px; background: rgba(${differenceClass === 'positive' ? '34, 197, 94' : '239, 68, 68'}, 0.12); border: 1px solid rgba(${differenceClass === 'positive' ? '34, 197, 94' : '239, 68, 68'}, 0.25); border-radius: 6px;">
-          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">% DIFFERENCE</div>
-          <div style="font-size: 11px; font-weight: 700; color: ${differenceClass === 'positive' ? '#4ade80' : '#f87171'};">
-            ${differenceText}
-          </div>
-        </div>
-        <div style="text-align: center; padding: 6px; background: rgba(${parseFloat(aboveRecommended) > 0 ? '239, 68, 68' : '34, 197, 94'}, 0.12); border: 1px solid rgba(${parseFloat(aboveRecommended) > 0 ? '239, 68, 68' : '34, 197, 94'}, 0.25); border-radius: 6px;">
-          <div style="font-size: 9px; color: #94a3b8; margin-bottom: 2px; font-weight: 600; text-transform: uppercase;">ABOVE REC</div>
-          <div style="font-size: 11px; font-weight: 700; color: ${parseFloat(aboveRecommended) > 0 ? '#f87171' : '#4ade80'};">
-            ${parseFloat(aboveRecommended) > 0 ? '+' : ''}${aboveRecommended}%
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
+  // Set notification title and subtitle based on notification type
+  const notificationTitle = isAutomationPurchase ? 'AUTO-PURCHASED!' : 'ITEM TARGET FOUND';
+  const notificationSubtitle = isAutomationPurchase ? 'Automation Success!' : 'Target Match!';
 
   notification.innerHTML = `
     <div style="display: flex; align-items: center; margin-bottom: 12px;">
@@ -912,10 +1041,10 @@ showItemTargetNotification(itemData) {
       </div>
       <div style="flex: 1;">
         <div style="font-size: 14px; font-weight: 700; margin-bottom: 2px;" class="gradient-text item-target">
-          ITEM TARGET FOUND
+          ${notificationTitle}
         </div>
         <div style="font-size: 10px; opacity: 0.6; color: #94a3b8; font-weight: 500;">
-          Target Match!
+          ${notificationSubtitle}
         </div>
       </div>
       <button onclick="this.closest('.keychain-notification').remove()" style="
@@ -1002,6 +1131,9 @@ showItemTargetNotification(itemData) {
     }
   });
 
+  // Store item data for price refresh
+  this.notificationData.set(itemData.id, itemData);
+
   // Add notification to container
   this.notificationContainer.appendChild(notification);
   this.notifications.push(notificationId);
@@ -1024,25 +1156,14 @@ showItemTargetNotification(itemData) {
 
   // Flash the page title
   this.flashPageTitle('🎯 Item Target Found!');
-
-  console.log('✅ Enhanced item target notification with price data displayed successfully');
 }
 
   showKeychainNotification(itemData) {
-    if (!this.monitoringEnabled) {
-      console.log('🚫 Notification ignored - monitoring disabled');
-      return;
-    }
-
-    console.log('🔑 Showing keychain notification overlay:', itemData);
-    console.log('🔍 DEBUG: Full item data received:', JSON.stringify(itemData, null, 2));
+    if (!this.monitoringEnabled) return;
 
     // Check if we already have a notification for this item ID to prevent duplicates
     const existingNotification = document.getElementById(`notification-${itemData.id}`);
-    if (existingNotification) {
-      console.log('🚫 Duplicate notification prevented for item:', itemData.id);
-      return;
-    }
+    if (existingNotification) return;
 
     // Check if sound is enabled (can come from itemData or instance setting)
     const soundEnabled = itemData.soundEnabled !== undefined ? itemData.soundEnabled : this.soundEnabled;
@@ -1061,7 +1182,6 @@ showItemTargetNotification(itemData) {
     
     // Get enhanced charm information with fallback support
     const charmInfo = this.formatCharmInfo(itemData);
-    console.log('🔍 DEBUG: Charm info result:', charmInfo);
 
     // Create notification element with unique ID based on item ID
     const notification = document.createElement('div');
@@ -1106,17 +1226,27 @@ showItemTargetNotification(itemData) {
       </svg>
     `;
 
-    
+
+
     let charmDisplayHTML = '';
-    if (charmInfo.hasCharmData) {
-      console.log('✅ Rendering ENHANCED charm display with consistent pricing');
-      console.log('🔍 Charm details:', {
-        name: charmInfo.charmName,
-        category: charmInfo.charmCategory,
-        price: charmInfo.charmPrice,
-        percentage: charmInfo.percentageOfMarket.toFixed(2)
-      });
-      
+    if (charmInfo.hasBlueGemData) {
+      charmDisplayHTML = `
+        <div class="charm-info" style="border-left-color: #3b82f6;">
+          <div class="charm-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);">
+            💎
+          </div>
+          <div class="charm-details">
+            <div class="charm-name" style="color: #3b82f6;">
+              Blue Gem – ${charmInfo.formattedDisplay}
+            </div>
+            <div class="charm-price">
+              <span class="price-badge">Case Hardened Pattern</span>
+              <span style="opacity: 0.6;">High Blue %</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (charmInfo.hasCharmData) {
       charmDisplayHTML = `
         <div class="charm-info" style="border-left-color: ${charmInfo.charmColor};">
           <div class="charm-icon" style="background: ${charmInfo.charmColor};">
@@ -1134,7 +1264,6 @@ showItemTargetNotification(itemData) {
         </div>
       `;
     } else {
-      console.log('⚠️ Rendering fallback charm display');
       // Fallback display for items without charm data
       charmDisplayHTML = `
         <div style="font-size: 12px; color: #36d1dc; display: flex; align-items: center; font-weight: 600; margin-bottom: 12px;">
@@ -1256,7 +1385,7 @@ showItemTargetNotification(itemData) {
       <!-- Compact footer info with charm percentage (if available) -->
       <div style="font-size: 9px; color: #64748b; margin-top: 10px; text-align: center; opacity: 0.7; font-weight: 500;">
         ID: ${itemData.id || 'Unknown'} • ${new Date().toLocaleTimeString()}
-        ${charmInfo.hasCharmData ? ` • Charm: ${charmInfo.percentageOfMarket.toFixed(1)}%` : ''}
+        ${charmInfo.hasCharmData && charmInfo.percentageOfMarket > 0 ? ` • Charm: ${charmInfo.percentageOfMarket.toFixed(1)}%` : ''}
       </div>
     `;
 
@@ -1289,8 +1418,6 @@ showItemTargetNotification(itemData) {
 
     // Flash the page title
     this.flashPageTitle();
-
-    console.log('✅ Enhanced notification with consistent charm pricing displayed successfully');
   }
 
   removeNotification(notificationId) {
@@ -1302,7 +1429,81 @@ showItemTargetNotification(itemData) {
           notification.remove();
         }
         this.notifications = this.notifications.filter(id => id !== notificationId);
+        // Clean up stored data
+        const itemId = notificationId.replace('notification-', '');
+        this.notificationData.delete(itemId);
       }, 300);
+    }
+  }
+
+  async refreshEmpirePrice(itemId) {
+    try {
+      const storedData = this.notificationData.get(itemId);
+      if (!storedData) return;
+
+      const response = await fetch(`https://csgoempire.com/api/v2/trading/items/${itemId}`);
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (!data || !data.data) return;
+
+      const currentItem = data.data;
+      const newEmpirePrice = currentItem.market_value ? (currentItem.market_value / 100).toFixed(2) : null;
+
+      if (!newEmpirePrice) return;
+
+      // Update the Empire price display
+      const empirePriceElement = document.getElementById(`empire-price-${itemId}`);
+      if (empirePriceElement) {
+        empirePriceElement.textContent = `$${newEmpirePrice}`;
+      }
+
+      // Recalculate percentage difference
+      const marketplaceConfig = {
+        csfloat: storedData.csfloat_price || storedData.csfloatPrice || null,
+        buff163: storedData.buff163_price || storedData.buffPrice || null,
+        youpin: storedData.youpin_price || storedData.youpinPrice || null,
+        steam: storedData.steam_price || storedData.steamPrice || null,
+        bitskins: storedData.bitskins_price || storedData.bitskinsPrice || null,
+        skinport: storedData.skinport_price || storedData.skinportPrice || null
+      };
+
+      const selectedMarketplacePrice = marketplaceConfig[this.differenceMarketplace === 'marketplace1' ? this.selectedMarketplace1 : this.selectedMarketplace2];
+      const newEmpirePriceNum = parseFloat(newEmpirePrice);
+
+      if (selectedMarketplacePrice && newEmpirePriceNum > 0) {
+        let percentageDifference;
+        if (this.differenceCalculationMethod === 'marketplace_over_empire') {
+          percentageDifference = (selectedMarketplacePrice / newEmpirePriceNum) * 100;
+        } else {
+          percentageDifference = (newEmpirePriceNum / selectedMarketplacePrice) * 100;
+        }
+
+        const differenceText = `${percentageDifference.toFixed(1)}%`;
+        const differenceClass = percentageDifference < 100 ? 'positive' : 'negative';
+
+        // Update difference text
+        const differenceTextElement = document.getElementById(`difference-text-${itemId}`);
+        if (differenceTextElement) {
+          differenceTextElement.textContent = differenceText;
+          differenceTextElement.style.color = differenceClass === 'positive' ? '#4ade80' : '#f87171';
+        }
+
+        // Update difference box background
+        const differenceBoxElement = document.getElementById(`difference-box-${itemId}`);
+        if (differenceBoxElement) {
+          const bgColor = differenceClass === 'positive' ? '34, 197, 94' : '239, 68, 68';
+          differenceBoxElement.style.background = `rgba(${bgColor}, 0.12)`;
+          differenceBoxElement.style.borderColor = `rgba(${bgColor}, 0.25)`;
+        }
+      }
+
+      // Update stored data with new price
+      storedData.market_value = currentItem.market_value;
+      this.notificationData.set(itemId, storedData);
+
+    } catch (error) {
+      console.error('Error refreshing Empire price:', error);
     }
   }
 

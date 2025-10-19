@@ -4,7 +4,7 @@ class NotificationHistory {
     constructor() {
         this.notifications = [];
         this.autoRefreshInterval = null;
-        this.currentFilter = 'All Items';
+        this.currentFilter = 'Found';
         this.currentTheme = 'nebula';
         
         this.charmColors = {
@@ -88,12 +88,12 @@ class NotificationHistory {
                 console.log('📱 Manual refresh triggered');
                 
                 refreshBtn.classList.add('loading');
-                refreshBtn.innerHTML = '<span class="refresh-icon spinning">🔄</span> Refreshing...';
+                refreshBtn.innerHTML = '<span class="refresh-icon spinning"></span> Refreshing...';
                 refreshBtn.disabled = true;
                 
                 this.loadHistory().finally(() => {
                     refreshBtn.classList.remove('loading');
-                    refreshBtn.innerHTML = '<span class="refresh-icon">🔄</span> Refresh';
+                    refreshBtn.innerHTML = '<span class="refresh-icon"></span> Refresh';
                     refreshBtn.disabled = false;
                 });
             });
@@ -125,56 +125,107 @@ class NotificationHistory {
 
     applyCurrentFilter() {
         console.log(`🎯 Applying filter: ${this.currentFilter}`);
-        
+
         let sortedNotifications = [...this.notifications];
-        
-        if (this.currentFilter === 'Good Deals') {
-            sortedNotifications.sort((a, b) => {
-                const aPercent = a.above_recommended_price || 0;
-                const bPercent = b.above_recommended_price || 0;
-                return aPercent - bPercent;
-            });
-            console.log(`📊 Sorted ${sortedNotifications.length} items by best deals first`);
-        } else if (this.currentFilter === 'Recent') {
-            sortedNotifications.sort((a, b) => {
-                const aTime = new Date(a.published_at || a.timestamp).getTime();
-                const bTime = new Date(b.published_at || b.timestamp).getTime();
-                return bTime - aTime;
-            });
-            console.log(`⏰ Sorted ${sortedNotifications.length} items by most recent first`);
+
+        if (this.currentFilter === 'Purchased') {
+            // Show only automation purchases (Item Target + Charm automation)
+            sortedNotifications = sortedNotifications.filter(item =>
+                item.notification_type === 'automation_purchase'
+            );
+            console.log(`🛒 Filtered to ${sortedNotifications.length} automation purchases`);
+        } else if (this.currentFilter === 'Found') {
+            // Show all Control Panel notifications (not auto-purchased)
+            sortedNotifications = sortedNotifications.filter(item =>
+                item.notification_type !== 'automation_purchase'
+            );
+            console.log(`🔍 Filtered to ${sortedNotifications.length} found items`);
         }
-        
+
+        // Always sort by most recent first
+        sortedNotifications.sort((a, b) => {
+            const aTime = new Date(a.published_at || a.timestamp).getTime();
+            const bTime = new Date(b.published_at || b.timestamp).getTime();
+            return bTime - aTime;
+        });
+
         this.renderFilteredHistory(sortedNotifications);
     }
 
     formatCharmInfo(item) {
-        if (item.charm_name && item.charm_category && item.charm_price !== undefined) {
-            const charmName = item.charm_name;
-            const charmCategory = item.charm_category;
-            const charmPrice = item.charm_price;
-            const marketValue = item.market_value ? (item.market_value / 100) : 0;
-            
-            let percentageOfMarket = 0;
-            if (marketValue > 0 && charmPrice > 0) {
-                percentageOfMarket = (charmPrice / marketValue) * 100;
+        // Handle Blue Gem items
+        if (item.notification_type === 'blue_gem' && item.blue_percentage !== null && item.blue_percentage !== undefined) {
+            const bluePercentage = parseFloat(item.blue_percentage);
+            if (!isNaN(bluePercentage)) {
+                return {
+                    hasBlueGemData: true,
+                    bluePercentage,
+                    formattedDisplay: `${bluePercentage.toFixed(2)}% Blue`,
+                    isBlueGem: true
+                };
             }
-            
-            const charmColor = this.charmColors[charmCategory] || '#ffffff';
-            const categoryIcon = this.getCategoryIcon(charmCategory);
-            
+        }
+
+        // Handle Austin charms (sticker-based detection)
+        if (item.notification_type === 'austin_charm') {
+            const stickerCount = item.austin_sticker_count || 0;
+            const stickerNames = item.austin_sticker_names || [];
+
+            const stickerDisplay = stickerNames.length > 0
+                ? stickerNames.slice(0, 2).map(name => name.replace(' (Gold) | Austin 2025', '')).join(', ')
+                : 'Austin 2025';
+
             return {
+                hasAustinCharmData: true,
                 hasCharmData: true,
-                charmName,
-                charmCategory,
-                charmPrice,
-                charmColor,
-                categoryIcon,
-                percentageOfMarket,
-                formattedDisplay: `${charmName} – $${charmPrice.toFixed(2)}`,
-                percentageDisplay: percentageOfMarket > 0 ? `${percentageOfMarket.toFixed(2)}% of market` : 'N/A'
+                charmName: 'Potential Austin Charm',
+                charmCategory: 'Austin Major',
+                charmColor: '#f59e0b',
+                categoryIcon: '🏆',
+                stickerCount: stickerCount,
+                percentageOfMarket: 0,
+                formattedDisplay: `Potential Austin Charm – Inspect to Confirm`,
+                percentageDisplay: stickerCount > 0 ? `${stickerCount} Gold Stickers` : 'Manual Inspection Required',
+                isAustinCharm: true,
+                stickerDisplay: stickerDisplay
             };
         }
-        
+
+        // Handle charm/keychain items with collection info
+        if (item.charm_name && item.charm_category && item.charm_price !== undefined && item.charm_price !== null) {
+            const charmName = item.charm_name;
+            const charmCategory = item.charm_category;
+            const charmPrice = parseFloat(item.charm_price);
+            const charmCollection = item.charm_collection || null; // Get collection if available
+            const marketValue = item.market_value ? (item.market_value / 100) : 0;
+
+            if (!isNaN(charmPrice)) {
+                let percentageOfMarket = 0;
+                if (marketValue > 0 && charmPrice > 0) {
+                    percentageOfMarket = (charmPrice / marketValue) * 100;
+                }
+
+                const charmColor = this.charmColors[charmCategory] || '#ffffff';
+                const categoryIcon = this.getCategoryIcon(charmCategory);
+
+                // Include collection in display if available
+                const collectionPrefix = charmCollection ? `${charmCollection} | ` : '';
+
+                return {
+                    hasCharmData: true,
+                    charmName,
+                    charmCategory,
+                    charmPrice,
+                    charmCollection,
+                    charmColor,
+                    categoryIcon,
+                    percentageOfMarket,
+                    formattedDisplay: `${collectionPrefix}${charmName} – $${charmPrice.toFixed(2)}`,
+                    percentageDisplay: percentageOfMarket > 0 ? `${percentageOfMarket.toFixed(2)}% of market` : 'N/A'
+                };
+            }
+        }
+
         let keychainDisplay = 'N/A';
         if (item.keychains) {
             if (Array.isArray(item.keychains)) {
@@ -183,7 +234,7 @@ class NotificationHistory {
                 keychainDisplay = item.keychains;
             }
         }
-        
+
         return {
             hasCharmData: false,
             fallbackDisplay: keychainDisplay
@@ -226,19 +277,24 @@ class NotificationHistory {
         
         try {
             const cardsHTML = sortedNotifications.map((item, index) => {
-                const marketValue = (item.market_value || 0) / 100;
-                const aboveRec = item.above_recommended_price || 0;
+                const marketValueRaw = (item.market_value || 0) / 100;
+                const marketValue = isNaN(marketValueRaw) ? 0 : marketValueRaw;
+
+                const aboveRecRaw = item.above_recommended_price !== null && item.above_recommended_price !== undefined
+                    ? parseFloat(item.above_recommended_price)
+                    : 0;
+                const aboveRec = isNaN(aboveRecRaw) ? 0 : aboveRecRaw;
 
                 const charmInfo = this.formatCharmInfo(item);
 
                 const publishedTime = new Date(item.published_at || item.timestamp);
                 const now = new Date();
                 const isToday = publishedTime.toDateString() === now.toDateString();
-                const timeStr = isToday ? 
-                    `Today at ${publishedTime.toLocaleTimeString()}` : 
+                const timeStr = isToday ?
+                    `Today at ${publishedTime.toLocaleTimeString()}` :
                     publishedTime.toLocaleString();
 
-                const floatValue = item.wear !== undefined && item.wear !== null ? 
+                const floatValue = item.wear !== undefined && item.wear !== null ?
                     parseFloat(item.wear).toFixed(6) : 'Unknown';
 
                 const percentageClass = aboveRec >= 0 ? 'positive' : 'negative';
@@ -249,7 +305,9 @@ class NotificationHistory {
                 const buff163Price = item.buff163_price || null;
                 const csfloatPrice = item.csfloat_price || null;
                 const empirePrice = item.empire_price || marketValue;
-                const buff163Percentage = item.buff163_percentage || null;
+                const buff163Percentage = item.buff163_percentage !== null && item.buff163_percentage !== undefined
+                    ? parseFloat(item.buff163_percentage)
+                    : null;
 
                 const formatPrice = (price) => {
                     if (!price || price === 'Unknown' || isNaN(price)) return 'N/A';
@@ -307,7 +365,20 @@ class NotificationHistory {
                 }
 
                 let charmDisplayHTML = '';
-                if (charmInfo.hasCharmData) {
+                if (charmInfo.hasBlueGemData) {
+                    // Blue Gem display
+                    charmDisplayHTML = `
+                        <div class="item-charm enhanced-charm blue-gem-display" style="color: #3b82f6;">
+                            <div class="charm-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);">
+                                💎
+                            </div>
+                            <div class="charm-details">
+                                <div class="charm-name">Blue Gem – ${charmInfo.formattedDisplay}</div>
+                                <div class="charm-percentage">Case Hardened Pattern</div>
+                            </div>
+                        </div>
+                    `;
+                } else if (charmInfo.hasCharmData) {
                     charmDisplayHTML = `
                         <div class="item-charm enhanced-charm" style="color: ${charmInfo.charmColor};">
                             <div class="charm-icon" style="background: ${charmInfo.charmColor};">
@@ -328,11 +399,19 @@ class NotificationHistory {
                     `;
                 }
 
+                // Check if this is an automation purchase
+                const isAutomationPurchase = item.notification_type === 'automation_purchase';
+                const automationBadge = isAutomationPurchase ?
+                    '<span class="automation-badge" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 8px; display: inline-block;">🤖 AUTO-PURCHASED</span>' :
+                    '';
+
                 return `
                     <div class="item-card" style="animation-delay: ${index * 0.05}s;">
                         <div class="item-header">
                             <div>
-                                <div class="item-name" title="${item.market_name || 'Unknown Item'}">${item.market_name || 'Unknown Item'}</div>
+                                <div class="item-name" title="${item.market_name || 'Unknown Item'}">
+                                    ${item.market_name || 'Unknown Item'}${automationBadge}
+                                </div>
                                 ${charmDisplayHTML}
                             </div>
                             <div class="item-id">#${item.id || 'Unknown'}</div>
@@ -511,8 +590,21 @@ class NotificationHistory {
             body.theme-shooting-star .keychain-icon {
                 background: linear-gradient(135deg, #87ceeb 0%, #4a90e2 100%) !important;
             }
+
+            .blue-gem-display {
+                border-left-color: #3b82f6 !important;
+            }
+
+            .blue-gem-display .charm-icon {
+                animation: gemShine 2s ease-in-out infinite !important;
+            }
+
+            @keyframes gemShine {
+                0%, 100% { opacity: 1; transform: scale(1); }
+                50% { opacity: 0.8; transform: scale(1.1); }
+            }
         `;
-        
+
         document.head.appendChild(styles);
     }
 
@@ -524,8 +616,13 @@ class NotificationHistory {
 
             const result = await chrome.storage.local.get(['notificationHistory']);
             this.notifications = result.notificationHistory || [];
-            
+
             console.log(`✅ Loaded ${this.notifications.length} notifications from storage`);
+
+            // Debug: Check how many automation purchases we have
+            const automationCount = this.notifications.filter(n => n.notification_type === 'automation_purchase').length;
+            console.log(`🤖 [DEBUG] Found ${automationCount} automation purchases in history`);
+            console.log('🔍 [DEBUG] Notification types:', this.notifications.map(n => n.notification_type));
             
             if (this.notifications.length > 0) {
                 console.log('🎯 Notifications found, rendering cards...');
@@ -586,20 +683,23 @@ class NotificationHistory {
     updateStats() {
         try {
             const totalNotifications = this.notifications.length;
-            const totalValue = this.notifications.reduce((sum, item) => sum + ((item.market_value || 0) / 100), 0);
-            const lastNotification = this.notifications.length > 0 
+            const totalValue = this.notifications.reduce((sum, item) => {
+                const value = (item.market_value || 0) / 100;
+                return sum + (isNaN(value) ? 0 : value);
+            }, 0);
+            const lastNotification = this.notifications.length > 0
                 ? new Date(this.notifications[0].timestamp).toLocaleTimeString()
                 : 'Never';
-            
+
             const totalNotificationsEl = document.getElementById('totalNotifications');
             const totalValueEl = document.getElementById('totalValue');
             const lastNotificationEl = document.getElementById('lastNotification');
-            
+
             if (totalNotificationsEl) totalNotificationsEl.textContent = totalNotifications;
-            if (totalValueEl) totalValueEl.textContent = `$${totalValue.toFixed(2)}`;
+            if (totalValueEl) totalValueEl.textContent = `$${(totalValue || 0).toFixed(2)}`;
             if (lastNotificationEl) lastNotificationEl.textContent = lastNotification;
-            
-            console.log(`📊 Stats updated: ${totalNotifications} notifications, $${totalValue.toFixed(2)} total value`);
+
+            console.log(`📊 Stats updated: ${totalNotifications} notifications, $${(totalValue || 0).toFixed(2)} total value`);
         } catch (error) {
             console.error('❌ Error updating stats:', error);
         }

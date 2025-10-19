@@ -29,14 +29,33 @@
 
         body {
             width: 420px;
+            height: 600px;
             padding: 0;
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
             color: #e2e8f0;
             position: relative;
-            overflow: hidden;
-            min-height: 700px;
+            overflow-x: hidden;
+            overflow-y: auto;
             transition: all 0.3s ease;
+        }
+
+        /* Custom Scrollbar Styling */
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        body::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        body::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.5);
+            border-radius: 4px;
+        }
+
+        body::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.7);
         }
 
         /* ============================================================================
@@ -72,7 +91,6 @@
         /* === THEME 2: SHOOTING STAR === */
         body.theme-shooting-star {
             background: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 35%, #0f0f1e 100%);
-            overflow: hidden;
         }
 
         body.theme-shooting-star::before {
@@ -591,13 +609,13 @@
 
         .tab {
             flex: 1;
-            padding: 12px 18px;
+            padding: 12px 12px;
             background: transparent;
             border: none;
             color: #94a3b8;
             cursor: pointer;
             border-radius: 10px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             transition: all 0.3s ease;
             position: relative;
@@ -621,6 +639,59 @@
 
         .tab-content.active {
             display: block;
+        }
+
+        /* ============================================================================
+           SETTINGS SUB-TABS COMPONENT
+           ============================================================================ */
+
+        .settings-tabs {
+            display: flex;
+            margin-bottom: 18px;
+            background: rgba(30, 32, 41, 0.7);
+            border-radius: 12px;
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            gap: 4px;
+        }
+
+        .settings-tab {
+            flex: 1;
+            padding: 10px 14px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .settings-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .settings-tab:not(.active):hover {
+            color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .settings-tab-content {
+            display: none;
+        }
+
+        .settings-tab-content.active {
+            display: block;
+        }
+
+        /* Shooting star theme override for settings tabs */
+        body.theme-shooting-star .settings-tab.active {
+            background: linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%);
+            box-shadow: 0 2px 10px rgba(135, 206, 235, 0.4);
         }
 
         /* ============================================================================
@@ -1325,6 +1396,121 @@
         .keychain-item.blue .keychain-price { color: #3b82f6; }
 
         /* ============================================================================
+           COLLECTION TABS COMPONENT
+           ============================================================================ */
+
+        .collection-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .collection-tab {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            color: #94a3b8;
+            padding: 8px 14px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex: 1;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .collection-tab:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .collection-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .collection-content {
+            position: relative;
+        }
+
+        .collection-panel {
+            display: none;
+        }
+
+        .collection-panel.active {
+            display: block;
+        }
+
+        /* Color sections within collections */
+        .color-section {
+            margin-bottom: 18px;
+        }
+
+        .color-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .color-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .color-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .color-badge.red {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .color-badge.pink {
+            background: rgba(236, 72, 153, 0.2);
+            color: #ec4899;
+            border: 1px solid rgba(236, 72, 153, 0.3);
+        }
+
+        .color-badge.purple {
+            background: rgba(168, 85, 247, 0.2);
+            color: #a855f7;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .color-badge.blue {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .color-count {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .color-items {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 6px;
+        }
+
+        /* ============================================================================
            SUPPORT SECTION COMPONENT
            ============================================================================ */
         
@@ -1435,6 +1621,168 @@
             width: 16px;
             height: 16px;
             fill: currentColor;
+        }
+
+        .input-icon {
+            width: 18px;
+            height: 18px;
+            opacity: 0.7;
+            flex-shrink: 0;
+        }
+
+        .section-icon {
+            width: 20px;
+            height: 20px;
+            opacity: 0.9;
+            flex-shrink: 0;
+        }
+
+        /* ============================================================================
+           INPUT GROUP AND LABEL COMPONENTS
+           ============================================================================ */
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 10px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .settings-section {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* ============================================================================
+           AUTOMATION TAB ENHANCEMENTS
+           ============================================================================ */
+
+        /* Range Slider Styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            border-radius: 10px;
+            background: linear-gradient(90deg,
+                rgba(102, 126, 234, 0.2) 0%,
+                rgba(118, 75, 162, 0.2) 100%);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]:hover {
+            background: linear-gradient(90deg,
+                rgba(102, 126, 234, 0.3) 0%,
+                rgba(118, 75, 162, 0.3) 100%);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.7), 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(0.95);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]::-moz-range-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.7), 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Number Input Styling */
+        input[type="number"] {
+            transition: all 0.3s ease;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: rgba(102, 126, 234, 0.5);
+            background: rgba(102, 126, 234, 0.08);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input[type="number"]:hover {
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        /* Automation threshold value display */
+        #automationThresholdValue {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Save Automation Settings Button */
+        #saveAutomationSettings:hover {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.25) 0%, rgba(118, 75, 162, 0.2) 100%);
+            border-color: rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.2);
+            transform: translateY(-1px);
+        }
+
+        #saveAutomationSettings:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+        }
+
+        /* Reset Statistics Button */
+        #resetAutomationStats:hover {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%);
+            border-color: rgba(239, 68, 68, 0.4);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.15);
+            transform: translateY(-1px);
+        }
+
+        #resetAutomationStats:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
         }
 
         .coin-icon {
@@ -1735,14 +2083,15 @@
              TAB NAVIGATION SYSTEM
              ============================================================================ -->
         <div class="tabs">
-            <button class="tab active" data-tab="status">Status</button>
-            <button class="tab" data-tab="settings">Settings</button>
+            <button class="tab" data-tab="controlPanel">Control Panel</button>
+            <button class="tab active" data-tab="settings">Settings</button>
+            <button class="tab" data-tab="automation">Automation</button>
         </div>
 
         <!-- ============================================================================
-             STATUS TAB CONTENT
+             SETTINGS TAB CONTENT
              ============================================================================ -->
-        <div id="statusTab" class="tab-content active">
+        <div id="settingsTab" class="tab-content active">
             <!-- Connection Status Display -->
             <div class="status">
                 <span class="status-indicator" id="statusIndicator"></span>
@@ -1761,14 +2110,22 @@
                 </div>
             </div>
 
-            <!-- Theme Selection Component -->
+            <!-- Home Sub-Tabs -->
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-home-tab="theme">Theme</button>
+                <button class="settings-tab" data-home-tab="marketplace">Marketplace</button>
+                <button class="settings-tab" data-home-tab="comparison">Comparison</button>
+            </div>
+
+            <!-- Theme Selection Tab Content -->
+            <div id="themeHomeTab" class="settings-tab-content active">
             <div class="theme-selector">
                 <h3>
                     <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
                         <polygon points="10,8 16,12 10,16 10,8"/>
                     </svg>
-                    Theme Selection
+                    Theme
                 </h3>
                 
                 <div class="theme-options">
@@ -1782,6 +2139,140 @@
                         <div class="theme-name">Shooting Star</div>
                         <div class="theme-description">Starfield with animations</div>
                     </div>
+                </div>
+            </div>
+            </div>
+
+            <!-- Marketplace Tab Content -->
+            <div id="marketplaceHomeTab" class="settings-tab-content">
+                <div class="settings-section">
+                    <h3>
+                        <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
+                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                        Marketplace Configuration
+                    </h3>
+
+                    <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px; line-height: 1.6;">
+                        Select 2 marketplaces to display alongside Empire prices in the price comparison section. Empire is always displayed since this is the host site.
+                    </p>
+
+                    <!-- Marketplace Selection -->
+                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px; font-weight: 600;">
+                            Select Marketplace 1
+                        </div>
+                        <select id="marketplace1Select" class="marketplace-select" style="width: 100%; padding: 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #e2e8f0; font-size: 13px; cursor: pointer; margin-bottom: 16px;">
+                            <option value="csfloat" style="background: #1e293b; color: #e2e8f0;">CSFloat</option>
+                            <option value="buff163" style="background: #1e293b; color: #e2e8f0;">Buff163</option>
+                            <option value="youpin" style="background: #1e293b; color: #e2e8f0;">YouPin</option>
+                            <option value="steam" style="background: #1e293b; color: #e2e8f0;">Steam Market</option>
+                            <option value="bitskins" style="background: #1e293b; color: #e2e8f0;">BitSkins</option>
+                            <option value="skinport" style="background: #1e293b; color: #e2e8f0;">Skinport</option>
+                        </select>
+
+                        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px; font-weight: 600;">
+                            Select Marketplace 2
+                        </div>
+                        <select id="marketplace2Select" class="marketplace-select" style="width: 100%; padding: 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #e2e8f0; font-size: 13px; cursor: pointer;">
+                            <option value="csfloat" style="background: #1e293b; color: #e2e8f0;">CSFloat</option>
+                            <option value="buff163" style="background: #1e293b; color: #e2e8f0;">Buff163</option>
+                            <option value="youpin" style="background: #1e293b; color: #e2e8f0;">YouPin</option>
+                            <option value="steam" style="background: #1e293b; color: #e2e8f0;">Steam Market</option>
+                            <option value="bitskins" style="background: #1e293b; color: #e2e8f0;">BitSkins</option>
+                            <option value="skinport" style="background: #1e293b; color: #e2e8f0;">Skinport</option>
+                        </select>
+                    </div>
+
+                    <!-- Empire (Always Displayed) -->
+                    <div style="background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <svg style="width: 18px; height: 18px; color: #22c55e;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
+                                <span style="color: #22c55e; font-weight: 600; font-size: 13px;">Empire</span>
+                            </div>
+                            <span style="color: #22c55e; font-size: 11px; opacity: 0.8;">Always Displayed</span>
+                        </div>
+                    </div>
+
+                    <button class="button" id="saveMarketplaceSettings" style="margin-top: 18px; width: 100%; justify-content: center;">
+                        <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17,21 17,13 7,13 7,21"/>
+                            <polyline points="7,3 7,8 15,8"/>
+                        </svg>
+                        Save Marketplace Settings
+                    </button>
+                </div>
+            </div>
+
+            <!-- Comparison Tab Content -->
+            <div id="comparisonHomeTab" class="settings-tab-content">
+                <div class="settings-section">
+                    <h3>
+                        <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            <path d="M9 12h6m-6 4h6"/>
+                        </svg>
+                        Price Comparison Settings
+                    </h3>
+
+                    <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px; line-height: 1.6;">
+                        Configure which marketplace to use for percentage difference calculations in the price comparison section.
+                    </p>
+
+                    <!-- Difference Marketplace Selection -->
+                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px; font-weight: 600;">
+                            Calculate % Difference Using
+                        </div>
+                        <select id="differenceMarketplaceSelect" class="marketplace-select" style="width: 100%; padding: 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #e2e8f0; font-size: 13px; cursor: pointer; margin-bottom: 16px;">
+                            <option value="marketplace1" style="background: #1e293b; color: #e2e8f0;">Marketplace 1</option>
+                            <option value="marketplace2" style="background: #1e293b; color: #e2e8f0;">Marketplace 2</option>
+                        </select>
+
+                        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px; font-weight: 600;">
+                            Calculation Method
+                        </div>
+                        <select id="differenceCalculationMethod" class="marketplace-select" style="width: 100%; padding: 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #e2e8f0; font-size: 13px; cursor: pointer;">
+                            <option value="marketplace_over_empire" style="background: #1e293b; color: #e2e8f0;">Marketplace / Empire × 100</option>
+                            <option value="empire_over_marketplace" style="background: #1e293b; color: #e2e8f0;">Empire / Marketplace × 100</option>
+                        </select>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 8px; line-height: 1.5;">
+                            <strong>Marketplace / Empire:</strong> Shows what % of Empire price you pay (e.g., 77% = 23% cheaper)<br>
+                            <strong>Empire / Marketplace:</strong> Shows how much more Empire costs (e.g., 130% = 30% more expensive)
+                        </div>
+                    </div>
+
+                    <!-- Info Box -->
+                    <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px; padding: 12px; display: flex; gap: 10px; align-items: flex-start;">
+                        <svg style="width: 18px; height: 18px; color: #3b82f6; flex-shrink: 0; margin-top: 2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 16v-4m0-4h.01"/>
+                        </svg>
+                        <div style="flex: 1;">
+                            <div style="color: #3b82f6; font-size: 12px; font-weight: 600; margin-bottom: 4px;">
+                                How It Works
+                            </div>
+                            <div style="color: #94a3b8; font-size: 11px; line-height: 1.5;">
+                                Choose which marketplace (1 or 2) to compare against Empire prices. The percentage shows how much cheaper or more expensive the selected marketplace is compared to Empire.
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="button" id="saveComparisonSettings" style="margin-top: 18px; width: 100%; justify-content: center;">
+                        <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17,21 17,13 7,13 7,21"/>
+                            <polyline points="7,3 7,8 15,8"/>
+                        </svg>
+                        Save Comparison Settings
+                    </button>
                 </div>
             </div>
 
@@ -1814,12 +2305,13 @@
                             <span style="font-size: 12px; text-align: center; line-height: 1.3;">View History</span>
                         </button>
                         
-                        <button class="premium-action-btn" id="openTracker">
+                        <button class="premium-action-btn" id="openSkinStatz">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.9;">
-                                <line x1="12" y1="1" x2="12" y2="23"/>
-                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
-                            <span style="font-size: 12px; text-align: center; line-height: 1.3;">Portfolio Tracker</span>
+                            <span style="font-size: 12px; text-align: center; line-height: 1.3;">Get SkinStatz</span>
                         </button>
                     </div>
                     
@@ -1877,11 +2369,21 @@
         </div>
 
         <!-- ============================================================================
-             SETTINGS TAB CONTENT
+             CONTROL PANEL TAB CONTENT
              ============================================================================ -->
-        <div id="settingsTab" class="tab-content">
-            <!-- Item Target List Management -->
-            <div class="item-target-list">
+        <div id="controlPanelTab" class="tab-content">
+            <!-- Settings Sub-Tabs -->
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-settings-tab="items">Items</button>
+                <button class="settings-tab" data-settings-tab="filters">Filters</button>
+                <button class="settings-tab" data-settings-tab="keychains">Keychains</button>
+                <button class="settings-tab" data-settings-tab="bluegem">Blue Gem</button>
+            </div>
+
+            <!-- Items Sub-Tab Content -->
+            <div id="itemsSettingsTab" class="settings-tab-content active">
+                <!-- Item Target List Management -->
+                <div class="item-target-list">
                 <h3>
                     <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -1970,10 +2472,13 @@
                         No items added yet. Add keywords above to start monitoring specific items.
                     </div>
                 </div>
+                </div>
             </div>
 
-            <!-- Price Filter Range Settings -->
-            <div class="settings-section">
+            <!-- Filters Sub-Tab Content -->
+            <div id="filtersSettingsTab" class="settings-tab-content">
+                <!-- Price Filter Range Settings -->
+                <div class="settings-section">
                 <h3>
                     <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="3"/>
@@ -2029,10 +2534,13 @@
                     </svg>
                     Save Settings
                 </button>
+                </div>
             </div>
 
-            <!-- Keychain Filter Configuration -->
-            <div class="keychain-filter">
+            <!-- Keychains Sub-Tab Content -->
+            <div id="keychainsSettingsTab" class="settings-tab-content">
+                <!-- Keychain Filter Configuration -->
+                <div class="keychain-filter">
                 <h3>
                     <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
@@ -2075,6 +2583,322 @@
                     </svg>
                     Save Keychain Settings
                 </button>
+            </div>
+        </div>
+
+            <!-- Blue Gem Sub-Tab Content -->
+            <div id="bluegemSettingsTab" class="settings-tab-content">
+                <!-- Blue Gem Sniper Configuration -->
+                <div class="settings-section">
+                <h3>
+                    <svg class="coin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                    Blue Gem Sniper
+                </h3>
+
+                <!-- Enable/Disable Toggle -->
+                <div class="control-row" style="margin-bottom: 18px;">
+                    <div class="control-label">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12,2 2,9 12,16 22,9"/>
+                            <polyline points="2,9 12,16 12,23"/>
+                            <polyline points="22,9 12,16"/>
+                        </svg>
+                        <span>Enable Blue Gem Sniper</span>
+                    </div>
+                    <div class="toggle-switch" id="blueGemToggle"></div>
+                </div>
+
+                <!-- Blue Percentage Range Slider -->
+                <div class="percentage-slider">
+                    <label>Minimum Blue Percentage (%)</label>
+                    <input type="range" id="blueGemPercentage" min="0" max="100" value="70" step="1">
+                    <div class="percentage-value" id="blueGemPercentageValue">70% Blue</div>
+                </div>
+
+                <!-- Description -->
+                <div style="font-size: 12px; color: #94a3b8; margin: 16px 0; padding: 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 10px; line-height: 1.5;">
+                    <strong style="color: #3b82f6;">About Blue Gem Sniper:</strong><br>
+                    This feature specifically targets Case Hardened skins (e.g., Karambit | Case Hardened) with high blue percentages. When enabled, you'll receive notifications for Case Hardened items that meet your minimum blue percentage threshold.
+                </div>
+
+                <!-- Additional Filters -->
+                <div style="margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                    <div style="font-size: 13px; color: #94a3b8; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Price Range (Optional)
+                    </div>
+
+                    <div class="range-input">
+                        <label>Min:</label>
+                        <span style="color: #64748b; font-weight: 500; margin-right: 8px;">$</span>
+                        <input type="number" id="blueGemMinPrice" step="0.01" min="0" placeholder="0.00">
+                    </div>
+
+                    <div class="range-input">
+                        <label>Max:</label>
+                        <span style="color: #64748b; font-weight: 500; margin-right: 8px;">$</span>
+                        <input type="number" id="blueGemMaxPrice" step="0.01" min="0" placeholder="10000.00">
+                    </div>
+
+                    <div style="font-size: 11px; color: #64748b; margin-top: 8px; font-style: italic; line-height: 1.4;">
+                        Leave empty for no price limits. Blue Gem items can range from affordable to extremely expensive depending on pattern.
+                    </div>
+                </div>
+
+                <button class="button" id="saveBlueGemSettings" style="margin-top: 14px; width: 100%; justify-content: center;">
+                    <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17,21 17,13 7,13 7,21"/>
+                        <polyline points="7,3 7,8 15,8"/>
+                    </svg>
+                    Save Blue Gem Settings
+                </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================================
+             AUTOMATION TAB CONTENT
+             ============================================================================ -->
+        <div id="automationTab" class="tab-content">
+            <!-- Automation Sub-Tabs -->
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-automation-tab="charms">Charms</button>
+                <button class="settings-tab" data-automation-tab="itemTarget">Item Target</button>
+            </div>
+
+            <!-- ============================================================================
+                 CHARMS AUTOMATION SUB-TAB
+                 ============================================================================ -->
+            <div id="charmsAutomationTab" class="settings-tab-content active">
+                <div class="settings-section">
+                    <div class="section-header">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 1v6m0 6v6"/>
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M16.24 7.76l-2.12 2.12m-4.24 4.24l-2.12 2.12m10.48 0l-2.12-2.12m-4.24-4.24L7.76 7.76"/>
+                        </svg>
+                        <span>CHARMS AUTO-WITHDRAWAL</span>
+                    </div>
+
+                    <!-- Master Toggle -->
+                    <div class="control-row" style="margin-bottom: 20px;">
+                        <div class="control-label">
+                            <span style="font-size: 14px; font-weight: 600;">Enable Charms Auto-Withdrawal</span>
+                        </div>
+                        <div class="toggle-switch" id="automationToggle"></div>
+                    </div>
+
+                    <!-- Automation Settings -->
+                    <div id="automationSettings" style="opacity: 0.5; pointer-events: none; transition: all 0.3s ease;">
+                        <!-- Percentage Threshold -->
+                        <div style="margin-bottom: 20px;">
+                            <div style="font-size: 13px; color: #94a3b8; margin-bottom: 12px; font-weight: 500;">Minimum Charm Value (% of Item Value)</div>
+                            <input type="range" id="automationThreshold" min="0" max="100" value="50" style="width: 100%; margin-bottom: 8px;">
+                            <div id="automationThresholdValue" style="text-align: center; font-weight: 600; font-size: 15px; color: #667eea;">50% of market value</div>
+                        </div>
+
+                        <!-- Price Range Filter -->
+                        <div style="margin-bottom: 20px;">
+                            <div style="font-size: 13px; color: #94a3b8; margin-bottom: 12px; font-weight: 500;">Item Price Range (USD)</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <input type="number" id="automationMinPrice" placeholder="Min ($)" min="0" step="0.01"
+                                       style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #e2e8f0; font-size: 13px;">
+                                <input type="number" id="automationMaxPrice" placeholder="Max ($)" min="0" step="0.01"
+                                       style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #e2e8f0; font-size: 13px;">
+                            </div>
+                        </div>
+
+                        <!-- Price Difference % Filter -->
+                        <div style="margin-bottom: 20px;">
+                            <div style="font-size: 13px; color: #94a3b8; margin-bottom: 8px; font-weight: 500;">Price Difference % (Marketplace vs Empire)</div>
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 12px;">Only buy if Empire price difference is within range</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <input type="number" id="automationMinDifference" placeholder="Min %" min="0" max="200" step="1" value="50"
+                                       style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #e2e8f0; font-size: 13px;">
+                                <input type="number" id="automationMaxDifference" placeholder="Max %" min="0" max="200" step="1" value="100"
+                                       style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #e2e8f0; font-size: 13px;">
+                            </div>
+                        </div>
+
+                        <!-- Save Button -->
+                        <button class="button" id="saveAutomationSettings" style="width: 100%; justify-content: center; margin-bottom: 20px;">
+                            <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                <polyline points="17,21 17,13 7,13 7,21"/>
+                                <polyline points="7,3 7,8 15,8"/>
+                            </svg>
+                            Save Automation Settings
+                        </button>
+                    </div>
+
+                    <!-- Statistics Section -->
+                    <div class="section-header" style="margin-top: 20px; margin-bottom: 12px;">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="20" x2="12" y2="10"/>
+                            <line x1="18" y1="20" x2="18" y2="4"/>
+                            <line x1="6" y1="20" x2="6" y2="16"/>
+                        </svg>
+                        <span>STATISTICS</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+                        <div class="stat-card" style="padding: 14px;">
+                            <div class="stat-value" id="automationSuccessCount" style="color: #22c55e; font-size: 22px;">0</div>
+                            <div class="stat-label" style="font-size: 10px;">Success</div>
+                        </div>
+                        <div class="stat-card" style="padding: 14px;">
+                            <div class="stat-value" id="automationFailureCount" style="color: #ef4444; font-size: 22px;">0</div>
+                            <div class="stat-label" style="font-size: 10px;">Failed</div>
+                        </div>
+                        <div class="stat-card" style="padding: 14px;">
+                            <div class="stat-value" id="automationTotalValue" style="color: #667eea; font-size: 18px;">$0.00</div>
+                            <div class="stat-label" style="font-size: 10px;">Value</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================================
+                 ITEM TARGET AUTOMATION SUB-TAB
+                 ============================================================================ -->
+            <div id="itemTargetAutomationTab" class="settings-tab-content">
+                <div class="settings-section">
+                    <div class="section-header">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                        <span>ITEM TARGET AUTO-WITHDRAWAL</span>
+                    </div>
+
+                    <!-- Master Toggle -->
+                    <div class="control-row" style="margin-bottom: 20px;">
+                        <div class="control-label">
+                            <span style="font-size: 14px; font-weight: 600;">Enable Item Target Auto-Withdrawal</span>
+                        </div>
+                        <div class="toggle-switch" id="itemTargetAutomationToggle"></div>
+                    </div>
+
+                    <!-- Info Message -->
+                    <div style="padding: 12px; background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-radius: 8px; margin-bottom: 20px;">
+                        <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">
+                            <strong style="color: #667eea;">Note:</strong> These filters are separate from the Control Panel filters.
+                            Items matching these automation filters will be automatically withdrawn when detected.
+                        </div>
+                    </div>
+
+                    <!-- Automation Settings -->
+                    <div id="itemTargetAutomationSettings" style="opacity: 0.5; pointer-events: none; transition: all 0.3s ease;">
+                        <!-- Item Filters -->
+                        <div style="margin-bottom: 20px;">
+                            <div style="font-size: 13px; color: #94a3b8; margin-bottom: 12px; font-weight: 500;">Item Filters</div>
+
+                            <!-- Item Keyword -->
+                            <div style="margin-bottom: 12px;">
+                                <label style="font-size: 12px; color: #64748b; margin-bottom: 6px; display: block;">Item Keyword</label>
+                                <input type="text" id="automationItemKeyword" placeholder="e.g., AWP | Hyper Beast, Glock"
+                                       style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #e2e8f0; font-size: 13px;">
+                                <div style="font-size: 11px; color: #64748b; margin-top: 6px;">Leave empty to match any item</div>
+                            </div>
+
+                            <!-- Float Range -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                                <div>
+                                    <label style="font-size: 12px; color: #64748b; margin-bottom: 6px; display: block;">Min Float</label>
+                                    <input type="number" id="automationMinFloat" placeholder="0.00" step="0.01" min="0" max="1"
+                                           style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #e2e8f0; font-size: 13px;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 12px; color: #64748b; margin-bottom: 6px; display: block;">Max Float</label>
+                                    <input type="number" id="automationMaxFloat" placeholder="1.00" step="0.01" min="0" max="1"
+                                           style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #e2e8f0; font-size: 13px;">
+                                </div>
+                            </div>
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 12px;">Leave empty to match any wear value</div>
+
+                            <!-- Percentage Difference Range -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                                <div>
+                                    <label style="font-size: 12px; color: #64748b; margin-bottom: 6px; display: block;">Min % Diff</label>
+                                    <input type="number" id="automationMinPercentDiff" placeholder="-50" step="1"
+                                           style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #e2e8f0; font-size: 13px;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 12px; color: #64748b; margin-bottom: 6px; display: block;">Max % Diff</label>
+                                    <input type="number" id="automationMaxPercentDiff" placeholder="5" step="1"
+                                           style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #e2e8f0; font-size: 13px;">
+                                </div>
+                            </div>
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 12px;">Leave empty to match any percentage</div>
+
+                            <!-- Price Range -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                                <div>
+                                    <label style="font-size: 12px; color: #64748b; margin-bottom: 6px; display: block;">Min Price</label>
+                                    <input type="number" id="itemTargetMinPrice" placeholder="0" step="0.01" min="0"
+                                           style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #e2e8f0; font-size: 13px;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 12px; color: #64748b; margin-bottom: 6px; display: block;">Max Price</label>
+                                    <input type="number" id="itemTargetMaxPrice" placeholder="1000" step="0.01" min="0"
+                                           style="width: 100%; padding: 10px 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #e2e8f0; font-size: 13px;">
+                                </div>
+                            </div>
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 12px;">Leave empty to match any market value</div>
+                        </div>
+
+                        <!-- Add Button -->
+                        <button class="button" id="addAutomationFilterEntry" style="width: 100%; justify-content: center; margin-bottom: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14m-7-7h14"/>
+                            </svg>
+                            Add Filter Entry
+                        </button>
+
+                        <!-- Filter Entries Counter -->
+                        <div class="items-count" id="automationEntriesCount" style="margin-bottom: 12px;">
+                            0 filter entries
+                        </div>
+
+                        <!-- Filter Entries List -->
+                        <div class="items-list" id="automationEntriesList" style="margin-bottom: 20px;">
+                            <div class="empty-state">
+                                No filter entries added yet. Add filters above to start automation.
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Statistics Section -->
+                    <div class="section-header" style="margin-top: 20px; margin-bottom: 12px;">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="20" x2="12" y2="10"/>
+                            <line x1="18" y1="20" x2="18" y2="4"/>
+                            <line x1="6" y1="20" x2="6" y2="16"/>
+                        </svg>
+                        <span>STATISTICS</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+                        <div class="stat-card" style="padding: 14px;">
+                            <div class="stat-value" id="itemTargetSuccessCount" style="color: #22c55e; font-size: 22px;">0</div>
+                            <div class="stat-label" style="font-size: 10px;">Success</div>
+                        </div>
+                        <div class="stat-card" style="padding: 14px;">
+                            <div class="stat-value" id="itemTargetFailureCount" style="color: #ef4444; font-size: 22px;">0</div>
+                            <div class="stat-label" style="font-size: 10px;">Failed</div>
+                        </div>
+                        <div class="stat-card" style="padding: 14px;">
+                            <div class="stat-value" id="itemTargetTotalValue" style="color: #667eea; font-size: 18px;">$0.00</div>
+                            <div class="stat-label" style="font-size: 10px;">Value</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

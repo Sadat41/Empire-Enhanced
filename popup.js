@@ -12,28 +12,34 @@ class PopupManager {
         };
         // Item Target List management
         this.itemTargetList = []; // Array of {keyword, minFloat, maxFloat, id}
+        // Automation Filter Entries management
+        this.automationFilterEntries = []; // Array of automation filter entries
         this.init();
     }
     
 
     async init() {
     console.log('🚀 Popup initialized for native extension');
-    
+
     // Force nebula theme first, then load from storage
     this.applyTheme('nebula');
-    
+
     // Load theme and site theming state
     await this.loadTheme();
-    
+
     // Setup event listeners
     this.setupEventListeners();
-    
+
     // Load initial data
     await this.loadStats();
     await this.loadKeychainFilterSettings();
     await this.loadCurrentFilterSettings();
     await this.loadItemTargetList();
-    
+    await this.loadBlueGemSettings();
+    await this.loadMarketplaceSettings();
+    await this.loadAutomationSettings();
+    await this.loadItemTargetAutomationSettings();
+
     // Setup auto-refresh
     setInterval(() => this.loadStats(), 3000);
     }
@@ -494,6 +500,30 @@ itemEntry.innerHTML = `
             });
         });
 
+        // Settings sub-tab switching (for Control Panel)
+        document.querySelectorAll('[data-settings-tab]').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const settingsTabName = tab.getAttribute('data-settings-tab');
+                this.switchSettingsTab(settingsTabName);
+            });
+        });
+
+        // Home sub-tab switching (for Settings/Home page)
+        document.querySelectorAll('[data-home-tab]').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const homeTabName = tab.getAttribute('data-home-tab');
+                this.switchHomeTab(homeTabName);
+            });
+        });
+
+        // Automation sub-tab switching
+        document.querySelectorAll('[data-automation-tab]').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const automationTabName = tab.getAttribute('data-automation-tab');
+                this.switchAutomationTab(automationTabName);
+            });
+        });
+
         // Action buttons
         this.setupActionButtons();
 
@@ -502,6 +532,18 @@ itemEntry.innerHTML = `
 
         // Keychain filter controls
         this.setupKeychainFilterControls();
+
+        // Blue Gem Detection controls
+        this.setupBlueGemControls();
+
+        // Marketplace settings controls
+        this.setupMarketplaceControls();
+
+        // Automation controls
+        this.setupAutomationControls();
+
+        // Item Target automation controls
+        this.setupItemTargetAutomationControls();
 
         // Listen for storage changes
         chrome.storage.onChanged.addListener((changes, namespace) => {
@@ -851,13 +893,20 @@ itemEntry.innerHTML = `
 
     populateKeychainList() {
         console.log('🔧 Populating keychain list...');
-        
+
         const keychainItems = document.getElementById('keychainItems');
         if (!keychainItems) {
             console.error('❌ Keychain items container not found');
             return;
         }
 
+        // Check if we have collection data (new format)
+        if (this.keychainFilterSettings.collections) {
+            this.populateKeychainListWithCollections();
+            return;
+        }
+
+        // Fallback to old format
         if (!this.keychainFilterSettings.allKeychains || !Array.isArray(this.keychainFilterSettings.allKeychains)) {
             console.error('❌ No keychain data available');
             keychainItems.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;">No keychain data available</div>';
@@ -868,10 +917,10 @@ itemEntry.innerHTML = `
 
         this.keychainFilterSettings.allKeychains.forEach((keychain) => {
             const isEnabled = this.keychainFilterSettings.enabledKeychains?.includes(keychain.name) || false;
-            
+
             const keychainItem = document.createElement('div');
             keychainItem.className = `keychain-item ${keychain.category?.toLowerCase() || 'unknown'}`;
-            
+
             keychainItem.innerHTML = `
                 <div class="keychain-checkbox ${isEnabled ? 'checked' : ''}" data-keychain="${keychain.name}"></div>
                 <div class="keychain-info">
@@ -879,16 +928,119 @@ itemEntry.innerHTML = `
                     <div class="keychain-price">${(keychain.price || 0).toFixed(2)}</div>
                 </div>
             `;
-            
+
             // Add click handler for the entire item
             keychainItem.addEventListener('click', () => {
                 this.toggleKeychainSelection(keychain.name);
             });
-            
+
             keychainItems.appendChild(keychainItem);
         });
 
         console.log(`✅ Populated ${this.keychainFilterSettings.allKeychains.length} keychain items`);
+    }
+
+    populateKeychainListWithCollections() {
+        const keychainItems = document.getElementById('keychainItems');
+        const collections = this.keychainFilterSettings.collections;
+
+        if (!collections || Object.keys(collections).length === 0) {
+            keychainItems.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;">No collection data available</div>';
+            return;
+        }
+
+        // Create collection tabs and content structure
+        const collectionsHTML = `
+            <div class="collection-tabs">
+                ${Object.keys(collections).map((collectionName, index) => `
+                    <button class="collection-tab ${index === 0 ? 'active' : ''}" data-collection="${collectionName}">
+                        ${collectionName}
+                    </button>
+                `).join('')}
+            </div>
+            <div class="collection-content">
+                ${Object.entries(collections).map(([collectionName, colors], index) => `
+                    <div class="collection-panel ${index === 0 ? 'active' : ''}" data-collection="${collectionName}">
+                        ${this.renderColorSections(colors, collectionName)}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        keychainItems.innerHTML = collectionsHTML;
+
+        // Setup tab click handlers
+        document.querySelectorAll('.collection-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const collectionName = e.target.getAttribute('data-collection');
+                this.switchCollectionTab(collectionName);
+            });
+        });
+
+        // Setup checkbox click handlers
+        document.querySelectorAll('.keychain-checkbox').forEach(checkbox => {
+            checkbox.closest('.keychain-item').addEventListener('click', () => {
+                const keychainName = checkbox.getAttribute('data-keychain');
+                this.toggleKeychainSelection(keychainName);
+            });
+        });
+
+        console.log(`✅ Populated collection-based keychain list with ${Object.keys(collections).length} collections`);
+    }
+
+    renderColorSections(colors, collectionName) {
+        const colorOrder = ['Red', 'Pink', 'Purple', 'Blue'];
+
+        return colorOrder.map(color => {
+            const charms = colors[color] || [];
+
+            if (charms.length === 0) {
+                return ''; // Skip empty color sections
+            }
+
+            return `
+                <div class="color-section">
+                    <div class="color-header">
+                        <span class="color-badge ${color.toLowerCase()}">${color}</span>
+                        <span class="color-count">(${charms.length})</span>
+                    </div>
+                    <div class="color-items">
+                        ${charms.map(charm => {
+                            const isEnabled = this.keychainFilterSettings.enabledKeychains?.includes(charm.name) || false;
+                            return `
+                                <div class="keychain-item ${color.toLowerCase()}">
+                                    <div class="keychain-checkbox ${isEnabled ? 'checked' : ''}" data-keychain="${charm.name}"></div>
+                                    <div class="keychain-info">
+                                        <div class="keychain-name">${charm.name}</div>
+                                        <div class="keychain-price">$${charm.price.toFixed(2)}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    switchCollectionTab(collectionName) {
+        // Update tab active states
+        document.querySelectorAll('.collection-tab').forEach(tab => {
+            if (tab.getAttribute('data-collection') === collectionName) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
+
+        // Update panel active states
+        document.querySelectorAll('.collection-panel').forEach(panel => {
+            if (panel.getAttribute('data-collection') === collectionName) {
+                panel.classList.add('active');
+            } else {
+                panel.classList.remove('active');
+            }
+        });
     }
 
     toggleKeychainSelection(keychainName) {
@@ -931,24 +1083,51 @@ itemEntry.innerHTML = `
             this.keychainFilterSettings.enabledKeychains = [];
         }
 
-        document.querySelectorAll('.keychain-checkbox').forEach(checkbox => {
-            const keychainName = checkbox.getAttribute('data-keychain');
-            
-            if (selectAll) {
-                checkbox.classList.add('checked');
-                if (!this.keychainFilterSettings.enabledKeychains.includes(keychainName)) {
-                    this.keychainFilterSettings.enabledKeychains.push(keychainName);
-                }
-            } else {
-                checkbox.classList.remove('checked');
-                this.keychainFilterSettings.enabledKeychains = this.keychainFilterSettings.enabledKeychains.filter(name => name !== keychainName);
+        // If we have collections, only affect the active collection
+        if (this.keychainFilterSettings.collections) {
+            // Find the active collection panel
+            const activePanel = document.querySelector('.collection-panel.active');
+            if (!activePanel) {
+                console.error('❌ No active collection panel found');
+                return;
             }
-        });
+
+            const checkboxes = activePanel.querySelectorAll('.keychain-checkbox');
+
+            checkboxes.forEach(checkbox => {
+                const keychainName = checkbox.getAttribute('data-keychain');
+
+                if (selectAll) {
+                    checkbox.classList.add('checked');
+                    if (!this.keychainFilterSettings.enabledKeychains.includes(keychainName)) {
+                        this.keychainFilterSettings.enabledKeychains.push(keychainName);
+                    }
+                } else {
+                    checkbox.classList.remove('checked');
+                    this.keychainFilterSettings.enabledKeychains = this.keychainFilterSettings.enabledKeychains.filter(name => name !== keychainName);
+                }
+            });
+        } else {
+            // Old behavior - affect all keychains
+            document.querySelectorAll('.keychain-checkbox').forEach(checkbox => {
+                const keychainName = checkbox.getAttribute('data-keychain');
+
+                if (selectAll) {
+                    checkbox.classList.add('checked');
+                    if (!this.keychainFilterSettings.enabledKeychains.includes(keychainName)) {
+                        this.keychainFilterSettings.enabledKeychains.push(keychainName);
+                    }
+                } else {
+                    checkbox.classList.remove('checked');
+                    this.keychainFilterSettings.enabledKeychains = this.keychainFilterSettings.enabledKeychains.filter(name => name !== keychainName);
+                }
+            });
+        }
 
         // Update enabled count display
         const enabledCount = document.getElementById('enabledCount');
         if (enabledCount) {
-            const total = this.keychainFilterSettings.allKeychains?.length || 0;
+            const total = this.keychainFilterSettings.totalKeychains || this.keychainFilterSettings.allKeychains?.length || 0;
             enabledCount.textContent = `${this.keychainFilterSettings.enabledKeychains.length}/${total}`;
         }
     }
@@ -1024,11 +1203,11 @@ itemEntry.innerHTML = `
             });
         }
 
-    // Open tracker
-    const trackerBtn = document.getElementById('openTracker');
-    if (trackerBtn) {
-        trackerBtn.addEventListener('click', () => {
-            chrome.tabs.create({url: chrome.runtime.getURL('Tracker/tracker.html')});
+    // Open SkinStatz extension in Chrome Web Store
+    const skinStatzBtn = document.getElementById('openSkinStatz');
+    if (skinStatzBtn) {
+        skinStatzBtn.addEventListener('click', () => {
+            chrome.tabs.create({url: 'https://chromewebstore.google.com/detail/moghmlcphfnnjlhkhpangpmdgcpdigeo'});
         });
     }
 
@@ -1284,6 +1463,50 @@ itemEntry.innerHTML = `
         document.getElementById(`${tabName}Tab`).classList.add('active');
     }
 
+    switchSettingsTab(tabName) {
+        // Update settings tab buttons
+        document.querySelectorAll('[data-settings-tab]').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelector(`[data-settings-tab="${tabName}"]`).classList.add('active');
+
+        // Update settings tab content
+        document.querySelectorAll('.settings-tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}SettingsTab`).classList.add('active');
+    }
+
+    switchHomeTab(tabName) {
+        // Update home tab buttons
+        document.querySelectorAll('[data-home-tab]').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelector(`[data-home-tab="${tabName}"]`).classList.add('active');
+
+        // Update home tab content
+        const homeTabContents = document.querySelectorAll('#settingsTab .settings-tab-content');
+        homeTabContents.forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}HomeTab`).classList.add('active');
+    }
+
+    switchAutomationTab(tabName) {
+        // Update automation tab buttons
+        document.querySelectorAll('[data-automation-tab]').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelector(`[data-automation-tab="${tabName}"]`).classList.add('active');
+
+        // Update automation tab content
+        const automationTabContents = document.querySelectorAll('#automationTab .settings-tab-content');
+        automationTabContents.forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}AutomationTab`).classList.add('active');
+    }
+
     async loadStats() {
         try {
             const response = await chrome.runtime.sendMessage({type: 'GET_STATS'});
@@ -1500,15 +1723,15 @@ itemEntry.innerHTML = `
 
     showMessage(text, type) {
         console.log(`${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '❌'} ${text}`);
-        
+
         const errorDiv = document.getElementById('errorMessage');
 
         // Only show temporary error/warning messages, don't interfere with status display
         if ((type === 'error' || type === 'warning') && errorDiv) {
-            // Save current error state 
+            // Save current error state
             const wasVisible = errorDiv.style.display !== 'none';
             const originalText = errorDiv.textContent;
-            
+
             // Show temporary message
             errorDiv.textContent = text;
             errorDiv.style.display = 'block';
@@ -1522,7 +1745,7 @@ itemEntry.innerHTML = `
                 errorDiv.style.borderColor = 'rgba(239, 68, 68, 0.25)';
                 errorDiv.style.color = '#fca5a5';
             }
-            
+
             // Restore original state after timeout
             setTimeout(() => {
                 if (wasVisible) {
@@ -1537,17 +1760,890 @@ itemEntry.innerHTML = `
                 errorDiv.style.color = '#fca5a5';
             }, 5000);
         }
-        
+
         // For success messages, just log them
         if (type === 'success') {
             console.log('✅ Success:', text);
         }
     }
+
+    // ============================================================================
+    // BLUE GEM DETECTION FUNCTIONALITY
+    // ============================================================================
+
+    setupBlueGemControls() {
+        console.log('🔧 Setting up Blue Gem Detection controls...');
+
+        // Blue Gem toggle
+        const blueGemToggle = document.getElementById('blueGemToggle');
+        if (blueGemToggle) {
+            blueGemToggle.addEventListener('click', () => {
+                const isActive = blueGemToggle.classList.contains('active');
+                this.setBlueGemState(!isActive);
+            });
+        }
+
+        // Blue percentage slider
+        const percentageSlider = document.getElementById('blueGemPercentage');
+        const percentageValue = document.getElementById('blueGemPercentageValue');
+
+        if (percentageSlider && percentageValue) {
+            percentageSlider.addEventListener('input', (e) => {
+                const value = e.target.value;
+                percentageValue.textContent = `${value}% Blue`;
+            });
+        }
+
+        // Save blue gem settings button
+        const saveBlueGemBtn = document.getElementById('saveBlueGemSettings');
+        if (saveBlueGemBtn) {
+            saveBlueGemBtn.addEventListener('click', () => {
+                this.saveBlueGemSettings();
+            });
+        }
+
+        console.log('✅ Blue Gem Detection controls setup complete');
+    }
+
+    async loadBlueGemSettings() {
+        try {
+            console.log('🔄 Loading Blue Gem Detection settings...');
+
+            const response = await chrome.runtime.sendMessage({
+                type: 'GET_BLUE_GEM_SETTINGS'
+            });
+
+            if (response && response.success) {
+                const settings = response.data;
+
+                // Update toggle
+                this.updateToggleState('blueGemToggle', settings.enabled);
+
+                // Update slider
+                const percentageSlider = document.getElementById('blueGemPercentage');
+                const percentageValue = document.getElementById('blueGemPercentageValue');
+                if (percentageSlider && percentageValue) {
+                    percentageSlider.value = settings.minBluePercentage;
+                    percentageValue.textContent = `${settings.minBluePercentage}% Blue`;
+                }
+
+                // Update price inputs
+                const minPriceInput = document.getElementById('blueGemMinPrice');
+                const maxPriceInput = document.getElementById('blueGemMaxPrice');
+                if (minPriceInput && maxPriceInput) {
+                    minPriceInput.value = settings.minPrice !== null ? settings.minPrice : '';
+                    maxPriceInput.value = settings.maxPrice !== null ? settings.maxPrice : '';
+                }
+
+                console.log('✅ Blue Gem Detection settings loaded:', settings);
+            } else {
+                throw new Error(response?.error || 'Failed to load Blue Gem settings');
+            }
+        } catch (error) {
+            console.error('❌ Error loading Blue Gem settings:', error);
+        }
+    }
+
+    async setBlueGemState(enabled) {
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'SET_BLUE_GEM_STATE',
+                data: { enabled }
+            });
+
+            if (response && response.success) {
+                this.updateToggleState('blueGemToggle', enabled);
+                this.showMessage(enabled ? 'Blue Gem Detection enabled' : 'Blue Gem Detection disabled', 'success');
+            }
+        } catch (error) {
+            console.error('Error setting Blue Gem state:', error);
+            this.showMessage('Failed to update Blue Gem Detection state', 'error');
+        }
+    }
+
+    async saveBlueGemSettings() {
+        const percentageSlider = document.getElementById('blueGemPercentage');
+        const minPriceInput = document.getElementById('blueGemMinPrice');
+        const maxPriceInput = document.getElementById('blueGemMaxPrice');
+
+        if (!percentageSlider || !minPriceInput || !maxPriceInput) return;
+
+        const minBluePercentage = parseFloat(percentageSlider.value);
+
+        // Parse price values (empty string becomes null)
+        const minPrice = minPriceInput.value.trim() === '' ? null : parseFloat(minPriceInput.value);
+        const maxPrice = maxPriceInput.value.trim() === '' ? null : parseFloat(maxPriceInput.value);
+
+        // Validate price range
+        if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
+            this.showMessage('Minimum price cannot be greater than maximum price', 'error');
+            return;
+        }
+
+        // Validate price values are not negative
+        if ((minPrice !== null && minPrice < 0) || (maxPrice !== null && maxPrice < 0)) {
+            this.showMessage('Prices cannot be negative', 'error');
+            return;
+        }
+
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'UPDATE_BLUE_GEM_SETTINGS',
+                data: { minBluePercentage, minPrice, maxPrice }
+            });
+
+            if (response && response.success) {
+                this.showMessage(response.message || 'Blue Gem settings saved successfully!', 'success');
+            } else {
+                this.showMessage(response?.error || 'Failed to save Blue Gem settings', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving Blue Gem settings:', error);
+            this.showMessage('Failed to save Blue Gem settings', 'error');
+        }
+    }
+
+    // ============================================================================
+    // MARKETPLACE SETTINGS FUNCTIONALITY
+    // ============================================================================
+
+    setupMarketplaceControls() {
+        console.log('🔧 Setting up Marketplace controls...');
+
+        // Save marketplace settings button
+        const saveMarketplaceBtn = document.getElementById('saveMarketplaceSettings');
+        if (saveMarketplaceBtn) {
+            saveMarketplaceBtn.addEventListener('click', () => {
+                this.saveMarketplaceSettings();
+            });
+        }
+
+        // Save comparison settings button (in Comparison tab)
+        const saveComparisonBtn = document.getElementById('saveComparisonSettings');
+        if (saveComparisonBtn) {
+            saveComparisonBtn.addEventListener('click', () => {
+                this.saveComparisonSettings();
+            });
+        }
+
+        console.log('✅ Marketplace controls setup complete');
+    }
+
+    async loadMarketplaceSettings() {
+        try {
+            console.log('🔄 Loading Marketplace settings...');
+
+            const settings = await chrome.storage.sync.get({
+                selectedMarketplace1: 'csfloat',
+                selectedMarketplace2: 'buff163',
+                differenceMarketplace: 'marketplace1',
+                differenceCalculationMethod: 'marketplace_over_empire'
+            });
+
+            const marketplace1Select = document.getElementById('marketplace1Select');
+            const marketplace2Select = document.getElementById('marketplace2Select');
+            const differenceMarketplaceSelect = document.getElementById('differenceMarketplaceSelect');
+            const differenceCalculationMethod = document.getElementById('differenceCalculationMethod');
+
+            if (marketplace1Select) {
+                marketplace1Select.value = settings.selectedMarketplace1;
+            }
+
+            if (marketplace2Select) {
+                marketplace2Select.value = settings.selectedMarketplace2;
+            }
+
+            if (differenceMarketplaceSelect) {
+                differenceMarketplaceSelect.value = settings.differenceMarketplace;
+            }
+
+            if (differenceCalculationMethod) {
+                differenceCalculationMethod.value = settings.differenceCalculationMethod;
+            }
+
+        } catch (error) {
+            console.error('❌ Error loading Marketplace settings:', error);
+        }
+    }
+
+    async saveMarketplaceSettings() {
+        try {
+            console.log('💾 Saving Marketplace settings...');
+
+            const marketplace1Select = document.getElementById('marketplace1Select');
+            const marketplace2Select = document.getElementById('marketplace2Select');
+
+            if (!marketplace1Select || !marketplace2Select) {
+                this.showMessage('Marketplace selectors not found', 'error');
+                return;
+            }
+
+            const selectedMarketplace1 = marketplace1Select.value;
+            const selectedMarketplace2 = marketplace2Select.value;
+
+            // Validate that both selections are different
+            if (selectedMarketplace1 === selectedMarketplace2) {
+                this.showMessage('Please select two different marketplaces', 'error');
+                return;
+            }
+
+            // Save to storage
+            await chrome.storage.sync.set({
+                selectedMarketplace1,
+                selectedMarketplace2
+            });
+
+            // Clear price cache in background to force refresh with new marketplaces
+            await chrome.runtime.sendMessage({
+                type: 'CLEAR_PRICE_CACHE'
+            });
+
+            // Get marketplace names for display
+            const marketplace1Name = marketplace1Select.options[marketplace1Select.selectedIndex].text;
+            const marketplace2Name = marketplace2Select.options[marketplace2Select.selectedIndex].text;
+
+            this.showMessage(`Marketplace settings saved! Displaying: ${marketplace1Name}, ${marketplace2Name}, and Empire`, 'success');
+        } catch (error) {
+            console.error('❌ Error saving Marketplace settings:', error);
+            this.showMessage('Failed to save Marketplace settings', 'error');
+        }
+    }
+
+    async saveComparisonSettings() {
+        try {
+            console.log('💾 Saving Comparison settings...');
+
+            const differenceMarketplaceSelect = document.getElementById('differenceMarketplaceSelect');
+            const differenceCalculationMethodSelect = document.getElementById('differenceCalculationMethod');
+
+            if (!differenceMarketplaceSelect || !differenceCalculationMethodSelect) {
+                this.showMessage('Comparison selectors not found', 'error');
+                return;
+            }
+
+            const differenceMarketplace = differenceMarketplaceSelect.value;
+            const differenceCalculationMethod = differenceCalculationMethodSelect.value;
+
+            // Get current marketplace selections to show in message
+            const settings = await chrome.storage.sync.get({
+                selectedMarketplace1: 'csfloat',
+                selectedMarketplace2: 'buff163'
+            });
+
+            // Save to storage
+            await chrome.storage.sync.set({
+                differenceMarketplace,
+                differenceCalculationMethod
+            });
+
+            // Get the marketplace names
+            const marketplace1Select = document.getElementById('marketplace1Select');
+            const marketplace2Select = document.getElementById('marketplace2Select');
+
+            let diffMarketplaceName = differenceMarketplace === 'marketplace1' ? 'Marketplace 1' : 'Marketplace 2';
+            if (marketplace1Select && marketplace2Select) {
+                const marketplace1Name = marketplace1Select.options[marketplace1Select.selectedIndex].text;
+                const marketplace2Name = marketplace2Select.options[marketplace2Select.selectedIndex].text;
+                diffMarketplaceName = differenceMarketplace === 'marketplace1' ? marketplace1Name : marketplace2Name;
+            }
+
+            const methodName = differenceCalculationMethod === 'marketplace_over_empire' ? 'Marketplace / Empire' : 'Empire / Marketplace';
+            this.showMessage(`Comparison settings saved! Using ${diffMarketplaceName} vs Empire with ${methodName} calculation`, 'success');
+        } catch (error) {
+            console.error('❌ Error saving Comparison settings:', error);
+            this.showMessage('Failed to save Comparison settings', 'error');
+        }
+    }
+
+    // ============================================================================
+    // AUTOMATION FUNCTIONALITY
+    // ============================================================================
+
+    setupAutomationControls() {
+        console.log('🔧 Setting up Automation controls...');
+
+        // Automation toggle
+        const automationToggle = document.getElementById('automationToggle');
+        if (automationToggle) {
+            automationToggle.addEventListener('click', () => {
+                const isActive = automationToggle.classList.contains('active');
+                this.setAutomationState(!isActive);
+            });
+        }
+
+        // Threshold slider
+        const thresholdSlider = document.getElementById('automationThreshold');
+        const thresholdValue = document.getElementById('automationThresholdValue');
+
+        if (thresholdSlider && thresholdValue) {
+            thresholdSlider.addEventListener('input', (e) => {
+                const value = e.target.value;
+                thresholdValue.textContent = `${value}% of market value`;
+            });
+        }
+
+        // Save automation settings button
+        const saveAutomationBtn = document.getElementById('saveAutomationSettings');
+        if (saveAutomationBtn) {
+            saveAutomationBtn.addEventListener('click', () => {
+                this.saveAutomationSettings();
+            });
+        }
+
+        // Reset statistics button
+        const resetStatsBtn = document.getElementById('resetAutomationStats');
+        if (resetStatsBtn) {
+            resetStatsBtn.addEventListener('click', () => {
+                this.resetAutomationStats();
+            });
+        }
+
+        console.log('✅ Automation controls setup complete');
+    }
+
+    async loadAutomationSettings() {
+        try {
+            console.log('🔄 Loading Automation settings...');
+
+            const response = await chrome.runtime.sendMessage({
+                type: 'GET_AUTOMATION_SETTINGS'
+            });
+
+            if (response && response.success) {
+                const settings = response.data;
+
+                // Update toggle state
+                this.updateToggleState('automationToggle', settings.enabled);
+                this.updateAutomationSettingsVisibility(settings.enabled);
+
+                // Update threshold slider
+                const thresholdSlider = document.getElementById('automationThreshold');
+                const thresholdValue = document.getElementById('automationThresholdValue');
+                if (thresholdSlider && thresholdValue) {
+                    thresholdSlider.value = settings.thresholdPercentage;
+                    thresholdValue.textContent = `${settings.thresholdPercentage}%`;
+                }
+
+                // Update price inputs
+                const minPriceInput = document.getElementById('automationMinPrice');
+                const maxPriceInput = document.getElementById('automationMaxPrice');
+                if (minPriceInput && maxPriceInput) {
+                    minPriceInput.value = settings.minPrice !== null && settings.minPrice !== undefined && settings.minPrice !== 0 ? settings.minPrice : '';
+                    maxPriceInput.value = settings.maxPrice !== null && settings.maxPrice !== undefined && settings.maxPrice !== 100 ? settings.maxPrice : '';
+                }
+
+                // Update statistics
+                this.updateAutomationStats(settings.stats);
+
+                console.log('✅ Automation settings loaded:', settings);
+            } else {
+                throw new Error(response?.error || 'Failed to load Automation settings');
+            }
+        } catch (error) {
+            console.error('❌ Error loading Automation settings:', error);
+        }
+    }
+
+    async setAutomationState(enabled) {
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'SET_AUTOMATION_STATE',
+                data: { enabled }
+            });
+
+            if (response && response.success) {
+                this.updateToggleState('automationToggle', enabled);
+                this.updateAutomationSettingsVisibility(enabled);
+                this.showMessage(enabled ? 'Auto-Withdrawal ENABLED' : 'Auto-Withdrawal disabled', enabled ? 'success' : 'warning');
+            }
+        } catch (error) {
+            console.error('Error setting Automation state:', error);
+            this.showMessage('Failed to update Automation state', 'error');
+        }
+    }
+
+    updateAutomationSettingsVisibility(enabled) {
+        const settingsDiv = document.getElementById('automationSettings');
+        if (settingsDiv) {
+            if (enabled) {
+                settingsDiv.style.opacity = '1';
+                settingsDiv.style.pointerEvents = 'auto';
+            } else {
+                settingsDiv.style.opacity = '0.5';
+                settingsDiv.style.pointerEvents = 'none';
+            }
+        }
+    }
+
+    async saveAutomationSettings() {
+        const thresholdSlider = document.getElementById('automationThreshold');
+        const minPriceInput = document.getElementById('automationMinPrice');
+        const maxPriceInput = document.getElementById('automationMaxPrice');
+
+        if (!thresholdSlider || !minPriceInput || !maxPriceInput) return;
+
+        const thresholdPercentage = parseFloat(thresholdSlider.value);
+
+        // Parse price values (empty string becomes null/0/100 defaults)
+        const minPrice = minPriceInput.value.trim() === '' ? 0 : parseFloat(minPriceInput.value);
+        const maxPrice = maxPriceInput.value.trim() === '' ? 100 : parseFloat(maxPriceInput.value);
+
+        // Validate price range
+        if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
+            this.showMessage('Minimum price cannot be greater than maximum price', 'error');
+            return;
+        }
+
+        // Validate price values are not negative
+        if (minPrice < 0 || maxPrice < 0) {
+            this.showMessage('Prices cannot be negative', 'error');
+            return;
+        }
+
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'UPDATE_AUTOMATION_SETTINGS',
+                data: { thresholdPercentage, minPrice, maxPrice }
+            });
+
+            if (response && response.success) {
+                this.showMessage(response.message || 'Automation settings saved successfully!', 'success');
+            } else {
+                this.showMessage(response?.error || 'Failed to save Automation settings', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving Automation settings:', error);
+            this.showMessage('Failed to save Automation settings', 'error');
+        }
+    }
+
+    async resetAutomationStats() {
+        if (!confirm('Are you sure you want to reset automation statistics?')) {
+            return;
+        }
+
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'RESET_AUTOMATION_STATS'
+            });
+
+            if (response && response.success) {
+                this.updateAutomationStats(response.data.stats);
+                this.showMessage('Automation statistics reset successfully', 'success');
+            } else {
+                this.showMessage(response?.error || 'Failed to reset statistics', 'error');
+            }
+        } catch (error) {
+            console.error('Error resetting automation stats:', error);
+            this.showMessage('Failed to reset statistics', 'error');
+        }
+    }
+
+    updateAutomationStats(stats) {
+        if (!stats) return;
+
+        // Update success count
+        const successCount = document.getElementById('automationSuccessCount');
+        if (successCount) {
+            successCount.textContent = stats.successCount || 0;
+        }
+
+        // Update failure count
+        const failureCount = document.getElementById('automationFailureCount');
+        if (failureCount) {
+            failureCount.textContent = stats.failureCount || 0;
+        }
+
+        // Update total value
+        const totalValue = document.getElementById('automationTotalValue');
+        if (totalValue) {
+            totalValue.textContent = `$${(stats.totalValueWithdrawn || 0).toFixed(2)}`;
+        }
+
+        // Update last activity
+        const lastActivity = document.getElementById('automationLastActivity');
+        if (lastActivity) {
+            if (stats.lastAttempt) {
+                const date = new Date(stats.lastAttempt);
+                lastActivity.textContent = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+            } else {
+                lastActivity.textContent = 'No activity yet';
+            }
+        }
+    }
+
+    // ============================================================================
+    // ITEM TARGET AUTOMATION FUNCTIONALITY
+    // ============================================================================
+
+    setupItemTargetAutomationControls() {
+        console.log('🔧 Setting up Item Target Automation controls...');
+
+        // Item Target Automation toggle
+        const itemTargetAutomationToggle = document.getElementById('itemTargetAutomationToggle');
+        if (itemTargetAutomationToggle) {
+            itemTargetAutomationToggle.addEventListener('click', () => {
+                const isActive = itemTargetAutomationToggle.classList.contains('active');
+                this.setItemTargetAutomationState(!isActive);
+            });
+        }
+
+        // Add filter entry button
+        const addFilterEntryBtn = document.getElementById('addAutomationFilterEntry');
+        if (addFilterEntryBtn) {
+            addFilterEntryBtn.addEventListener('click', () => {
+                this.addAutomationFilterEntry();
+            });
+        }
+
+        console.log('✅ Item Target Automation controls setup complete');
+    }
+
+    async loadItemTargetAutomationSettings() {
+        try {
+            console.log('🔄 Loading Item Target Automation settings...');
+
+            const response = await chrome.runtime.sendMessage({
+                type: 'GET_ITEM_TARGET_AUTOMATION_SETTINGS'
+            });
+
+            if (response && response.success) {
+                const settings = response.data;
+
+                // Update toggle state
+                this.updateToggleState('itemTargetAutomationToggle', settings.enabled);
+                this.updateItemTargetAutomationSettingsVisibility(settings.enabled);
+
+                // Load and display filter entries list
+                this.automationFilterEntries = settings.filterEntries || [];
+                this.displayAutomationFilterEntries();
+
+                // Update statistics
+                this.updateItemTargetAutomationStats(settings.stats);
+
+                console.log('✅ Item Target Automation settings loaded:', settings);
+            } else {
+                throw new Error(response?.error || 'Failed to load Item Target Automation settings');
+            }
+        } catch (error) {
+            console.error('❌ Error loading Item Target Automation settings:', error);
+        }
+    }
+
+    async setItemTargetAutomationState(enabled) {
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'SET_ITEM_TARGET_AUTOMATION_STATE',
+                data: { enabled }
+            });
+
+            if (response && response.success) {
+                this.updateToggleState('itemTargetAutomationToggle', enabled);
+                this.updateItemTargetAutomationSettingsVisibility(enabled);
+                this.showMessage(enabled ? 'Item Target Auto-Withdrawal ENABLED' : 'Item Target Auto-Withdrawal disabled', enabled ? 'success' : 'warning');
+            }
+        } catch (error) {
+            console.error('Error setting Item Target Automation state:', error);
+            this.showMessage('Failed to update Item Target Automation state', 'error');
+        }
+    }
+
+    updateItemTargetAutomationSettingsVisibility(enabled) {
+        const settingsDiv = document.getElementById('itemTargetAutomationSettings');
+        if (settingsDiv) {
+            if (enabled) {
+                settingsDiv.style.opacity = '1';
+                settingsDiv.style.pointerEvents = 'auto';
+            } else {
+                settingsDiv.style.opacity = '0.5';
+                settingsDiv.style.pointerEvents = 'none';
+            }
+        }
+    }
+
+    async addAutomationFilterEntry() {
+        console.log('🔧 Adding automation filter entry...');
+
+        // Get filter values from inputs
+        const keywordInput = document.getElementById('automationItemKeyword');
+        const minFloatInput = document.getElementById('automationMinFloat');
+        const maxFloatInput = document.getElementById('automationMaxFloat');
+        const minPercentDiffInput = document.getElementById('automationMinPercentDiff');
+        const maxPercentDiffInput = document.getElementById('automationMaxPercentDiff');
+        const minPriceInput = document.getElementById('itemTargetMinPrice');
+        const maxPriceInput = document.getElementById('itemTargetMaxPrice');
+
+        // Build filter entry object
+        const keyword = keywordInput?.value?.trim() || '';
+
+        const minFloat = minFloatInput?.value ? parseFloat(minFloatInput.value) : null;
+        const maxFloat = maxFloatInput?.value ? parseFloat(maxFloatInput.value) : null;
+        const floatFilterEnabled = minFloat !== null || maxFloat !== null;
+
+        const minPercentDiff = minPercentDiffInput?.value ? parseFloat(minPercentDiffInput.value) : null;
+        const maxPercentDiff = maxPercentDiffInput?.value ? parseFloat(maxPercentDiffInput.value) : null;
+        const percentDiffFilterEnabled = minPercentDiff !== null || maxPercentDiff !== null;
+
+        const minPrice = minPriceInput?.value ? parseFloat(minPriceInput.value) : null;
+        const maxPrice = maxPriceInput?.value ? parseFloat(maxPriceInput.value) : null;
+        const priceFilterEnabled = minPrice !== null || maxPrice !== null;
+
+        console.log('💰 Price inputs:', {
+            minPriceValue: minPriceInput?.value,
+            maxPriceValue: maxPriceInput?.value,
+            minPrice: minPrice,
+            maxPrice: maxPrice,
+            priceFilterEnabled: priceFilterEnabled
+        });
+
+        const entry = {
+            keyword: keyword,
+            floatFilter: {
+                enabled: floatFilterEnabled,
+                min: minFloat,
+                max: maxFloat
+            },
+            percentDiffFilter: {
+                enabled: percentDiffFilterEnabled,
+                min: minPercentDiff,
+                max: maxPercentDiff
+            },
+            priceFilter: {
+                enabled: priceFilterEnabled,
+                min: minPrice,
+                max: maxPrice
+            }
+        };
+
+        console.log('📋 Filter entry to add:', entry);
+
+        try {
+            console.log('📤 Sending ADD_AUTOMATION_FILTER_ENTRY message...');
+            const response = await chrome.runtime.sendMessage({
+                type: 'ADD_AUTOMATION_FILTER_ENTRY',
+                data: { entry }
+            });
+
+            console.log('📥 Response received:', response);
+
+            if (response && response.success) {
+                this.showMessage('Filter entry added successfully!', 'success');
+                console.log('✅ Filter entry added, reloading settings...');
+                // Reload settings to update the display
+                await this.loadItemTargetAutomationSettings();
+                // Clear the input fields
+                this.clearAutomationFilterInputs();
+            } else {
+                console.error('❌ Failed to add filter entry:', response?.error);
+                this.showMessage(response?.error || 'Failed to add filter entry', 'error');
+            }
+        } catch (error) {
+            console.error('❌ Error adding filter entry:', error);
+            this.showMessage('Failed to add filter entry', 'error');
+        }
+    }
+
+    clearAutomationFilterInputs() {
+        const keywordInput = document.getElementById('automationItemKeyword');
+        const minFloatInput = document.getElementById('automationMinFloat');
+        const maxFloatInput = document.getElementById('automationMaxFloat');
+        const minPercentDiffInput = document.getElementById('automationMinPercentDiff');
+        const maxPercentDiffInput = document.getElementById('automationMaxPercentDiff');
+        const minPriceInput = document.getElementById('itemTargetMinPrice');
+        const maxPriceInput = document.getElementById('itemTargetMaxPrice');
+
+        if (keywordInput) keywordInput.value = '';
+        if (minFloatInput) minFloatInput.value = '';
+        if (maxFloatInput) maxFloatInput.value = '';
+        if (minPercentDiffInput) minPercentDiffInput.value = '';
+        if (maxPercentDiffInput) maxPercentDiffInput.value = '';
+        if (minPriceInput) minPriceInput.value = '';
+        if (maxPriceInput) maxPriceInput.value = '';
+    }
+
+    displayAutomationFilterEntries() {
+        const entriesList = document.getElementById('automationEntriesList');
+        const entriesCount = document.getElementById('automationEntriesCount');
+
+        if (!entriesList || !entriesCount) return;
+
+        // Update counter
+        entriesCount.textContent = `${this.automationFilterEntries.length} filter ${this.automationFilterEntries.length === 1 ? 'entry' : 'entries'}`;
+
+        // Display entries
+        if (this.automationFilterEntries.length === 0) {
+            entriesList.innerHTML = '<div class="empty-state">No filter entries added yet. Add filters above to start automation.</div>';
+            return;
+        }
+
+        console.log('🔍 ALL AUTOMATION ENTRIES:', JSON.stringify(this.automationFilterEntries, null, 2));
+
+        entriesList.innerHTML = this.automationFilterEntries.map(entry => {
+            console.log('📊 Displaying entry:', JSON.stringify(entry, null, 2));
+
+            // Build keyword display
+            const keyword = entry.keyword && entry.keyword.trim() !== '' ? entry.keyword : 'Universal Filter';
+
+            // Build float display
+            let floatDisplay = '';
+            if (entry.floatFilter?.enabled) {
+                const min = entry.floatFilter.min !== null ? entry.floatFilter.min.toFixed(4) : '0.0000';
+                const max = entry.floatFilter.max !== null ? entry.floatFilter.max.toFixed(4) : '1.0000';
+                floatDisplay = `<div class="item-wear-range">Floats: ${min} - ${max} <span class="wear-badge small-badge">Custom Float</span></div>`;
+            }
+
+            // Build percentage difference display
+            let percentDiffDisplay = '';
+            if (entry.percentDiffFilter?.enabled) {
+                const min = entry.percentDiffFilter.min !== null ? entry.percentDiffFilter.min : '-∞';
+                const max = entry.percentDiffFilter.max !== null ? entry.percentDiffFilter.max : '+∞';
+                percentDiffDisplay = `<div class="item-wear-range">% Diff: ${min}% to ${max}% <span class="wear-badge small-badge">Custom % Diff</span></div>`;
+            }
+
+            // Build price display
+            let priceDisplay = '';
+            console.log('💰 Price filter check:', {
+                enabled: entry.priceFilter?.enabled,
+                min: entry.priceFilter?.min,
+                max: entry.priceFilter?.max
+            });
+            if (entry.priceFilter?.enabled) {
+                const min = entry.priceFilter.min !== null ? `$${entry.priceFilter.min}` : '$0';
+                const max = entry.priceFilter.max !== null ? `$${entry.priceFilter.max}` : '∞';
+                priceDisplay = `<div class="item-wear-range">Price: ${min} - ${max} <span class="wear-badge small-badge">Custom Price</span></div>`;
+                console.log('💰 Price display created:', priceDisplay);
+            } else {
+                console.log('❌ Price filter not enabled, skipping display');
+            }
+
+            return `
+                <div class="item-card" data-entry-id="${entry.id}">
+                    <div class="item-info">
+                        <div class="item-keyword">${this.escapeHtml(keyword)}</div>
+                        ${floatDisplay}
+                        ${percentDiffDisplay}
+                        ${priceDisplay}
+                    </div>
+                    <button class="remove-item-btn" data-entry-id="${entry.id}" title="Remove entry">×</button>
+                </div>
+            `;
+        }).join('');
+
+        // Add event listeners to delete buttons
+        const deleteButtons = entriesList.querySelectorAll('.remove-item-btn');
+        deleteButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const entryId = btn.getAttribute('data-entry-id');
+                this.removeAutomationFilterEntry(entryId);
+            });
+        });
+    }
+
+    async removeAutomationFilterEntry(entryId) {
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'REMOVE_AUTOMATION_FILTER_ENTRY',
+                data: { entryId }
+            });
+
+            if (response && response.success) {
+                this.showMessage('Filter entry removed', 'success');
+                // Reload settings to update the display
+                await this.loadItemTargetAutomationSettings();
+            } else {
+                this.showMessage(response?.error || 'Failed to remove filter entry', 'error');
+            }
+        } catch (error) {
+            console.error('Error removing filter entry:', error);
+            this.showMessage('Failed to remove filter entry', 'error');
+        }
+    }
+
+    updateItemTargetAutomationStats(stats) {
+        if (!stats) return;
+
+        // Update success count
+        const successCount = document.getElementById('itemTargetSuccessCount');
+        if (successCount) {
+            successCount.textContent = stats.successCount || 0;
+        }
+
+        // Update failure count
+        const failureCount = document.getElementById('itemTargetFailureCount');
+        if (failureCount) {
+            failureCount.textContent = stats.failureCount || 0;
+        }
+
+        // Update total value
+        const totalValue = document.getElementById('itemTargetTotalValue');
+        if (totalValue) {
+            totalValue.textContent = `$${(stats.totalValueWithdrawn || 0).toFixed(2)}`;
+        }
+    }
 }
 
 // Initialize popup when DOM is ready
+let popupManagerInstance = null;
 document.addEventListener('DOMContentLoaded', () => {
-    new PopupManager();
+    popupManagerInstance = new PopupManager();
+});
+
+// Listen for automation withdrawal results from background script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (!popupManagerInstance) return;
+
+    switch (message.type) {
+        case 'AUTOMATION_WITHDRAWAL_SUCCESS':
+            console.log('🤖✅ Automation withdrawal succeeded:', message.data);
+            // Update stats in real-time
+            if (message.data.stats) {
+                popupManagerInstance.updateAutomationStats(message.data.stats);
+            }
+            popupManagerInstance.showMessage(
+                `Automated withdrawal successful: ${message.data.item.market_name}`,
+                'success'
+            );
+            break;
+
+        case 'AUTOMATION_WITHDRAWAL_FAILED':
+            console.log('🤖❌ Automation withdrawal failed:', message.data);
+            // Update stats in real-time
+            if (message.data.stats) {
+                popupManagerInstance.updateAutomationStats(message.data.stats);
+            }
+            popupManagerInstance.showMessage(
+                `Automation withdrawal failed: ${message.data.error}`,
+                'error'
+            );
+            break;
+
+        case 'ITEM_TARGET_AUTOMATION_WITHDRAWAL_SUCCESS':
+            console.log('🎯✅ Item Target automation withdrawal succeeded:', message.data);
+            // Update stats in real-time
+            if (message.data.stats) {
+                popupManagerInstance.updateItemTargetAutomationStats(message.data.stats);
+            }
+            popupManagerInstance.showMessage(
+                `Item Target automated withdrawal successful: ${message.data.item.market_name}`,
+                'success'
+            );
+            break;
+
+        case 'ITEM_TARGET_AUTOMATION_WITHDRAWAL_FAILED':
+            console.log('🎯❌ Item Target automation withdrawal failed:', message.data);
+            // Update stats in real-time
+            if (message.data.stats) {
+                popupManagerInstance.updateItemTargetAutomationStats(message.data.stats);
+            }
+            popupManagerInstance.showMessage(
+                `Item Target automation withdrawal failed: ${message.data.error}`,
+                'error'
+            );
+            break;
+    }
+
+    sendResponse({ received: true });
 });
 
 // Module system initialization
